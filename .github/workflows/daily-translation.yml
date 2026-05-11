@@ -29,7 +29,6 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       OPENAI_MODEL: gpt-5-nano
       BOT_TOKEN: ${{ secrets.KREW_BOT_TOKEN }}
-      GH_TOKEN: ${{ secrets.KREW_BOT_TOKEN }}
       KREW_REPO: Hugging-Face-KREW/hugging-face-krew.github.io
 
     steps:
