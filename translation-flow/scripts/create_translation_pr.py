@@ -420,6 +420,26 @@ def create_branch(worktree: Path, branch: str) -> None:
         run_cmd(["git", "switch", "-c", branch], cwd=worktree)
 
 
+def create_or_update_branch(worktree: Path, branch: str, base_branch: str) -> None:
+    remote_ref = f"origin/{branch}"
+    fetch = run_cmd(
+        ["git", "fetch", "origin", f"{branch}:refs/remotes/{remote_ref}"],
+        cwd=worktree,
+        check=False,
+    )
+    if fetch.returncode == 0:
+        existing = run_cmd(["git", "rev-parse", "--verify", branch], cwd=worktree, check=False)
+        if existing.returncode == 0:
+            run_cmd(["git", "switch", branch], cwd=worktree)
+            run_cmd(["git", "merge", "--ff-only", remote_ref], cwd=worktree)
+        else:
+            run_cmd(["git", "switch", "-c", branch, "--track", remote_ref], cwd=worktree)
+        return
+
+    run_cmd(["git", "switch", base_branch], cwd=worktree)
+    create_branch(worktree, branch)
+
+
 def current_branch(worktree: Path) -> str:
     return run_cmd(["git", "branch", "--show-current"], cwd=worktree).stdout.strip()
 
@@ -445,6 +465,14 @@ def create_pr(
         run_cmd(["git", "push", "-u", "origin", branch], cwd=worktree)
     if not open_pr:
         return ""
+
+    existing = run_cmd(
+        ["gh", "pr", "view", branch, "--json", "url", "-q", ".url"],
+        cwd=worktree,
+        check=False,
+    )
+    if existing.returncode == 0 and existing.stdout.strip():
+        return existing.stdout.strip()
 
     result = run_cmd(
         ["gh", "pr", "create", "--title", title, "--body", body],
@@ -575,6 +603,28 @@ def main(argv: Optional[list[str]] = None) -> int:
                 "Use --skip-existing to skip or --force to overwrite."
             )
 
+        run_cmd(["git", "switch", base_branch], cwd=target_worktree)
+        create_or_update_branch(target_worktree, branch, base_branch)
+
+        if full_path.exists() and not args.force:
+            if args.skip_existing:
+                log(f"Skipping existing translation on branch before API call: {full_path}")
+                run_results.append(
+                    {
+                        "status": "skipped_existing",
+                        "slug": post.slug,
+                        "source_url": post.url,
+                        "file_path": file_path,
+                        "manifest_path": str(manifest_path),
+                        "pr_url": "",
+                    }
+                )
+                continue
+            raise RuntimeError(
+                f"Translation file already exists on branch {branch}: {full_path}. "
+                "Use --skip-existing to skip or --force to overwrite."
+            )
+
         source_html = fetch_text(post.url)
         source_markdown = html_to_markdown(source_html)
         if not source_markdown:
@@ -588,8 +638,6 @@ def main(argv: Optional[list[str]] = None) -> int:
                 target_locale=DEFAULT_LOCALE,
             )
         )
-        run_cmd(["git", "switch", base_branch], cwd=target_worktree)
-        create_branch(target_worktree, branch)
 
         full_path.parent.mkdir(parents=True, exist_ok=True)
         full_path.write_text(build_translation_markdown(post, translated_markdown, translator.name, post.url))

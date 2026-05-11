@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
+import scripts.create_translation_pr as create_translation_pr
 from scripts.create_translation_pr import (
     FeedPost,
     build_translation_markdown,
+    create_or_update_branch,
+    create_pr,
     html_to_markdown,
     parse_feed,
+    run_cmd,
     select_posts,
     slug_from_url,
 )
@@ -164,3 +169,58 @@ def test_default_translation_prompt_is_stored_in_docs() -> None:
     assert "Hugging Face technical blog posts" in prompt
     assert "Output Korean Markdown only" in prompt
     assert "Chunking Rules" in prompt
+
+
+def init_git_repo(path: Path) -> None:
+    run_cmd(["git", "init"], cwd=path)
+    run_cmd(["git", "config", "user.email", "test@example.com"], cwd=path)
+    run_cmd(["git", "config", "user.name", "Test User"], cwd=path)
+
+
+def test_create_or_update_branch_tracks_existing_remote_branch(tmp_path: Path) -> None:
+    remote = tmp_path / "remote.git"
+    seed = tmp_path / "seed"
+    worktree = tmp_path / "worktree"
+    remote.mkdir()
+    seed.mkdir()
+
+    run_cmd(["git", "init", "--bare"], cwd=remote)
+    init_git_repo(seed)
+    (seed / "README.md").write_text("base\n")
+    run_cmd(["git", "add", "README.md"], cwd=seed)
+    run_cmd(["git", "commit", "-m", "base"], cwd=seed)
+    run_cmd(["git", "branch", "-M", "main"], cwd=seed)
+    run_cmd(["git", "remote", "add", "origin", str(remote)], cwd=seed)
+    run_cmd(["git", "push", "-u", "origin", "main"], cwd=seed)
+    run_cmd(["git", "switch", "-c", "translate/example"], cwd=seed)
+    (seed / "_posts").mkdir()
+    (seed / "_posts" / "example.md").write_text("remote translation\n")
+    run_cmd(["git", "add", "_posts/example.md"], cwd=seed)
+    run_cmd(["git", "commit", "-m", "remote branch"], cwd=seed)
+    run_cmd(["git", "push", "-u", "origin", "translate/example"], cwd=seed)
+
+    run_cmd(["git", "clone", str(remote), str(worktree)])
+    run_cmd(["git", "switch", "main"], cwd=worktree)
+
+    create_or_update_branch(worktree, "translate/example", "main")
+
+    assert run_cmd(["git", "branch", "--show-current"], cwd=worktree).stdout.strip() == "translate/example"
+    assert (worktree / "_posts" / "example.md").read_text() == "remote translation\n"
+
+
+def test_create_pr_reuses_existing_pr_url(monkeypatch, tmp_path: Path) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run_cmd(args, cwd=None, check=True):
+        calls.append(args)
+        if args[:3] == ["gh", "pr", "view"]:
+            return create_translation_pr.subprocess.CompletedProcess(args, 0, "https://github.com/o/r/pull/1\n", "")
+        return create_translation_pr.subprocess.CompletedProcess(args, 0, "", "")
+
+    monkeypatch.setattr(create_translation_pr, "run_cmd", fake_run_cmd)
+
+    pr_url = create_pr(tmp_path, "translate/example", "Title", "Body", push=True, open_pr=True)
+
+    assert pr_url == "https://github.com/o/r/pull/1"
+    assert ["git", "push", "-u", "origin", "translate/example"] in calls
+    assert not any(call[:3] == ["gh", "pr", "create"] for call in calls)
