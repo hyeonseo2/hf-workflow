@@ -1,0 +1,12 @@
+.env
+**/.env
+.venv/
+**/.venv/
+.pytest_cache/
+**/.pytest_cache/
+*.egg-info/
+__pycache__/
+*.pyc
+run-summary.json
+target-repo/
+hugging-face-krew.github.io/

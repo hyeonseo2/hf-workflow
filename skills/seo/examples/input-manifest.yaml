@@ -1,0 +1,11 @@
+version: 1
+source:
+  url: https://huggingface.co/blog/example-post
+  title: Example Post
+translation:
+  file_path: posts/ko/example-post.md
+handoff:
+  seo:
+    enabled: true
+    primary_keyword: ""
+    secondary_keywords: []

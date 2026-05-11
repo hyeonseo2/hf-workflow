@@ -1,0 +1,124 @@
+name: Daily HF Blog Translation
+
+on:
+  schedule:
+    - cron: "10 0 * * *"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Target date in Asia/Seoul, YYYY-MM-DD. Empty means today."
+        required: false
+        type: string
+      post_url:
+        description: "Optional single Hugging Face Blog URL."
+        required: false
+        type: string
+      dry_run:
+        description: "Find posts without creating translation PRs."
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  translate:
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_MODEL: gpt-5-nano
+      KREW_REPO: Hugging-Face-KREW/hugging-face-krew.github.io
+      SEO_SKILLS_REPO: Hugging-Face-KREW/seo-skills
+      QUALITY_SKILLS_REPO: Hugging-Face-KREW/quality-skills
+      BOT_TOKEN: ${{ secrets.KREW_BOT_TOKEN }}
+
+    steps:
+      - name: Checkout translation-flow
+        uses: actions/checkout@v4
+
+      - name: Set target date
+        id: date
+        run: |
+          if [ -n "${{ inputs.date }}" ]; then
+            echo "value=${{ inputs.date }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=$(TZ=Asia/Seoul date +%F)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install -e ".[dev]"
+
+      - name: Clone target KREW repo
+        run: |
+          git clone "https://x-access-token:${BOT_TOKEN}@github.com/${KREW_REPO}.git" target-repo
+          git -C target-repo config user.email "github-actions[bot]@users.noreply.github.com"
+          git -C target-repo config user.name "github-actions[bot]"
+
+      - name: Create translation PR
+        env:
+          GH_TOKEN: ${{ env.BOT_TOKEN }}
+        run: |
+          args=(
+            --date "${{ steps.date.outputs.value }}"
+            --timezone "Asia/Seoul"
+            --target-worktree "target-repo"
+            --target-repo "${KREW_REPO}"
+            --translator "openai"
+            --skip-existing
+            --allow-untracked
+            --run-summary "run-summary.json"
+          )
+          if [ -n "${{ inputs.post_url }}" ]; then
+            args+=(--post-url "${{ inputs.post_url }}")
+          fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            args+=(--dry-run --no-pr --no-push)
+          fi
+          python scripts/create_translation_pr.py "${args[@]}"
+
+      - name: Upload run artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: translation-flow-${{ steps.date.outputs.value }}
+          path: |
+            run-summary.json
+            manifests/*.yaml
+
+      - name: Dispatch SEO and quality workflows
+        if: ${{ inputs.dry_run != true }}
+        run: |
+          python - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+
+          summary = json.loads(Path("run-summary.json").read_text())
+          for result in summary["results"]:
+              if result["status"] != "created":
+                  continue
+              subprocess.run(
+                  [
+                      "python",
+                      "scripts/dispatch_skill_workflows.py",
+                      "--manifest",
+                      result["manifest_path"],
+                      "--target-repo",
+                      "Hugging-Face-KREW/hugging-face-krew.github.io",
+                      "--file-path",
+                      result["file_path"],
+                      "--pr-url",
+                      result["pr_url"],
+                      "--seo-repo",
+                      "Hugging-Face-KREW/seo-skills",
+                      "--quality-repo",
+                      "Hugging-Face-KREW/quality-skills",
+                  ],
+                  check=True,
+              )
+          PY

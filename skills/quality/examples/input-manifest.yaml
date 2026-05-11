@@ -1,0 +1,15 @@
+version: 1
+source:
+  url: https://huggingface.co/blog/example-post
+  title: Example Post
+translation:
+  file_path: posts/ko/example-post.md
+handoff:
+  quality:
+    enabled: true
+    checks:
+      - fidelity
+      - fluency
+      - terminology
+      - formatting
+      - links

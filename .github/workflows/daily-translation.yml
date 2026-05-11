@@ -1,0 +1,131 @@
+name: Daily HF Blog Translation
+
+on:
+  schedule:
+    - cron: "10 0 * * *"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Target date in Asia/Seoul, YYYY-MM-DD. Empty means today."
+        required: false
+        type: string
+      post_url:
+        description: "Optional single Hugging Face Blog URL."
+        required: false
+        type: string
+      dry_run:
+        description: "Find posts without creating translation PRs."
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  translate-and-review:
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_MODEL: gpt-5-nano
+      BOT_TOKEN: ${{ secrets.KREW_BOT_TOKEN }}
+      GH_TOKEN: ${{ secrets.KREW_BOT_TOKEN }}
+      KREW_REPO: Hugging-Face-KREW/hugging-face-krew.github.io
+
+    steps:
+      - name: Checkout hf workflow
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.KREW_BOT_TOKEN }}
+
+      - name: Set target date
+        id: date
+        run: |
+          if [ -n "${{ inputs.date }}" ]; then
+            echo "value=${{ inputs.date }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=$(TZ=Asia/Seoul date +%F)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install translation-flow dependencies
+        run: python -m pip install -e "translation-flow[dev]"
+
+      - name: Clone target KREW blog repo
+        run: |
+          git clone "https://x-access-token:${BOT_TOKEN}@github.com/${KREW_REPO}.git" target-repo
+          git -C target-repo config user.email "github-actions[bot]@users.noreply.github.com"
+          git -C target-repo config user.name "github-actions[bot]"
+
+      - name: Create translation PR
+        working-directory: translation-flow
+        run: |
+          args=(
+            --date "${{ steps.date.outputs.value }}"
+            --timezone "Asia/Seoul"
+            --target-worktree "../target-repo"
+            --target-repo "${KREW_REPO}"
+            --translator "openai"
+            --skip-existing
+            --allow-untracked
+            --run-summary "../run-summary.json"
+          )
+          if [ -n "${{ inputs.post_url }}" ]; then
+            args+=(--post-url "${{ inputs.post_url }}")
+          fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            args+=(--dry-run --no-pr --no-push)
+          fi
+          python scripts/create_translation_pr.py "${args[@]}"
+
+      - name: Generate SEO and quality reports
+        if: ${{ inputs.dry_run != true }}
+        run: |
+          python - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+
+          summary = json.loads(Path("run-summary.json").read_text())
+          for result in summary["results"]:
+              if result["status"] != "created":
+                  continue
+              manifest = Path("translation-flow") / result["manifest_path"]
+              subprocess.run(
+                  [
+                      "python",
+                      "scripts/run_local_review.py",
+                      "--manifest",
+                      str(manifest),
+                      "--target-root",
+                      "target-repo",
+                  ],
+                  check=True,
+              )
+          PY
+
+      - name: Commit manifests and reports
+        if: ${{ inputs.dry_run != true }}
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add translation-flow/manifests reports
+          if git diff --cached --quiet; then
+            echo "No manifest or report changes to commit."
+          else
+            git commit -m "Add HF blog workflow reports for ${{ steps.date.outputs.value }}"
+            git push
+          fi
+
+      - name: Upload run artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: hf-workflow-${{ steps.date.outputs.value }}
+          path: |
+            run-summary.json
+            translation-flow/manifests/*.yaml
+            reports/**

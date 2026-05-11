@@ -1,0 +1,1 @@
+"""Quality skill deterministic tools."""
