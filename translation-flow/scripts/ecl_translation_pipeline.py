@@ -1,0 +1,478 @@
+from __future__ import annotations
+
+import ast
+import json
+import re
+from dataclasses import dataclass
+from typing import Any, Callable, Optional
+
+from markdown_it import MarkdownIt
+
+
+PARSER = MarkdownIt("js-default", {"html": True})
+TRANSLATABLE_KINDS = {"heading", "paragraph", "bullet_list", "ordered_list", "blockquote", "table"}
+TOKEN_TO_KIND = {
+    "heading_open": "heading",
+    "paragraph_open": "paragraph",
+    "bullet_list_open": "bullet_list",
+    "ordered_list_open": "ordered_list",
+    "blockquote_open": "blockquote",
+    "table_open": "table",
+    "fence": "code",
+    "code_block": "code",
+    "html_block": "html_block",
+    "hr": "hr",
+}
+
+IMPERATIVE_VERBS = {
+    "run",
+    "install",
+    "use",
+    "call",
+    "click",
+    "open",
+    "type",
+    "enter",
+    "navigate",
+    "select",
+    "create",
+    "delete",
+    "set",
+    "configure",
+    "deploy",
+    "import",
+    "load",
+    "save",
+    "execute",
+    "launch",
+    "start",
+    "stop",
+}
+
+KEEP_RE = re.compile(r"(`[^`\n]+`|!?\[[^\]]*\]\([^)]+\)|https?://[^\s)>\]]+)")
+TOKEN_NORMALIZE_RE = re.compile(r"[^0-9a-zA-Z.+/#_-]+")
+PLURAL_SUFFIXES = ["s", "es"]
+FENCE_START_RE = re.compile(r"^(?P<indent>[ \t]*)(?P<fence>`{3,}|~{3,})(?P<info>.*)$")
+CODE_BLOCK_PLACEHOLDER_RE = re.compile(r"^\{\{CODE_BLOCK_\d+\}\}$")
+
+DEFAULT_GLOSSARY: dict[str, str] = {
+    "Hugging Face": "허깅페이스",
+    "OpenCLAW": "오픈클로",
+    "Inference Providers": "추론 제공자",
+    "open model": "오픈 모델",
+    "dataset": "데이터셋",
+    "benchmark": "벤치마크",
+    "deployment": "배포",
+}
+
+
+def ecl_log(message: str) -> None:
+    print(f"[translation-ecl] {message}", flush=True)
+
+
+@dataclass
+class Block:
+    id: int
+    kind: str
+    raw: str
+    start_line: int
+    end_line: int
+    translatable: bool
+
+
+def normalize_term_key(text: str) -> str:
+    text = text.lower().strip()
+    text = TOKEN_NORMALIZE_RE.sub(" ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def build_glossary_lookup(custom: dict[str, str]) -> tuple[dict[str, dict[str, str]], int]:
+    merged: dict[str, dict[str, str]] = {}
+    for term, korean in custom.items():
+        key = normalize_term_key(term)
+        if not key:
+            continue
+        merged[key] = {
+            "term": term,
+            "korean": korean,
+            "definition": "",
+            "source": "custom",
+        }
+    max_n = max((len(key.split()) for key in merged), default=1)
+    return merged, min(max_n, 6)
+
+
+def plural_variants(key: str) -> set[str]:
+    parts = key.split()
+    if not parts:
+        return set()
+    last, head = parts[-1], parts[:-1]
+    out = {key}
+    for suffix in PLURAL_SUFFIXES:
+        out.add(" ".join(head + [last + suffix]))
+    for suffix in PLURAL_SUFFIXES:
+        if last.endswith(suffix) and len(last) > len(suffix) + 2:
+            out.add(" ".join(head + [last[: -len(suffix)]]))
+    return out
+
+
+def build_plural_index(lookup: dict[str, dict[str, str]]) -> dict[str, str]:
+    index: dict[str, str] = {}
+    for key in lookup:
+        for variant in plural_variants(key):
+            if variant not in index or len(index[variant]) > len(key):
+                index[variant] = key
+    return index
+
+
+def glossary_candidates(
+    text: str,
+    lookup: dict[str, dict[str, str]],
+    plural_index: dict[str, str],
+    max_n: int,
+    max_hits: int,
+) -> list[dict[str, str]]:
+    tokens = normalize_term_key(text).split()
+    hits: list[dict[str, str]] = []
+    used: set[int] = set()
+    for n in range(min(max_n, len(tokens)), 0, -1):
+        for i in range(len(tokens) - n + 1):
+            span = set(range(i, i + n))
+            if span & used:
+                continue
+            key = " ".join(tokens[i : i + n])
+            original_key = key if key in lookup else plural_index.get(key)
+            if not original_key:
+                continue
+            meta = lookup.get(original_key)
+            if not meta or not meta.get("korean"):
+                continue
+            hits.append({**meta, "key": original_key, "matched": key})
+            used.update(span)
+            if len(hits) >= max_hits:
+                return hits
+    return hits
+
+
+def parse_markdown_blocks(body_text: str) -> list[Block]:
+    lines = body_text.splitlines(keepends=True)
+    tokens = PARSER.parse(body_text)
+    blocks: list[Block] = []
+    seen: set[tuple[int, int]] = set()
+    block_id = 0
+    for token in tokens:
+        if token.level != 0 or token.map is None:
+            continue
+        kind = TOKEN_TO_KIND.get(token.type)
+        if not kind:
+            continue
+        token_range = tuple(token.map)
+        if token_range in seen:
+            continue
+        seen.add(token_range)
+        start, end = token_range
+        raw = "".join(lines[start:end])
+        is_code_placeholder = bool(CODE_BLOCK_PLACEHOLDER_RE.fullmatch(raw.strip()))
+        blocks.append(
+            Block(
+                id=block_id,
+                kind=kind,
+                raw=raw,
+                start_line=start,
+                end_line=end,
+                translatable=(kind in TRANSLATABLE_KINDS and not is_code_placeholder),
+            )
+        )
+        block_id += 1
+    return blocks
+
+
+def label_blocks(blocks: list[Block]) -> dict[int, str]:
+    paragraph_ids = [block.id for block in blocks if block.kind == "paragraph"]
+    paragraph_count = len(paragraph_ids)
+    code_adjacent: set[int] = set()
+    for i, block in enumerate(blocks):
+        if block.kind != "code":
+            continue
+        for j in (i - 1, i + 1):
+            if 0 <= j < len(blocks) and blocks[j].kind == "paragraph":
+                code_adjacent.add(blocks[j].id)
+
+    labels: dict[int, str] = {}
+    for block in blocks:
+        if not block.translatable or block.kind == "heading":
+            continue
+        if block.kind == "paragraph" and block.id in paragraph_ids[:2]:
+            labels[block.id] = "intro"
+            continue
+        if block.kind == "paragraph" and paragraph_count >= 3 and block.id in paragraph_ids[-2:]:
+            labels[block.id] = "conclusion"
+            continue
+        text = block.raw.strip()
+        first_word = re.split(r"\s+", text.lower(), maxsplit=1)[0] if text else ""
+        first_word = re.sub(r"^[-*\d.]+", "", first_word)
+        if first_word in IMPERATIVE_VERBS:
+            labels[block.id] = "instruction"
+        elif block.id in code_adjacent:
+            labels[block.id] = "code_context"
+        else:
+            labels[block.id] = "explanation"
+    return labels
+
+
+def protect_inline(markdown: str) -> tuple[str, dict[str, str]]:
+    saved: dict[str, str] = {}
+
+    def replacer(match: re.Match[str]) -> str:
+        key = f"{{{{KEEP_{len(saved)}}}}}"
+        saved[key] = match.group(0)
+        return key
+
+    return KEEP_RE.sub(replacer, markdown), saved
+
+
+def restore_inline(markdown: str, saved: dict[str, str]) -> str:
+    for key, value in saved.items():
+        markdown = markdown.replace(key, value)
+    return markdown
+
+
+def protect_fenced_code_blocks(markdown: str) -> tuple[str, dict[str, str]]:
+    lines = markdown.splitlines(keepends=True)
+    protected: list[str] = []
+    saved: dict[str, str] = {}
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        start_match = FENCE_START_RE.match(line)
+        if not start_match:
+            protected.append(line)
+            i += 1
+            continue
+
+        fence = start_match.group("fence")
+        fence_char = fence[0]
+        fence_len = len(fence)
+        block_lines = [line]
+        i += 1
+        while i < len(lines):
+            current = lines[i]
+            block_lines.append(current)
+            stripped = current.lstrip(" \t")
+            if stripped.startswith(fence_char * fence_len):
+                tail = stripped[fence_len:].rstrip("\r\n")
+                if not tail.strip() or set(tail.strip()) == {fence_char}:
+                    i += 1
+                    break
+            i += 1
+
+        key = f"{{{{CODE_BLOCK_{len(saved)}}}}}"
+        saved[key] = "".join(block_lines)
+        protected.append(key + "\n")
+    return "".join(protected), saved
+
+
+def restore_fenced_code_blocks(markdown: str, saved: dict[str, str]) -> str:
+    for key, value in saved.items():
+        markdown = markdown.replace(key, value)
+    return markdown
+
+
+def extract_doc_title(blocks: list[Block]) -> str:
+    for block in blocks:
+        if block.kind == "heading":
+            return block.raw.strip().lstrip("#").strip()
+    return "Untitled"
+
+
+def parse_json_array(text: str) -> Optional[list[dict[str, Any]]]:
+    cleaned = text.strip()
+    cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+    cleaned = re.sub(r"\s*```$", "", cleaned)
+
+    candidates = [cleaned]
+    match = re.search(r"\[[\s\S]*\]", cleaned)
+    if match:
+        candidates.append(match.group(0))
+
+    for candidate in candidates:
+        for loader in (json.loads, ast.literal_eval):
+            try:
+                data = loader(candidate)
+                if isinstance(data, list):
+                    return data
+            except Exception:
+                continue
+    return None
+
+
+def restore_body(blocks: list[Block], translated: dict[int, str]) -> str:
+    parts = [translated.get(block.id, block.raw).rstrip() for block in blocks]
+    return "\n\n".join(part for part in parts if part).strip() + "\n"
+
+
+def build_context(
+    blocks: list[Block],
+    doc_title: str,
+    lookup: dict[str, dict[str, str]],
+    plural_index: dict[str, str],
+    max_n: int,
+    max_glossary_terms: int,
+) -> str:
+    full_text = "\n".join(block.raw for block in blocks if block.translatable)
+    headings = [block.raw.strip().lstrip("#").strip() for block in blocks if block.kind == "heading"]
+    hits = glossary_candidates(full_text, lookup, plural_index, max_n, max_glossary_terms)
+
+    lines = [
+        f"Document title: {doc_title}",
+        "Headings in document: " + (" > ".join(headings) if headings else "none"),
+        "Style: technical blog translation in natural Korean. Do not over-explain terminology.",
+    ]
+    if hits:
+        lines.append("Glossary:")
+        for hit in hits:
+            term = hit.get("term", "")
+            korean = hit.get("korean", "")
+            definition = hit.get("definition", "")
+            if definition:
+                lines.append(f"- {term} -> {korean} | {definition}")
+            else:
+                lines.append(f"- {term} -> {korean}")
+    lines.append("Use block labels as role hints for tone and sentence style.")
+    return "\n".join(lines)
+
+
+def _translation_prompt(
+    items: list[dict[str, Any]],
+    doc_title: str,
+    blocks: list[Block],
+    core_rules: str,
+    target_language: str,
+    lookup: dict[str, dict[str, str]],
+    plural_index: dict[str, str],
+    max_n: int,
+    max_glossary_terms: int,
+) -> str:
+    context_text = build_context(
+        blocks=blocks,
+        doc_title=doc_title,
+        lookup=lookup,
+        plural_index=plural_index,
+        max_n=max_n,
+        max_glossary_terms=max_glossary_terms,
+    )
+    return f"""
+Translate the following Markdown blocks into {target_language}.
+
+[Core Translation Rules]
+{core_rules}
+
+[Context]
+{context_text}
+
+[Output Rules]
+- Context is guidance only. Do not translate Context.
+- Output JSON array only.
+- Preserve item count, ids, and order.
+- Output schema for each item: {{"id": number, "markdown": "translated markdown"}}
+- Preserve Markdown structure and placeholders like {{{{KEEP_0}}}} or {{{{CODE_BLOCK_0}}}} exactly.
+- Do not alter URLs, link targets, inline code, fenced code, commands, model names, API names, parameter names, or file paths.
+- Do not add explanations, notes, or summaries.
+
+[Input JSON]
+{json.dumps(items, ensure_ascii=False, indent=2)}
+""".strip()
+
+
+def translate_markdown_with_ecl(
+    source_markdown: str,
+    core_rules: str,
+    target_language: str,
+    model_call: Callable[[str], str],
+    max_glossary_terms: int = 15,
+    glossary: Optional[dict[str, str]] = None,
+) -> str:
+    protected_markdown, code_blocks = protect_fenced_code_blocks(source_markdown)
+    if code_blocks:
+        ecl_log(f"Protected fenced code blocks={len(code_blocks)}")
+
+    blocks = parse_markdown_blocks(protected_markdown)
+    if not blocks:
+        ecl_log("No blocks parsed from source markdown. Returning source as-is.")
+        restored = protected_markdown.strip() + ("\n" if protected_markdown else "")
+        return restore_fenced_code_blocks(restored, code_blocks)
+
+    labels = label_blocks(blocks)
+    doc_title = extract_doc_title(blocks)
+    translatable_count = sum(1 for block in blocks if block.translatable and block.raw.strip())
+    ecl_log(
+        f"Parsed blocks={len(blocks)}, translatable={translatable_count}, "
+        f"source_chars={len(protected_markdown)}"
+    )
+    ecl_log(f"Document title: {doc_title}")
+
+    merged_glossary = DEFAULT_GLOSSARY.copy()
+    if glossary:
+        merged_glossary.update(glossary)
+    lookup, max_n = build_glossary_lookup(merged_glossary)
+    plural_index = build_plural_index(lookup)
+    ecl_log(
+        f"Glossary entries={len(lookup)}, max_phrase_len={max_n}, max_glossary_terms={max_glossary_terms}"
+    )
+
+    items: list[dict[str, Any]] = []
+    protections: dict[int, dict[str, str]] = {}
+    for block in blocks:
+        if not block.translatable or not block.raw.strip():
+            continue
+        protected, saved = protect_inline(block.raw)
+        protections[block.id] = saved
+        item: dict[str, Any] = {"id": block.id, "kind": block.kind, "markdown": protected}
+        label = labels.get(block.id)
+        if label:
+            item["label"] = label
+        items.append(item)
+
+    if not items:
+        ecl_log("No translatable items after filtering. Returning restored source.")
+        restored = restore_body(blocks, {})
+        return restore_fenced_code_blocks(restored, code_blocks)
+    ecl_log(f"Prepared translation items={len(items)}")
+
+    prompt = _translation_prompt(
+        items=items,
+        doc_title=doc_title,
+        blocks=blocks,
+        core_rules=core_rules,
+        target_language=target_language,
+        lookup=lookup,
+        plural_index=plural_index,
+        max_n=max_n,
+        max_glossary_terms=max_glossary_terms,
+    )
+    ecl_log(f"Sending single model request. prompt_chars={len(prompt)}")
+
+    raw_output = model_call(prompt)
+    ecl_log(f"Received model response. response_chars={len(raw_output)}")
+    parsed = parse_json_array(raw_output)
+    if parsed is None:
+        ecl_log("JSON parse failed for model output. Falling back to source blocks.")
+        restored = restore_body(blocks, {})
+        return restore_fenced_code_blocks(restored, code_blocks)
+    ecl_log(f"Parsed translated rows={len(parsed)}")
+
+    translated_by_id: dict[int, str] = {}
+    for row in parsed:
+        if not isinstance(row, dict):
+            continue
+        block_id = row.get("id")
+        markdown = row.get("markdown")
+        if not isinstance(block_id, int) or not isinstance(markdown, str):
+            continue
+        translated_by_id[block_id] = restore_inline(markdown, protections.get(block_id, {}))
+    ecl_log(f"Restored translated blocks={len(translated_by_id)}")
+
+    restored = restore_body(blocks, translated_by_id)
+    restored = restore_fenced_code_blocks(restored, code_blocks)
+    ecl_log(f"Final translated markdown chars={len(restored)}")
+    return restored

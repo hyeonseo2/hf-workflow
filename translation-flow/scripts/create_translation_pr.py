@@ -8,6 +8,7 @@ import subprocess
 import sys
 import textwrap
 import urllib.request
+from urllib.parse import urlparse
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
@@ -24,6 +25,20 @@ except ModuleNotFoundError:
 
 DEFAULT_FEED_URL = "https://huggingface.co/blog/feed.xml"
 DEFAULT_LOCALE = "ko"
+HEADING_RE = re.compile(r"^(?P<marks>#{1,6})\s+(?P<text>.+?)\s*$")
+EXPLICIT_HEADING_ID_RE = re.compile(
+    r"^(?P<title>.*?)(?:\s+\{:\s*#(?P<id1>[A-Za-z0-9_-]+)\s*\}|\s+\{#(?P<id2>[A-Za-z0-9_-]+)\})\s*$"
+)
+FENCE_START_RE = re.compile(r"^(?P<indent>[ \t]*)(?P<fence>`{3,}|~{3,})(?P<info>.*)$")
+STANDALONE_HEADING_ID_RE = re.compile(r"^\s*\{(?::\s*)?#(?P<id>[A-Za-z0-9_-]+)\s*\}\s*$")
+AUTHOR_ITEM_RE = re.compile(r"^\s*-\s*(?P<value>.+?)\s*$")
+ATX_HEADING_RE = re.compile(r"^#{1,6}\s+\S")
+SETEXT_HEADING_RE = re.compile(r"^(?:=+|-+)\s*$")
+TABLE_SEPARATOR_RE = re.compile(
+    r"^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*$"
+)
+TABLE_ROW_RE = re.compile(r"^\s*\|.*\|\s*$")
+IMAGE_RE = re.compile(r"!\[[^\]]*\]\([^)]+\)")
 
 
 @dataclass(frozen=True)
@@ -37,6 +52,18 @@ class FeedPost:
     @property
     def published_date(self) -> date:
         return self.published_at.date()
+
+
+@dataclass(frozen=True)
+class SourceFrontmatter:
+    title: str = ""
+    published_at: Optional[datetime] = None
+    thumbnail: str = ""
+    authors: tuple[str, ...] = ()
+
+
+class SourceMarkdownUnavailableError(RuntimeError):
+    pass
 
 
 def log(message: str) -> None:
@@ -167,16 +194,21 @@ def build_translation_markdown(
     translated_markdown: str,
     translator_name: str,
     source_url: str,
+    source_frontmatter: Optional[SourceFrontmatter] = None,
 ) -> str:
     translated_markdown = translated_markdown.strip()
     title = first_markdown_heading(translated_markdown) or post.title
+    passthrough_lines = render_source_frontmatter_lines(source_frontmatter)
+    passthrough_block = ""
+    if passthrough_lines:
+        passthrough_block = "\n".join(passthrough_lines) + "\n"
 
     body = f"""---
 layout: post
 title: "{escape_yaml_string(title)}"
 author: dailybot
 categories: [Translation, HuggingFace]
-slug: "{post.slug}"
+{passthrough_block}slug: "{post.slug}"
 source_url: "{post.url}"
 source_published_date: "{post.published_date.isoformat()}"
 source_published_at: "{post.published_at.isoformat()}"
@@ -204,6 +236,302 @@ Review instructions:
 {translated_markdown}
 """
     return body
+
+
+def render_source_frontmatter_lines(source_frontmatter: Optional[SourceFrontmatter]) -> list[str]:
+    if source_frontmatter is None:
+        return []
+    lines: list[str] = []
+    if source_frontmatter.thumbnail:
+        lines.append(f"thumbnail: {source_frontmatter.thumbnail}")
+    if source_frontmatter.authors:
+        lines.append("authors:")
+        lines.extend(f"  - {author}" for author in source_frontmatter.authors)
+    return lines
+
+
+def unquote_yaml_scalar(value: str) -> str:
+    value = value.strip()
+    if len(value) >= 2 and ((value[0] == value[-1] == '"') or (value[0] == value[-1] == "'")):
+        return value[1:-1]
+    return value
+
+
+def split_source_frontmatter(markdown: str) -> tuple[SourceFrontmatter, str]:
+    normalized = markdown.replace("\r\n", "\n").replace("\r", "\n")
+    if not normalized.startswith("---\n"):
+        return SourceFrontmatter(), normalized.strip()
+    end = normalized.find("\n---\n", 4)
+    if end == -1:
+        return SourceFrontmatter(), normalized.strip()
+
+    block = normalized[4:end]
+    body = normalized[end + 5 :].strip()
+
+    title = ""
+    published_at: Optional[datetime] = None
+    thumbnail = ""
+    authors: list[str] = []
+    lines = block.splitlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i].rstrip()
+        stripped = line.strip()
+        if not stripped:
+            i += 1
+            continue
+        if line.startswith("title:"):
+            title = unquote_yaml_scalar(line.split(":", 1)[1].strip())
+            i += 1
+            continue
+        if line.startswith("date:") or line.startswith("published:") or line.startswith("published_at:"):
+            published_raw = unquote_yaml_scalar(line.split(":", 1)[1].strip())
+            if published_raw and published_at is None:
+                try:
+                    published_at = parse_datetime(published_raw)
+                except ValueError:
+                    pass
+            i += 1
+            continue
+        if line.startswith("thumbnail:"):
+            thumbnail = line.split(":", 1)[1].strip()
+            i += 1
+            continue
+        if stripped == "authors:":
+            i += 1
+            while i < len(lines):
+                item_line = lines[i]
+                item_match = AUTHOR_ITEM_RE.match(item_line)
+                if item_match:
+                    authors.append(item_match.group("value").strip())
+                    i += 1
+                    continue
+                if not item_line.strip():
+                    i += 1
+                    continue
+                break
+            continue
+        i += 1
+
+    return SourceFrontmatter(
+        title=title,
+        published_at=published_at,
+        thumbnail=thumbnail,
+        authors=tuple(authors),
+    ), body
+
+
+def resolve_post_from_source(post_url: str, allow_html_fallback: bool) -> FeedPost:
+    source_html = fetch_text(post_url)
+    source_markdown_raw = extract_source_markdown(
+        post_url,
+        source_html,
+        allow_html_fallback=allow_html_fallback,
+    )
+    source_frontmatter, _ = split_source_frontmatter(source_markdown_raw)
+    if not source_frontmatter.title:
+        raise RuntimeError(
+            "Missing `title` in source markdown frontmatter for --post-url mode: "
+            f"{post_url}"
+        )
+    if source_frontmatter.published_at is None:
+        raise RuntimeError(
+            "Missing `date`/`published` in source markdown frontmatter for --post-url mode: "
+            f"{post_url}"
+        )
+    return FeedPost(
+        title=source_frontmatter.title,
+        url=post_url,
+        published_at=source_frontmatter.published_at,
+        slug=slug_from_url(post_url),
+        summary="",
+    )
+
+
+def is_missing_source_frontmatter_metadata_error(exc: Exception) -> bool:
+    message = str(exc)
+    return (
+        "Missing `title` in source markdown frontmatter" in message
+        or "Missing `date`/`published` in source markdown frontmatter" in message
+    )
+
+
+def normalize_escaped_newlines(markdown: str) -> str:
+    escaped_count = markdown.count("\\n")
+    if escaped_count < 3 and "\\r\\n" not in markdown:
+        return markdown
+
+    lines = markdown.splitlines(keepends=True)
+    out: list[str] = []
+    in_fence = False
+    fence_char = ""
+    fence_len = 0
+
+    for line in lines:
+        fence_match = FENCE_START_RE.match(line)
+        if fence_match:
+            candidate = fence_match.group("fence")
+            candidate_char = candidate[0]
+            candidate_len = len(candidate)
+            if in_fence:
+                stripped = line.lstrip(" \t")
+                if stripped.startswith(fence_char * fence_len):
+                    tail = stripped[fence_len:].strip()
+                    if not tail or set(tail) == {fence_char}:
+                        in_fence = False
+                        fence_char = ""
+                        fence_len = 0
+                out.append(line)
+                continue
+            in_fence = True
+            fence_char = candidate_char
+            fence_len = candidate_len
+            out.append(line)
+            continue
+
+        if in_fence:
+            out.append(line)
+            continue
+
+        out.append(line.replace("\\r\\n", "\n").replace("\\n", "\n"))
+
+    normalized = "".join(out)
+    if normalized != markdown:
+        log(f"Normalized escaped newlines in translated markdown (count={escaped_count}).")
+    return normalized
+
+
+def split_heading_text_and_id(text: str) -> tuple[str, Optional[str]]:
+    match = EXPLICIT_HEADING_ID_RE.match(text.strip())
+    if not match:
+        return text.strip(), None
+    heading_id = match.group("id1") or match.group("id2")
+    return match.group("title").strip(), heading_id
+
+
+def is_toc_heading(text: str) -> bool:
+    normalized = re.sub(r"\s+", " ", text.strip().lower())
+    return normalized == "목차" or "table of contents" in normalized
+
+
+def stabilize_manual_toc(markdown: str) -> str:
+    lines = markdown.splitlines()
+    if not lines:
+        return markdown
+
+    rebuilt_lines: list[str] = []
+    in_fence = False
+    fence_char = ""
+    fence_len = 0
+    heading_rows: list[tuple[int, str, str]] = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        fence_match = FENCE_START_RE.match(line)
+        if fence_match:
+            candidate_fence = fence_match.group("fence")
+            candidate_char = candidate_fence[0]
+            candidate_len = len(candidate_fence)
+            if in_fence:
+                stripped = line.lstrip(" \t")
+                if stripped.startswith(fence_char * fence_len):
+                    tail = stripped[fence_len:].strip()
+                    if not tail or set(tail) == {fence_char}:
+                        in_fence = False
+                        fence_char = ""
+                        fence_len = 0
+                rebuilt_lines.append(line)
+                i += 1
+                continue
+            in_fence = True
+            fence_char = candidate_char
+            fence_len = candidate_len
+            rebuilt_lines.append(line)
+            i += 1
+            continue
+
+        if in_fence:
+            rebuilt_lines.append(line)
+            i += 1
+            continue
+
+        heading_match = HEADING_RE.match(line)
+        if heading_match and heading_match.group("marks") == "##":
+            heading_text, heading_id = split_heading_text_and_id(heading_match.group("text"))
+            heading_text = heading_text.replace("\\n", " ").strip()
+            if not heading_id and i + 1 < len(lines):
+                standalone_match = STANDALONE_HEADING_ID_RE.match(lines[i + 1])
+                if standalone_match:
+                    heading_id = standalone_match.group("id")
+                    i += 1
+            if not heading_id:
+                heading_id = f"section-{len(heading_rows) + 1}"
+            rebuilt_line = f"## {heading_text} {{#{heading_id}}}"
+            rebuilt_lines.append(rebuilt_line)
+            heading_rows.append((len(rebuilt_lines) - 1, heading_text, heading_id))
+            i += 1
+            continue
+
+        rebuilt_lines.append(line)
+        i += 1
+
+    if not heading_rows:
+        return "\n".join(rebuilt_lines).strip() + "\n"
+
+    toc_heading_rows = [row for row in heading_rows if is_toc_heading(row[1])]
+    toc_entries = [
+        f"[{text}](#{heading_id})"
+        for line_idx, text, heading_id in heading_rows
+        if (line_idx, text, heading_id) not in toc_heading_rows
+    ]
+    rebuilt_toc = "이 글에서: " + " · ".join(toc_entries)
+
+    # If the translated body has an explicit "Table of Contents" section,
+    # rewrite its list links to stable section IDs generated above.
+    if toc_heading_rows:
+        toc_line_idx = toc_heading_rows[0][0]
+        toc_section_targets = [
+            (text, heading_id) for line_idx, text, heading_id in heading_rows if line_idx > toc_line_idx
+        ]
+        if toc_section_targets:
+            next_h2_idx = next(
+                (line_idx for line_idx, _, _ in heading_rows if line_idx > toc_line_idx),
+                len(rebuilt_lines),
+            )
+            toc_block = [""] + [f"* [{text}](#{heading_id})" for text, heading_id in toc_section_targets] + [""]
+            rebuilt_lines = rebuilt_lines[: toc_line_idx + 1] + toc_block + rebuilt_lines[next_h2_idx:]
+
+    in_fence = False
+    fence_char = ""
+    fence_len = 0
+    for idx, line in enumerate(rebuilt_lines):
+        fence_match = FENCE_START_RE.match(line)
+        if fence_match:
+            candidate_fence = fence_match.group("fence")
+            candidate_char = candidate_fence[0]
+            candidate_len = len(candidate_fence)
+            if in_fence:
+                stripped = line.lstrip(" \t")
+                if stripped.startswith(fence_char * fence_len):
+                    tail = stripped[fence_len:].strip()
+                    if not tail or set(tail) == {fence_char}:
+                        in_fence = False
+                        fence_char = ""
+                        fence_len = 0
+                continue
+            in_fence = True
+            fence_char = candidate_char
+            fence_len = candidate_len
+            continue
+        if in_fence:
+            continue
+
+        stripped = line.strip()
+        if stripped.startswith("이 글에서:") or stripped.startswith("In this post:"):
+            rebuilt_lines[idx] = rebuilt_toc
+            break
+
+    return "\n".join(rebuilt_lines).strip() + "\n"
 
 
 def first_markdown_heading(markdown: str) -> str:
@@ -262,7 +590,9 @@ def html_to_markdown_with_bs4(source_html: str) -> str:
         if any(parent.name in {"p", "li", "pre"} for parent in node.parents if parent is not container):
             continue
         if node.name == "pre":
-            code = node.get_text("\n").strip("\n")
+            code_node = node.find("code")
+            code = code_node.get_text() if isinstance(code_node, Tag) else node.get_text()
+            code = code.replace("\r\n", "\n").replace("\r", "\n").strip("\n")
             if code:
                 blocks.append(f"```\n{code}\n```")
             continue
@@ -329,6 +659,187 @@ def clean_inline(value: str) -> str:
 def code_block(match: re.Match[str]) -> str:
     code = html.unescape(re.sub(r"(?s)<[^>]+>", "", match.group(1))).strip("\n")
     return f"\n\n```\n{code}\n```\n\n"
+
+
+def github_blob_to_raw(url: str) -> Optional[str]:
+    match = re.match(r"^https://github\.com/([^/]+)/([^/]+)/blob/([^/]+)/(.+)$", url.strip())
+    if not match:
+        return None
+    owner, repo, ref, path = match.groups()
+    return f"https://raw.githubusercontent.com/{owner}/{repo}/{ref}/{path}"
+
+
+def discover_markdown_urls(post_url: str, source_html: str) -> list[str]:
+    candidates: list[str] = []
+    parsed = urlparse(post_url)
+    path_parts = [part for part in parsed.path.split("/") if part]
+    if path_parts[:1] == ["blog"] and len(path_parts) >= 2:
+        slug = path_parts[-1]
+        if len(path_parts) >= 3:
+            org = path_parts[-2]
+            candidates.append(f"https://raw.githubusercontent.com/huggingface/blog/main/{org}/{slug}.md")
+        candidates.append(f"https://raw.githubusercontent.com/huggingface/blog/main/{slug}.md")
+
+    for match in re.finditer(r'https://github\.com/huggingface/blog/blob/main/[^"\'<> ]+\.md', source_html):
+        raw_url = github_blob_to_raw(match.group(0))
+        if raw_url:
+            candidates.append(raw_url)
+
+    seen: set[str] = set()
+    unique: list[str] = []
+    for url in candidates:
+        if url in seen:
+            continue
+        seen.add(url)
+        unique.append(url)
+    return unique
+
+
+def looks_like_markdown(text: str) -> bool:
+    stripped = text.strip()
+    if not stripped:
+        return False
+    if stripped.startswith("---\n") and "\n---\n" in stripped:
+        return True
+    if any(ATX_HEADING_RE.match(line.strip()) for line in stripped.splitlines()):
+        return True
+    if any(SETEXT_HEADING_RE.match(line.strip()) for line in stripped.splitlines()):
+        return True
+    if any(TABLE_ROW_RE.match(line) for line in stripped.splitlines()):
+        return True
+    if any(line.lstrip().startswith(("- ", "* ", "+ ")) for line in stripped.splitlines()):
+        return True
+    return "```" in stripped and "\n" in stripped
+
+
+def extract_source_markdown(post_url: str, source_html: str, allow_html_fallback: bool = False) -> str:
+    attempted_urls: list[str] = []
+    for url in discover_markdown_urls(post_url, source_html):
+        attempted_urls.append(url)
+        try:
+            fetched = fetch_text(url)
+        except Exception as exc:
+            log(f"Source markdown fetch failed: {url} ({exc})")
+            continue
+        if looks_like_markdown(fetched):
+            log(f"Using source markdown: {url}")
+            return fetched.strip()
+        log(f"Ignoring markdown candidate with unexpected shape: {url}")
+
+    if allow_html_fallback:
+        log("Source markdown not found. Falling back to HTML extraction due to --allow-html-fallback.")
+        return html_to_markdown(source_html)
+
+    attempted = ", ".join(attempted_urls) if attempted_urls else "(no markdown candidates discovered)"
+    raise SourceMarkdownUnavailableError(
+        "Could not fetch source markdown from raw URLs. "
+        "Run again with --allow-html-fallback if you want HTML extraction. "
+        f"Attempted: {attempted}"
+    )
+
+
+def _iter_non_fence_lines(markdown: str) -> list[str]:
+    lines = markdown.splitlines()
+    kept: list[str] = []
+    in_fence = False
+    fence_char = ""
+    fence_len = 0
+
+    for line in lines:
+        fence_match = FENCE_START_RE.match(line)
+        if fence_match:
+            candidate_fence = fence_match.group("fence")
+            candidate_char = candidate_fence[0]
+            candidate_len = len(candidate_fence)
+            if in_fence:
+                stripped = line.lstrip(" \t")
+                if stripped.startswith(fence_char * fence_len):
+                    tail = stripped[fence_len:].strip()
+                    if not tail or set(tail) == {fence_char}:
+                        in_fence = False
+                        fence_char = ""
+                        fence_len = 0
+                continue
+            in_fence = True
+            fence_char = candidate_char
+            fence_len = candidate_len
+            continue
+
+        if in_fence:
+            continue
+        kept.append(line)
+    return kept
+
+
+def count_fenced_code_blocks(markdown: str) -> int:
+    lines = markdown.splitlines()
+    count = 0
+    in_fence = False
+    fence_char = ""
+    fence_len = 0
+
+    for line in lines:
+        fence_match = FENCE_START_RE.match(line)
+        if not fence_match:
+            continue
+
+        candidate_fence = fence_match.group("fence")
+        candidate_char = candidate_fence[0]
+        candidate_len = len(candidate_fence)
+        if in_fence:
+            stripped = line.lstrip(" \t")
+            if stripped.startswith(fence_char * fence_len):
+                tail = stripped[fence_len:].strip()
+                if not tail or set(tail) == {fence_char}:
+                    in_fence = False
+                    fence_char = ""
+                    fence_len = 0
+            continue
+
+        in_fence = True
+        fence_char = candidate_char
+        fence_len = candidate_len
+        count += 1
+
+    return count
+
+
+def count_markdown_tables(markdown: str) -> int:
+    lines = _iter_non_fence_lines(markdown)
+    table_count = 0
+    for i, line in enumerate(lines):
+        if not TABLE_SEPARATOR_RE.match(line):
+            continue
+        prev_line = lines[i - 1] if i > 0 else ""
+        if TABLE_ROW_RE.match(prev_line):
+            table_count += 1
+    return table_count
+
+
+def count_markdown_images(markdown: str) -> int:
+    content = "\n".join(_iter_non_fence_lines(markdown))
+    return len(IMAGE_RE.findall(content))
+
+
+def enforce_structure_preservation(source_markdown: str, translated_markdown: str) -> None:
+    metrics = {
+        "tables": (count_markdown_tables(source_markdown), count_markdown_tables(translated_markdown)),
+        "images": (count_markdown_images(source_markdown), count_markdown_images(translated_markdown)),
+        "code_blocks": (
+            count_fenced_code_blocks(source_markdown),
+            count_fenced_code_blocks(translated_markdown),
+        ),
+    }
+    regressions = [
+        f"{name}:{translated_count}<{source_count}"
+        for name, (source_count, translated_count) in metrics.items()
+        if translated_count < source_count
+    ]
+    if regressions:
+        raise RuntimeError(
+            "Translated markdown lost structural elements: "
+            + ", ".join(regressions)
+        )
 
 
 def infer_github_repo(worktree: Path) -> str:
@@ -488,12 +999,6 @@ def default_manifest_path(post: FeedPost, target_date: date) -> Path:
     return Path("manifests") / f"{target_date.isoformat()}-{post.slug}.yaml"
 
 
-def write_run_summary(summary_path: Path, run_results: list[dict[str, str]]) -> None:
-    summary_path.parent.mkdir(parents=True, exist_ok=True)
-    summary_path.write_text(json.dumps({"results": run_results}, indent=2))
-    log(f"Wrote run summary: {summary_path}")
-
-
 def default_translation_file_path(posts_dir: str, post: FeedPost, target_date: date) -> str:
     return str(Path(posts_dir) / f"{target_date.isoformat()}-{post.slug}.md")
 
@@ -515,8 +1020,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--translator",
         default="openai",
-        choices=["openai", "none", "placeholder", "gemini", "local"],
-        help="Translation adapter to use. `openai` is implemented now.",
+        choices=["openai", "none", "placeholder"],
+        help="Translation adapter to use. `openai` is the production path.",
     )
     parser.add_argument("--openai-model", default=None, help="Override OPENAI_MODEL for the OpenAI adapter.")
     parser.add_argument(
@@ -534,6 +1039,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--no-push", action="store_true", help="Do not push the branch.")
     parser.add_argument("--no-pr", action="store_true", help="Do not create a GitHub PR.")
+    parser.add_argument(
+        "--allow-html-fallback",
+        action="store_true",
+        help="Allow HTML extraction only when raw markdown fetch fails.",
+    )
     return parser
 
 
@@ -547,13 +1057,56 @@ def main(argv: Optional[list[str]] = None) -> int:
     if not target_worktree.exists():
         parser.error(f"--target-worktree does not exist: {target_worktree}")
 
-    log(f"Fetching feed: {args.feed_url}")
-    posts = parse_feed(fetch_text(args.feed_url))
-    selected = select_posts(posts, target_date, args.post_url, local_tz)
+    run_results: list[dict[str, str]] = []
+
+    if args.post_url:
+        log(f"Resolving source metadata for --post-url: {args.post_url}")
+        try:
+            selected = [resolve_post_from_source(args.post_url, allow_html_fallback=args.allow_html_fallback)]
+        except SourceMarkdownUnavailableError as exc:
+            log(f"Skipping community or non-repo article: {args.post_url} ({exc})")
+            run_results.append(
+                {
+                    "status": "skipped_community",
+                    "slug": slug_from_url(args.post_url),
+                    "source_url": args.post_url,
+                    "file_path": "",
+                    "manifest_path": "",
+                    "pr_url": "",
+                }
+            )
+            if args.run_summary:
+                summary_path = Path(args.run_summary)
+                summary_path.parent.mkdir(parents=True, exist_ok=True)
+                summary_path.write_text(json.dumps({"results": run_results}, indent=2))
+                log(f"Wrote run summary: {summary_path}")
+            return 0
+        except RuntimeError as exc:
+            if not is_missing_source_frontmatter_metadata_error(exc):
+                raise
+            log(f"Skipping community or non-repo article: {args.post_url} ({exc})")
+            run_results.append(
+                {
+                    "status": "skipped_community",
+                    "slug": slug_from_url(args.post_url),
+                    "source_url": args.post_url,
+                    "file_path": "",
+                    "manifest_path": "",
+                    "pr_url": "",
+                }
+            )
+            if args.run_summary:
+                summary_path = Path(args.run_summary)
+                summary_path.parent.mkdir(parents=True, exist_ok=True)
+                summary_path.write_text(json.dumps({"results": run_results}, indent=2))
+                log(f"Wrote run summary: {summary_path}")
+            return 0
+    else:
+        log(f"Fetching feed: {args.feed_url}")
+        posts = parse_feed(fetch_text(args.feed_url))
+        selected = select_posts(posts, target_date, None, local_tz)
     if not selected:
         log(f"No posts found for {target_date.isoformat()}.")
-        if args.run_summary:
-            write_run_summary(Path(args.run_summary), [])
         return 0
     if len(selected) > 1 and args.output_manifest:
         parser.error("--output-manifest can only be used when one post is selected")
@@ -564,7 +1117,6 @@ def main(argv: Optional[list[str]] = None) -> int:
         raise RuntimeError(f"Could not determine current branch in {target_worktree}")
     prompt_path = Path(args.translation_prompt) if args.translation_prompt else None
     translator = get_translation_adapter(args.translator, model=args.openai_model, prompt_path=prompt_path)
-    run_results: list[dict[str, str]] = []
 
     for post in selected:
         branch = f"{args.branch_prefix}/{post.slug}"
@@ -634,9 +1186,35 @@ def main(argv: Optional[list[str]] = None) -> int:
             )
 
         source_html = fetch_text(post.url)
-        source_markdown = html_to_markdown(source_html)
-        if not source_markdown:
+        try:
+            source_markdown_raw = extract_source_markdown(
+                post.url,
+                source_html,
+                allow_html_fallback=args.allow_html_fallback,
+            )
+        except SourceMarkdownUnavailableError as exc:
+            log(f"Skipping community or non-repo article: {post.url} ({exc})")
+            run_results.append(
+                {
+                    "status": "skipped_community",
+                    "slug": post.slug,
+                    "source_url": post.url,
+                    "file_path": file_path,
+                    "manifest_path": str(manifest_path),
+                    "pr_url": "",
+                }
+            )
+            continue
+        if not source_markdown_raw:
             raise RuntimeError(f"Could not extract source markdown from {post.url}")
+        source_frontmatter, source_markdown = split_source_frontmatter(source_markdown_raw)
+        if source_frontmatter.thumbnail or source_frontmatter.authors:
+            log(
+                "Captured source frontmatter for passthrough: "
+                f"thumbnail={'yes' if source_frontmatter.thumbnail else 'no'}, "
+                f"authors={len(source_frontmatter.authors)}"
+            )
+        log(f"Source markdown chars: {len(source_markdown)}")
         log(f"Translating with adapter: {translator.name}")
         translated_markdown = translator.translate(
             TranslationRequest(
@@ -646,9 +1224,22 @@ def main(argv: Optional[list[str]] = None) -> int:
                 target_locale=DEFAULT_LOCALE,
             )
         )
+        translated_markdown = normalize_escaped_newlines(translated_markdown)
+        translated_markdown = stabilize_manual_toc(translated_markdown)
+        enforce_structure_preservation(source_markdown, translated_markdown)
+        log(f"Translated markdown chars: {len(translated_markdown)}")
 
         full_path.parent.mkdir(parents=True, exist_ok=True)
-        full_path.write_text(build_translation_markdown(post, translated_markdown, translator.name, post.url))
+        full_path.write_text(
+            build_translation_markdown(
+                post,
+                translated_markdown,
+                translator.name,
+                post.url,
+                source_frontmatter=source_frontmatter,
+            )
+        )
+        log(f"Wrote translated file: {full_path}")
 
         commit_file(
             target_worktree,
@@ -699,7 +1290,10 @@ def main(argv: Optional[list[str]] = None) -> int:
         )
 
     if args.run_summary:
-        write_run_summary(Path(args.run_summary), run_results)
+        summary_path = Path(args.run_summary)
+        summary_path.parent.mkdir(parents=True, exist_ok=True)
+        summary_path.write_text(json.dumps({"results": run_results}, indent=2))
+        log(f"Wrote run summary: {summary_path}")
 
     return 0
 
