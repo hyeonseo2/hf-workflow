@@ -347,15 +347,6 @@ def resolve_post_from_source(post_url: str, allow_html_fallback: bool) -> FeedPo
         summary="",
     )
 
-
-def is_missing_source_frontmatter_metadata_error(exc: Exception) -> bool:
-    message = str(exc)
-    return (
-        "Missing `title` in source markdown frontmatter" in message
-        or "Missing `date`/`published` in source markdown frontmatter" in message
-    )
-
-
 def normalize_escaped_newlines(markdown: str) -> str:
     escaped_count = markdown.count("\\n")
     if escaped_count < 3 and "\\r\\n" not in markdown:
@@ -1061,46 +1052,7 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     if args.post_url:
         log(f"Resolving source metadata for --post-url: {args.post_url}")
-        try:
-            selected = [resolve_post_from_source(args.post_url, allow_html_fallback=args.allow_html_fallback)]
-        except SourceMarkdownUnavailableError as exc:
-            log(f"Skipping community or non-repo article: {args.post_url} ({exc})")
-            run_results.append(
-                {
-                    "status": "skipped_community",
-                    "slug": slug_from_url(args.post_url),
-                    "source_url": args.post_url,
-                    "file_path": "",
-                    "manifest_path": "",
-                    "pr_url": "",
-                }
-            )
-            if args.run_summary:
-                summary_path = Path(args.run_summary)
-                summary_path.parent.mkdir(parents=True, exist_ok=True)
-                summary_path.write_text(json.dumps({"results": run_results}, indent=2))
-                log(f"Wrote run summary: {summary_path}")
-            return 0
-        except RuntimeError as exc:
-            if not is_missing_source_frontmatter_metadata_error(exc):
-                raise
-            log(f"Skipping community or non-repo article: {args.post_url} ({exc})")
-            run_results.append(
-                {
-                    "status": "skipped_community",
-                    "slug": slug_from_url(args.post_url),
-                    "source_url": args.post_url,
-                    "file_path": "",
-                    "manifest_path": "",
-                    "pr_url": "",
-                }
-            )
-            if args.run_summary:
-                summary_path = Path(args.run_summary)
-                summary_path.parent.mkdir(parents=True, exist_ok=True)
-                summary_path.write_text(json.dumps({"results": run_results}, indent=2))
-                log(f"Wrote run summary: {summary_path}")
-            return 0
+        selected = [resolve_post_from_source(args.post_url, allow_html_fallback=args.allow_html_fallback)]
     else:
         log(f"Fetching feed: {args.feed_url}")
         posts = parse_feed(fetch_text(args.feed_url))
@@ -1186,25 +1138,11 @@ def main(argv: Optional[list[str]] = None) -> int:
             )
 
         source_html = fetch_text(post.url)
-        try:
-            source_markdown_raw = extract_source_markdown(
-                post.url,
-                source_html,
-                allow_html_fallback=args.allow_html_fallback,
-            )
-        except SourceMarkdownUnavailableError as exc:
-            log(f"Skipping community or non-repo article: {post.url} ({exc})")
-            run_results.append(
-                {
-                    "status": "skipped_community",
-                    "slug": post.slug,
-                    "source_url": post.url,
-                    "file_path": file_path,
-                    "manifest_path": str(manifest_path),
-                    "pr_url": "",
-                }
-            )
-            continue
+        source_markdown_raw = extract_source_markdown(
+            post.url,
+            source_html,
+            allow_html_fallback=args.allow_html_fallback,
+        )
         if not source_markdown_raw:
             raise RuntimeError(f"Could not extract source markdown from {post.url}")
         source_frontmatter, source_markdown = split_source_frontmatter(source_markdown_raw)

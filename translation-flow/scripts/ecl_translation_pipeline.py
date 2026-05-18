@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import ast
 import json
+import os
 import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Callable, Optional
+import urllib.request
 
 from markdown_it import MarkdownIt
 
@@ -54,6 +57,11 @@ TOKEN_NORMALIZE_RE = re.compile(r"[^0-9a-zA-Z.+/#_-]+")
 PLURAL_SUFFIXES = ["s", "es"]
 FENCE_START_RE = re.compile(r"^(?P<indent>[ \t]*)(?P<fence>`{3,}|~{3,})(?P<info>.*)$")
 CODE_BLOCK_PLACEHOLDER_RE = re.compile(r"^\{\{CODE_BLOCK_\d+\}\}$")
+DEFAULT_TERMS_BASE_URL = "https://poc.terms.kr/data/"
+DEFAULT_TERMS_CACHE_PATH = Path(".cache/ecl_translation/terms_kr_glossary.json")
+DEFAULT_TERMS_TIMEOUT_SECONDS = 10.0
+_EXTERNAL_GLOSSARY_CACHE: Optional[dict[str, str]] = None
+_EXTERNAL_GLOSSARY_LOAD_FAILED = False
 
 DEFAULT_GLOSSARY: dict[str, str] = {
     "Hugging Face": "허깅페이스",
@@ -84,6 +92,155 @@ def normalize_term_key(text: str) -> str:
     text = text.lower().strip()
     text = TOKEN_NORMALIZE_RE.sub(" ", text)
     return re.sub(r"\s+", " ", text).strip()
+
+
+def parse_env_bool(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    normalized = raw.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    return default
+
+
+def terms_base_url() -> str:
+    value = os.getenv("ECL_TERMS_BASE_URL", DEFAULT_TERMS_BASE_URL).strip()
+    if not value:
+        return DEFAULT_TERMS_BASE_URL
+    return value if value.endswith("/") else value + "/"
+
+
+def terms_cache_path() -> Path:
+    raw = os.getenv("ECL_GLOSSARY_CACHE_PATH")
+    if raw:
+        return Path(raw).expanduser()
+    return DEFAULT_TERMS_CACHE_PATH
+
+
+def terms_timeout_seconds() -> float:
+    raw = os.getenv("ECL_TERMS_TIMEOUT_SECONDS")
+    if not raw:
+        return DEFAULT_TERMS_TIMEOUT_SECONDS
+    try:
+        value = float(raw)
+    except ValueError:
+        return DEFAULT_TERMS_TIMEOUT_SECONDS
+    return max(1.0, value)
+
+
+def fetch_json(url: str, timeout: float) -> Any:
+    request = urllib.request.Request(url, headers={"User-Agent": "translation-flow/0.1"})
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        charset = response.headers.get_content_charset() or "utf-8"
+        text = response.read().decode(charset, errors="replace")
+    return json.loads(text)
+
+
+def load_cached_terms_glossary(cache_path: Path) -> dict[str, str]:
+    if not cache_path.exists():
+        return {}
+    try:
+        loaded = json.loads(cache_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+    if not isinstance(loaded, dict):
+        return {}
+    glossary: dict[str, str] = {}
+    for term, korean in loaded.items():
+        if not isinstance(term, str) or not isinstance(korean, str):
+            continue
+        term = term.strip()
+        korean = korean.strip()
+        if term and korean:
+            glossary[term] = korean
+    return glossary
+
+
+def save_terms_glossary_cache(cache_path: Path, glossary: dict[str, str]) -> None:
+    try:
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        cache_path.write_text(json.dumps(glossary, ensure_ascii=False, indent=2), encoding="utf-8")
+    except OSError:
+        return
+
+
+def download_terms_glossary(base_url: str, timeout: float) -> dict[str, str]:
+    index_data = fetch_json(f"{base_url}index.json", timeout=timeout)
+    if isinstance(index_data, list):
+        filenames = index_data
+    elif isinstance(index_data, dict):
+        filenames = index_data.get("files", [])
+    else:
+        filenames = []
+    if not isinstance(filenames, list):
+        return {}
+
+    glossary: dict[str, str] = {}
+    for filename in filenames:
+        if not isinstance(filename, str) or not filename.strip():
+            continue
+        try:
+            rows_data = fetch_json(f"{base_url}{filename}", timeout=timeout)
+        except Exception as exc:
+            ecl_log(f"terms.kr chunk fetch failed: {filename} ({exc})")
+            continue
+        if isinstance(rows_data, list):
+            rows = rows_data
+        elif isinstance(rows_data, dict):
+            rows = rows_data.get("rows", [])
+        else:
+            rows = []
+        if not isinstance(rows, list):
+            continue
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            term = str(row.get("term", "")).strip()
+            meanings = row.get("meanings")
+            if not term or not isinstance(meanings, list) or not meanings:
+                continue
+            first = meanings[0] if isinstance(meanings[0], dict) else {}
+            korean = str(first.get("korean", "")).strip()
+            if korean:
+                glossary[term] = korean
+    return glossary
+
+
+def load_termskr_glossary() -> dict[str, str]:
+    global _EXTERNAL_GLOSSARY_CACHE
+    global _EXTERNAL_GLOSSARY_LOAD_FAILED
+
+    if _EXTERNAL_GLOSSARY_CACHE is not None:
+        return _EXTERNAL_GLOSSARY_CACHE.copy()
+    if _EXTERNAL_GLOSSARY_LOAD_FAILED:
+        return {}
+
+    cache_path = terms_cache_path()
+    cached = load_cached_terms_glossary(cache_path)
+    if cached:
+        _EXTERNAL_GLOSSARY_CACHE = cached
+        ecl_log(f"Loaded terms.kr glossary from cache entries={len(cached)} path={cache_path}")
+        return cached.copy()
+
+    try:
+        downloaded = download_terms_glossary(terms_base_url(), terms_timeout_seconds())
+    except Exception as exc:
+        _EXTERNAL_GLOSSARY_LOAD_FAILED = True
+        ecl_log(f"External glossary fetch failed ({exc}). Using built-in glossary only.")
+        return {}
+
+    if not downloaded:
+        _EXTERNAL_GLOSSARY_LOAD_FAILED = True
+        ecl_log("External glossary fetch returned no entries. Using built-in glossary only.")
+        return {}
+
+    save_terms_glossary_cache(cache_path, downloaded)
+    _EXTERNAL_GLOSSARY_CACHE = downloaded
+    ecl_log(f"Loaded terms.kr glossary from network entries={len(downloaded)}")
+    return downloaded.copy()
 
 
 def build_glossary_lookup(custom: dict[str, str]) -> tuple[dict[str, dict[str, str]], int]:
@@ -391,6 +548,7 @@ def translate_markdown_with_ecl(
     model_call: Callable[[str], str],
     max_glossary_terms: int = 15,
     glossary: Optional[dict[str, str]] = None,
+    use_external_glossary: Optional[bool] = None,
 ) -> str:
     protected_markdown, code_blocks = protect_fenced_code_blocks(source_markdown)
     if code_blocks:
@@ -411,7 +569,21 @@ def translate_markdown_with_ecl(
     )
     ecl_log(f"Document title: {doc_title}")
 
-    merged_glossary = DEFAULT_GLOSSARY.copy()
+    merged_glossary: dict[str, str] = {}
+    should_use_external = (
+        use_external_glossary
+        if use_external_glossary is not None
+        else parse_env_bool("ECL_USE_EXTERNAL_GLOSSARY", True)
+    )
+    if should_use_external:
+        external_glossary = load_termskr_glossary()
+        if external_glossary:
+            merged_glossary.update(external_glossary)
+            ecl_log(f"Using external glossary entries={len(external_glossary)}")
+    else:
+        ecl_log("External glossary disabled via ECL_USE_EXTERNAL_GLOSSARY.")
+
+    merged_glossary.update(DEFAULT_GLOSSARY)
     if glossary:
         merged_glossary.update(glossary)
     lookup, max_n = build_glossary_lookup(merged_glossary)
