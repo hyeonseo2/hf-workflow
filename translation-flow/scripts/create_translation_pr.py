@@ -66,6 +66,31 @@ class SourceMarkdownUnavailableError(RuntimeError):
     pass
 
 
+class SourceMarkdownSkipError(SourceMarkdownUnavailableError):
+    def __init__(self, reason: str, attempted_urls: list[str]):
+        self.reason = reason
+        attempted = ", ".join(attempted_urls) if attempted_urls else "(no markdown candidates discovered)"
+        if reason == "community_article":
+            message = (
+                "Could not fetch source markdown from raw URLs for a Community Article. "
+                "Skipping this post by policy. "
+                f"Attempted: {attempted}"
+            )
+        elif reason == "enterprise_article":
+            message = (
+                "Could not fetch source markdown from raw URLs for an Enterprise Article. "
+                "Skipping this post by policy. "
+                f"Attempted: {attempted}"
+            )
+        else:
+            message = (
+                "Could not fetch source markdown from raw URLs. "
+                "Skipping this post by policy. "
+                f"Attempted: {attempted}"
+            )
+        super().__init__(message)
+
+
 def log(message: str) -> None:
     print(f"[translation-flow] {message}", flush=True)
 
@@ -321,12 +346,41 @@ def split_source_frontmatter(markdown: str) -> tuple[SourceFrontmatter, str]:
     ), body
 
 
-def resolve_post_from_source(post_url: str, allow_html_fallback: bool) -> FeedPost:
+def resolve_published_at_from_feed(post_url: str, feed_url: str) -> Optional[datetime]:
+    post = resolve_feed_post_by_url(post_url, feed_url)
+    if post is None:
+        return None
+    return post.published_at
+
+
+def resolve_feed_post_by_url(post_url: str, feed_url: str) -> Optional[FeedPost]:
+    try:
+        posts = parse_feed(fetch_text(feed_url))
+    except Exception as exc:
+        log(f"Feed fallback lookup failed for --post-url metadata: {exc}")
+        return None
+    normalized_url = post_url.rstrip("/")
+    for post in posts:
+        if post.url.rstrip("/") == normalized_url:
+            return post
+    return None
+
+
+def classify_source_unavailable_reason(post_url: str, source_html: str, feed_url: str) -> Optional[str]:
+    if "Community Article" in source_html:
+        return "community_article"
+    if resolve_feed_post_by_url(post_url, feed_url) is not None:
+        return "enterprise_article"
+    return None
+
+
+def resolve_post_from_source(post_url: str, allow_html_fallback: bool, feed_url: str = DEFAULT_FEED_URL) -> FeedPost:
     source_html = fetch_text(post_url)
     source_markdown_raw = extract_source_markdown(
         post_url,
         source_html,
         allow_html_fallback=allow_html_fallback,
+        feed_url=feed_url,
     )
     source_frontmatter, _ = split_source_frontmatter(source_markdown_raw)
     if not source_frontmatter.title:
@@ -334,7 +388,12 @@ def resolve_post_from_source(post_url: str, allow_html_fallback: bool) -> FeedPo
             "Missing `title` in source markdown frontmatter for --post-url mode: "
             f"{post_url}"
         )
-    if source_frontmatter.published_at is None:
+    published_at = source_frontmatter.published_at
+    if published_at is None:
+        published_at = resolve_published_at_from_feed(post_url, feed_url)
+        if published_at is not None:
+            log("Recovered `published_at` from RSS feed for --post-url mode.")
+    if published_at is None:
         raise RuntimeError(
             "Missing `date`/`published` in source markdown frontmatter for --post-url mode: "
             f"{post_url}"
@@ -342,7 +401,7 @@ def resolve_post_from_source(post_url: str, allow_html_fallback: bool) -> FeedPo
     return FeedPost(
         title=source_frontmatter.title,
         url=post_url,
-        published_at=source_frontmatter.published_at,
+        published_at=published_at,
         slug=slug_from_url(post_url),
         summary="",
     )
@@ -703,7 +762,12 @@ def looks_like_markdown(text: str) -> bool:
     return "```" in stripped and "\n" in stripped
 
 
-def extract_source_markdown(post_url: str, source_html: str, allow_html_fallback: bool = False) -> str:
+def extract_source_markdown(
+    post_url: str,
+    source_html: str,
+    allow_html_fallback: bool = False,
+    feed_url: str = DEFAULT_FEED_URL,
+) -> str:
     attempted_urls: list[str] = []
     for url in discover_markdown_urls(post_url, source_html):
         attempted_urls.append(url)
@@ -720,6 +784,10 @@ def extract_source_markdown(post_url: str, source_html: str, allow_html_fallback
     if allow_html_fallback:
         log("Source markdown not found. Falling back to HTML extraction due to --allow-html-fallback.")
         return html_to_markdown(source_html)
+
+    skip_reason = classify_source_unavailable_reason(post_url, source_html, feed_url)
+    if skip_reason is not None:
+        raise SourceMarkdownSkipError(skip_reason, attempted_urls)
 
     attempted = ", ".join(attempted_urls) if attempted_urls else "(no markdown candidates discovered)"
     raise SourceMarkdownUnavailableError(
@@ -1052,7 +1120,49 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     if args.post_url:
         log(f"Resolving source metadata for --post-url: {args.post_url}")
-        selected = [resolve_post_from_source(args.post_url, allow_html_fallback=args.allow_html_fallback)]
+        try:
+            selected = [
+                resolve_post_from_source(
+                    args.post_url,
+                    allow_html_fallback=args.allow_html_fallback,
+                    feed_url=args.feed_url,
+                )
+            ]
+        except SourceMarkdownSkipError as exc:
+            slug = slug_from_url(args.post_url)
+            pseudo_post = FeedPost(
+                title=slug,
+                url=args.post_url,
+                published_at=datetime.combine(target_date, datetime.min.time(), tzinfo=timezone.utc),
+                slug=slug,
+            )
+            file_path = default_translation_file_path(args.posts_dir, pseudo_post, target_date)
+            manifest_path = (
+                Path(args.output_manifest)
+                if args.output_manifest
+                else default_manifest_path(pseudo_post, target_date)
+            )
+            status = "skipped_community" if exc.reason == "community_article" else "skipped_enterprise"
+            if exc.reason == "enterprise_article":
+                log(f"Skipping Enterprise Article due to missing raw markdown: {args.post_url}")
+            else:
+                log(f"Skipping post-url target due to source policy: {exc}")
+            run_results.append(
+                {
+                    "status": status,
+                    "slug": slug,
+                    "source_url": args.post_url,
+                    "file_path": file_path,
+                    "manifest_path": str(manifest_path),
+                    "pr_url": "",
+                }
+            )
+            if args.run_summary:
+                summary_path = Path(args.run_summary)
+                summary_path.parent.mkdir(parents=True, exist_ok=True)
+                summary_path.write_text(json.dumps({"results": run_results}, indent=2))
+                log(f"Wrote run summary: {summary_path}")
+            return 0
     else:
         log(f"Fetching feed: {args.feed_url}")
         posts = parse_feed(fetch_text(args.feed_url))
@@ -1115,6 +1225,43 @@ def main(argv: Optional[list[str]] = None) -> int:
                 "Use --skip-existing to skip or --force to overwrite."
             )
 
+        source_html = fetch_text(post.url)
+        try:
+            source_markdown_raw = extract_source_markdown(
+                post.url,
+                source_html,
+                allow_html_fallback=args.allow_html_fallback,
+                feed_url=args.feed_url,
+            )
+        except SourceMarkdownSkipError as exc:
+            status = "skipped_community" if exc.reason == "community_article" else "skipped_enterprise"
+            if exc.reason == "enterprise_article":
+                log(f"Skipping Enterprise Article due to missing raw markdown: {post.url}")
+            else:
+                log(f"Skipping post due to source policy: {post.url} ({exc.reason})")
+            run_results.append(
+                {
+                    "status": status,
+                    "slug": post.slug,
+                    "source_url": post.url,
+                    "file_path": file_path,
+                    "manifest_path": str(manifest_path),
+                    "pr_url": "",
+                }
+            )
+            continue
+        if not source_markdown_raw:
+            raise RuntimeError(f"Could not extract source markdown from {post.url}")
+        source_frontmatter, source_markdown = split_source_frontmatter(source_markdown_raw)
+        if source_frontmatter.thumbnail or source_frontmatter.authors:
+            log(
+                "Captured source frontmatter for passthrough: "
+                f"thumbnail={'yes' if source_frontmatter.thumbnail else 'no'}, "
+                f"authors={len(source_frontmatter.authors)}"
+            )
+        log(f"Source markdown chars: {len(source_markdown)}")
+        log(f"Translating with adapter: {translator.name}")
+
         run_cmd(["git", "switch", base_branch], cwd=target_worktree)
         create_or_update_branch(target_worktree, branch, base_branch)
 
@@ -1137,23 +1284,6 @@ def main(argv: Optional[list[str]] = None) -> int:
                 "Use --skip-existing to skip or --force to overwrite."
             )
 
-        source_html = fetch_text(post.url)
-        source_markdown_raw = extract_source_markdown(
-            post.url,
-            source_html,
-            allow_html_fallback=args.allow_html_fallback,
-        )
-        if not source_markdown_raw:
-            raise RuntimeError(f"Could not extract source markdown from {post.url}")
-        source_frontmatter, source_markdown = split_source_frontmatter(source_markdown_raw)
-        if source_frontmatter.thumbnail or source_frontmatter.authors:
-            log(
-                "Captured source frontmatter for passthrough: "
-                f"thumbnail={'yes' if source_frontmatter.thumbnail else 'no'}, "
-                f"authors={len(source_frontmatter.authors)}"
-            )
-        log(f"Source markdown chars: {len(source_markdown)}")
-        log(f"Translating with adapter: {translator.name}")
         translated_markdown = translator.translate(
             TranslationRequest(
                 title=post.title,
