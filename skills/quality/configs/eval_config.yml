@@ -1,0 +1,45 @@
+version: 1
+
+score:
+  auto_pass_score: 90
+  review_required_min_score: 75
+  reject_below_score: 75
+  calibration_factor: 1.0
+
+mqm:
+  severity_weight:
+    neutral: 0
+    minor: 1
+    major: 5
+    critical: 25
+  category_weight:
+    accuracy: 2.0
+    technical: 2.0
+    terminology: 1.5
+    formatting: 1.5
+    fluency: 1.0
+    style_locale: 1.0
+
+dimensions:
+  adequacy: 1.0
+  technical_accuracy: 1.0
+  completeness: 1.0
+  terminology: 1.0
+  fluency: 1.0
+  publishing_integrity: 1.0
+
+language:
+  max_untranslated_english_ratio: 0.35
+  min_korean_letter_ratio: 0.20
+
+length_ratio:
+  min_target_to_source: 0.35
+  max_target_to_source: 2.60
+
+metrics:
+  default_qe_metric: heuristic
+  qe_review_threshold: 0.55
+  embedding_similarity_review_threshold: 0.08
+  enable_embedding_similarity: true
+  enable_chrf: false
+  cache_enabled: true

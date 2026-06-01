@@ -1,0 +1,46 @@
+version: 1
+fixtures:
+  - id: bad_code
+    source: fixtures/translation_quality_harness/source.md
+    target: fixtures/translation_quality_harness/target_bad_code.md
+    expected_status: reject
+    expected_categories:
+      - technical
+      - formatting
+  - id: bad_number
+    source: fixtures/translation_quality_harness/source.md
+    target: fixtures/translation_quality_harness/target_bad_number.md
+    expected_status: reject
+    expected_categories:
+      - technical
+  - id: bad_link
+    source: fixtures/translation_quality_harness/source.md
+    target: fixtures/translation_quality_harness/target_bad_link.md
+    expected_status: reject
+    expected_categories:
+      - formatting
+  - id: bad_frontmatter
+    source: fixtures/translation_quality_harness/source.md
+    target: fixtures/translation_quality_harness/target_bad_frontmatter.md
+    expected_status: reject
+    expected_categories:
+      - formatting
+  - id: bad_table_latex
+    source: fixtures/translation_quality_harness/source.md
+    target: fixtures/translation_quality_harness/target_bad_table_latex.md
+    expected_status: reject
+    expected_categories:
+      - formatting
+      - technical
+  - id: bad_glossary
+    source: fixtures/translation_quality_harness/source.md
+    target: fixtures/translation_quality_harness/target_bad_glossary.md
+    expected_status: review_required
+    expected_categories:
+      - terminology
+  - id: bad_addition_duplicate
+    source: fixtures/translation_quality_harness/source.md
+    target: fixtures/translation_quality_harness/target_bad_addition_duplicate.md
+    expected_status: review_required
+    expected_categories:
+      - accuracy

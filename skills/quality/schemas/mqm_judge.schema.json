@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MQM Judge Segment Result",
+  "type": "object",
+  "required": ["segment_id", "adequacy_score", "fluency_score", "technical_score", "errors"],
+  "properties": {
+    "segment_id": { "type": "string" },
+    "adequacy_score": { "type": "number", "minimum": 0, "maximum": 1 },
+    "fluency_score": { "type": "number", "minimum": 0, "maximum": 1 },
+    "technical_score": { "type": "number", "minimum": 0, "maximum": 1 },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["category", "severity", "source_span", "target_span", "explanation", "suggested_fix"],
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": ["accuracy", "terminology", "technical", "fluency", "style_locale", "formatting"]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["neutral", "minor", "major", "critical"]
+          },
+          "source_span": { "type": "string" },
+          "target_span": { "type": "string" },
+          "explanation": { "type": "string" },
+          "suggested_fix": { "type": "string" }
+        }
+      }
+    }
+  }
+}

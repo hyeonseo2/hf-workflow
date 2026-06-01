@@ -1,0 +1,11 @@
+source_term	ko_term	policy
+model card	모델 카드	required
+inference	추론	required
+fine-tuning	파인튜닝	preferred
+dataset	데이터셋	required
+benchmark	벤치마크	required
+deployment	배포	required
+checkpoint	체크포인트	preferred
+tokenizer	토크나이저	preferred
+embedding	임베딩	required
+quantization	양자화	required

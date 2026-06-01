@@ -1,0 +1,12 @@
+source_term	ko_term	policy
+large language model	대규모 언어 모델	required
+language model	언어 모델	required
+foundation model	파운데이션 모델	preferred
+training	학습	required
+pretraining	사전 학습	required
+post-training	사후 학습	preferred
+alignment	정렬	preferred
+evaluation	평가	required
+leaderboard	리더보드	required
+open source	오픈 소스	required
+open model	오픈 모델	required

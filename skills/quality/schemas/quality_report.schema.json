@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HF Blog Korean Translation Quality Report",
+  "type": "object",
+  "required": ["status", "quality_score", "hard_failures", "dimension_scores", "issues", "segments", "segment_alignment", "metrics", "metadata"],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["auto_pass", "review_required", "reject", "source_changed"]
+    },
+    "quality_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "hard_failures": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/issue" }
+    },
+    "dimension_scores": {
+      "type": "object",
+      "required": ["adequacy", "technical_accuracy", "completeness", "terminology", "fluency", "publishing_integrity"],
+      "properties": {
+        "adequacy": { "type": "number" },
+        "technical_accuracy": { "type": "number" },
+        "completeness": { "type": "number" },
+        "terminology": { "type": "number" },
+        "fluency": { "type": "number" },
+        "publishing_integrity": { "type": "number" }
+      }
+    },
+    "issues": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/issue" }
+    },
+    "segments": {
+      "type": "object",
+      "required": ["source", "target"],
+      "properties": {
+        "source": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/segment" }
+        },
+        "target": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/segment" }
+        }
+      }
+    },
+    "segment_alignment": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "required": ["summary", "segments"],
+      "properties": {
+        "summary": {
+          "type": "object"
+        },
+        "segments": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object"
+    }
+  },
+  "$defs": {
+    "issue": {
+      "type": "object",
+      "required": ["id", "category", "severity", "message"],
+      "properties": {
+        "id": { "type": "string" },
+        "category": { "type": "string" },
+        "severity": { "type": "string", "enum": ["neutral", "minor", "major", "critical"] },
+        "segment_id": { "type": "string" },
+        "source_span": { "type": "string" },
+        "target_span": { "type": "string" },
+        "message": { "type": "string" },
+        "suggested_fix": { "type": "string" },
+        "reason": { "type": "string" }
+      }
+    },
+    "segment": {
+      "type": "object",
+      "required": ["id", "kind", "text", "hash", "path"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "type": "string" },
+        "text": { "type": "string" },
+        "hash": { "type": "string" },
+        "path": { "type": "string" }
+      }
+    }
+  }
+}

@@ -34,3 +34,45 @@ python skills/quality/tools/simple_quality_report.py \
   --target-root target-repo \
   --output reports/pr-130/quality-report.md
 ```
+
+The Phase 1 deterministic hard-gate harness is:
+
+```bash
+python skills/quality/tools/translation_quality_harness.py \
+  --manifest reports/pr-130/manifest.yaml \
+  --target-root target-repo \
+  --source source-post.md \
+  --output-md reports/pr-130/quality-report.md \
+  --output-json reports/pr-130/quality-report.json \
+  --output-source-segments reports/pr-130/source-segments.jsonl \
+  --output-target-segments reports/pr-130/target-segments.jsonl \
+  --qe-metric heuristic \
+  --metric-cache reports/pr-130/metric-cache.json \
+  --fail-on-reject
+```
+
+It checks publishing-safety gates such as front matter, fenced code blocks,
+inline code, URLs, images, model IDs, numbers, LaTeX, tables, and unresolved
+TODO/placeholders. `--source` is optional when the manifest includes
+`source.file_path`.
+
+Phase 2 also adds block-level text segments, source hash stale detection,
+glossary validation from `glossary/*.tsv`, language/length/duplicate checks,
+and an optional translation memory lookup via `--translation-memory`.
+
+Phase 3 adds automatic metric triage:
+
+- `--qe-metric off|heuristic|cometkiwi`: pluggable reference-free QE metric.
+  `cometkiwi` falls back to the heuristic provider when the optional model
+  dependency is unavailable.
+- `--disable-embedding-similarity`: turns off embedding-similarity outlier
+  checks.
+- `--enable-chrf --reference approved.md`: computes chrF for regression checks
+  when an approved Korean reference exists.
+- `--metric-cache path.json`: caches metric results by source/target segment
+  hash so repeated runs are stable and cheap.
+
+## Planning
+
+- `docs/translation-evaluation-harness-plan.md`: proposed harness design for
+  turning Korean translation quality into repeatable scores, gates, and reports.
