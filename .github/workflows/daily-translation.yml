@@ -43,7 +43,7 @@ jobs:
           if [ -n "${{ inputs.date }}" ]; then
             echo "value=${{ inputs.date }}" >> "$GITHUB_OUTPUT"
           else
-            echo "value=$(TZ=Asia/Seoul date +%F)" >> "$GITHUB_OUTPUT"
+            echo "value=$(TZ=Asia/Seoul date -d 'yesterday' +%F)" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set up Python
