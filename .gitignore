@@ -8,5 +8,6 @@
 __pycache__/
 *.pyc
 run-summary.json
-target-repo/
-hugging-face-krew.github.io/
+# root-level target-repo clones only — not the test fixture under skills/seo/tests/
+/target-repo/
+/hugging-face-krew.github.io/
