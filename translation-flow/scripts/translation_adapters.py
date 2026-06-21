@@ -44,9 +44,11 @@ class OpenAITranslationAdapter:
     def translate(self, request: TranslationRequest) -> str:
         try:
             from scripts.ecl_translation_pipeline import translate_markdown_with_ecl
+            from scripts.context_compression import build_compressed_guide, parse_guide_paths
         except ModuleNotFoundError:
             try:
                 from ecl_translation_pipeline import translate_markdown_with_ecl
+                from context_compression import build_compressed_guide, parse_guide_paths
             except ModuleNotFoundError as exc:
                 raise RuntimeError(
                     "The ECL pipeline requires `markdown-it-py`. "
@@ -70,30 +72,62 @@ class OpenAITranslationAdapter:
             flush=True,
         )
 
-        def model_call(prompt: str) -> str:
+        def call_openai(prompt: str, instructions: str, label: str, model: Optional[str] = None) -> str:
             print(
-                f"[translation-openai] request_start prompt_chars={len(prompt)}",
+                f"[translation-openai] {label}_start model={model or self.model} prompt_chars={len(prompt)}",
                 flush=True,
             )
             response = client.responses.create(
-                model=self.model,
-                instructions="You are a precise technical translation engine. Follow the user prompt strictly.",
+                model=model or self.model,
+                instructions=instructions,
                 input=prompt,
             )
             text = response.output_text.strip()
             if not text:
-                raise RuntimeError("OpenAI returned an empty translation chunk.")
+                raise RuntimeError(f"OpenAI returned an empty {label} response.")
             print(
-                f"[translation-openai] request_done response_chars={len(text)}",
+                f"[translation-openai] {label}_done response_chars={len(text)}",
                 flush=True,
             )
             return text
+
+        def model_call(prompt: str) -> str:
+            return call_openai(
+                prompt,
+                "You are a precise technical translation engine. Follow the user prompt strictly.",
+                "translation",
+            )
+
+        compressed_guide = ""
+        if guide_compression_enabled():
+            flow_root = Path(__file__).resolve().parents[1]
+            guide_paths = parse_guide_paths(os.getenv("ECL_GUIDE_DOCS"), base_dir=flow_root)
+            max_chars = env_int("ECL_GUIDE_CONTEXT_MAX_CHARS", 1200)
+            source_excerpt_chars = env_int("ECL_GUIDE_SOURCE_EXCERPT_CHARS", 2500)
+            compression_model = os.getenv("ECL_GUIDE_COMPRESSION_MODEL", self.model)
+
+            def compression_model_call(prompt: str) -> str:
+                return call_openai(
+                    prompt,
+                    "You compress translation guidance for a downstream technical translation prompt.",
+                    "guide_compression",
+                    model=compression_model,
+                )
+
+            compressed_guide = build_compressed_guide(
+                source_markdown=request.source_markdown,
+                guide_paths=guide_paths,
+                model_call=compression_model_call,
+                max_chars=max_chars,
+                source_excerpt_chars=source_excerpt_chars,
+            )
 
         return translate_markdown_with_ecl(
             source_markdown=request.source_markdown,
             core_rules=core_rules,
             target_language=target_language,
             model_call=model_call,
+            compressed_guide=compressed_guide,
         )
 
 
@@ -123,6 +157,24 @@ def locale_to_language(locale: str) -> str:
     if normalized in {"en", "en-us"}:
         return "English"
     return locale
+
+
+def env_int(name: str, default: int, minimum: int = 1) -> int:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    try:
+        value = int(raw.strip())
+    except ValueError:
+        return default
+    return max(minimum, value)
+
+
+def guide_compression_enabled() -> bool:
+    value = os.getenv("ECL_GUIDE_COMPRESSION", "llm").strip().lower()
+    if value in {"0", "false", "no", "off", "none", "disabled"}:
+        return False
+    return value in {"1", "true", "yes", "on", "llm"}
 
 
 def get_translation_adapter(

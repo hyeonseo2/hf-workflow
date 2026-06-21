@@ -1,25 +1,27 @@
 from __future__ import annotations
 
+import json
 from datetime import date, datetime, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+import pytest
+
 import scripts.create_translation_pr as create_translation_pr
 from scripts.create_translation_pr import (
     FeedPost,
+    SourceFrontmatter,
     build_translation_markdown,
     create_or_update_branch,
     create_pr,
-    default_manifest_path,
     html_to_markdown,
-    main,
-    manifest_path_for_pr,
+    normalize_escaped_newlines,
     parse_feed,
-    pr_number_from_url,
-    resolve_manifest_write_path,
     run_cmd,
     select_posts,
+    split_source_frontmatter,
     slug_from_url,
+    stabilize_manual_toc,
 )
 from scripts.translation_adapters import (
     PlaceholderTranslationAdapter,
@@ -100,25 +102,75 @@ def test_slug_from_url() -> None:
     assert slug_from_url("https://huggingface.co/blog/Transformers-to-MLX?x=1") == "transformers-to-mlx"
 
 
-def test_manifest_paths_use_reports_directory(monkeypatch, tmp_path: Path) -> None:
-    post = FeedPost(
-        "Example",
-        "https://huggingface.co/blog/example",
-        datetime(2026, 5, 11, tzinfo=timezone.utc),
-        "example",
+def test_discover_markdown_urls_prefers_org_slug_path() -> None:
+    urls = create_translation_pr.discover_markdown_urls(
+        "https://huggingface.co/blog/amazon/foundation-model-building-blocks",
+        "",
     )
 
-    fallback = default_manifest_path(post, date(2026, 5, 11))
+    assert urls[0] == (
+        "https://raw.githubusercontent.com/huggingface/blog/main/amazon/"
+        "foundation-model-building-blocks.md"
+    )
+    assert (
+        "https://raw.githubusercontent.com/huggingface/blog/main/"
+        "foundation-model-building-blocks.md"
+    ) in urls
 
-    assert fallback == Path("reports/2026-05-11-example/manifest.yaml")
-    assert pr_number_from_url("https://github.com/o/r/pull/143") == "143"
-    assert manifest_path_for_pr("https://github.com/o/r/pull/143", fallback) == Path("reports/pr-143/manifest.yaml")
 
-    workdir = tmp_path / "translation-flow"
-    workdir.mkdir()
-    monkeypatch.chdir(workdir)
+def test_extract_source_markdown_fails_fast_without_html_fallback(monkeypatch) -> None:
+    monkeypatch.setattr(
+        create_translation_pr,
+        "discover_markdown_urls",
+        lambda _post_url, _source_html: ["https://raw.example.com/post.md"],
+    )
+    monkeypatch.setattr(create_translation_pr, "fetch_text", lambda _url: "<html>not markdown</html>")
 
-    assert resolve_manifest_write_path(Path("reports/pr-143/manifest.yaml")) == Path("../reports/pr-143/manifest.yaml")
+    with pytest.raises(RuntimeError, match="Could not fetch source markdown"):
+        create_translation_pr.extract_source_markdown(
+            "https://huggingface.co/blog/example/post",
+            "<html></html>",
+            allow_html_fallback=False,
+        )
+
+
+def test_extract_source_markdown_allows_html_fallback(monkeypatch) -> None:
+    monkeypatch.setattr(
+        create_translation_pr,
+        "discover_markdown_urls",
+        lambda _post_url, _source_html: [],
+    )
+    monkeypatch.setattr(create_translation_pr, "html_to_markdown", lambda _html: "# From HTML\n\nBody")
+
+    result = create_translation_pr.extract_source_markdown(
+        "https://huggingface.co/blog/example/post",
+        "<html></html>",
+        allow_html_fallback=True,
+    )
+
+    assert result == "# From HTML\n\nBody"
+
+
+def test_enforce_structure_preservation_detects_missing_elements() -> None:
+    source = """# Title
+
+| A | B |
+| --- | --- |
+| 1 | 2 |
+
+![img](https://example.com/image.png)
+
+```python
+print("hi")
+```
+"""
+    translated = """# 제목
+
+본문만 남김
+"""
+
+    with pytest.raises(RuntimeError, match="Translated markdown lost structural elements"):
+        create_translation_pr.enforce_structure_preservation(source, translated)
 
 
 def test_build_translation_markdown_preserves_source_metadata() -> None:
@@ -141,6 +193,112 @@ def test_build_translation_markdown_preserves_source_metadata() -> None:
     assert "translation_status: \"draft\"" in markdown
     assert 'translator: "none"' in markdown
     assert "# 안녕하세요" in markdown
+
+
+def test_build_translation_markdown_includes_source_passthrough_frontmatter() -> None:
+    post = FeedPost(
+        title="Hello MLX",
+        url="https://huggingface.co/blog/hello-mlx",
+        published_at=datetime(2026, 5, 11, tzinfo=timezone.utc),
+        slug="hello-mlx",
+    )
+    source_frontmatter = SourceFrontmatter(
+        thumbnail="/blog/assets/hello-mlx/thumbnail.png",
+        authors=("user: alice", "user: bob"),
+    )
+
+    markdown = build_translation_markdown(
+        post,
+        "# 안녕하세요\n\n본문입니다.",
+        "none",
+        "https://huggingface.co/blog/hello-mlx",
+        source_frontmatter=source_frontmatter,
+    )
+
+    assert "thumbnail: /blog/assets/hello-mlx/thumbnail.png" in markdown
+    assert "authors:" in markdown
+    assert "  - user: alice" in markdown
+    assert "  - user: bob" in markdown
+
+
+def test_split_source_frontmatter_returns_body_and_selected_fields() -> None:
+    source = """---
+title: "Example"
+date: "2026-05-11T23:18:26+00:00"
+thumbnail: /blog/assets/example/thumb.png
+authors:
+  - user: meg
+  - user: clem
+---
+
+# Heading
+
+Body
+"""
+    parsed, body = split_source_frontmatter(source)
+
+    assert parsed.title == "Example"
+    assert parsed.published_at is not None
+    assert parsed.published_at.date() == date(2026, 5, 11)
+    assert parsed.thumbnail == "/blog/assets/example/thumb.png"
+    assert parsed.authors == ("user: meg", "user: clem")
+    assert body.startswith("# Heading")
+    assert "---" not in body
+
+
+def test_normalize_escaped_newlines_ignores_code_fence_content() -> None:
+    source = """# 제목\\n
+문장\\n\\n- 항목1\\n- 항목2\\n
+```python
+print("a\\\\n")
+```
+"""
+    normalized = normalize_escaped_newlines(source)
+
+    assert "# 제목\n" in normalized
+    assert "- 항목1\n- 항목2\n" in normalized
+    assert 'print("a\\\\n")' in normalized
+
+
+def test_stabilize_manual_toc_merges_standalone_heading_id_line() -> None:
+    source = """# Title
+
+이 글에서: [A](#old)
+
+## A
+ {#section-3}
+
+본문
+"""
+    stabilized = stabilize_manual_toc(source)
+
+    assert "## A {#section-3}" in stabilized
+    assert "{#section-3}" not in [line.strip() for line in stabilized.splitlines()]
+    assert "이 글에서: [A](#section-3)" in stabilized
+
+
+def test_stabilize_manual_toc_rewrites_table_of_contents_section_links() -> None:
+    source = """# Title
+
+## 목차
+
+* [What are Multimodal Models?](#what-are-multimodal-models)
+* [Installation](#installation)
+
+## 다중모달 모델이란?
+
+본문 A
+
+## 설치
+
+본문 B
+"""
+    stabilized = stabilize_manual_toc(source)
+
+    assert "* [다중모달 모델이란?](#section-2)" in stabilized
+    assert "* [설치](#section-3)" in stabilized
+    assert "#what-are-multimodal-models" not in stabilized
+    assert "#installation" not in stabilized
 
 
 def test_html_to_markdown_extracts_article_shape() -> None:
@@ -172,6 +330,206 @@ def test_html_to_markdown_removes_blog_page_chrome() -> None:
     assert "Table of contents" not in markdown
     assert "# Title" in markdown
     assert "Actual body with [models](/models)." in markdown
+
+
+def test_resolve_post_from_source_uses_frontmatter_metadata(monkeypatch) -> None:
+    source_markdown = """---
+title: "From Source"
+published: "2026-05-11T23:18:26+00:00"
+---
+
+# From Source
+
+Body
+"""
+    monkeypatch.setattr(create_translation_pr, "fetch_text", lambda _url: "<html></html>")
+    monkeypatch.setattr(
+        create_translation_pr,
+        "extract_source_markdown",
+        lambda _post_url, _source_html, allow_html_fallback=False, feed_url=create_translation_pr.DEFAULT_FEED_URL: source_markdown,
+    )
+
+    post = create_translation_pr.resolve_post_from_source(
+        "https://huggingface.co/blog/amazon/foundation-model-building-blocks",
+        allow_html_fallback=False,
+    )
+
+    assert post.title == "From Source"
+    assert post.slug == "foundation-model-building-blocks"
+    assert post.published_date == date(2026, 5, 11)
+
+
+def test_resolve_post_from_source_requires_title_and_date(monkeypatch) -> None:
+    source_markdown = """---
+thumbnail: /blog/assets/example/thumb.png
+---
+
+# Missing metadata
+"""
+    monkeypatch.setattr(create_translation_pr, "fetch_text", lambda _url: "<html></html>")
+    monkeypatch.setattr(
+        create_translation_pr,
+        "extract_source_markdown",
+        lambda _post_url, _source_html, allow_html_fallback=False, feed_url=create_translation_pr.DEFAULT_FEED_URL: source_markdown,
+    )
+
+    with pytest.raises(RuntimeError, match="Missing `title`"):
+        create_translation_pr.resolve_post_from_source(
+            "https://huggingface.co/blog/example-post",
+            allow_html_fallback=False,
+        )
+
+
+def test_resolve_post_from_source_falls_back_to_feed_date(monkeypatch) -> None:
+    source_markdown = """---
+title: "From Source"
+thumbnail: /blog/assets/example/thumb.png
+---
+
+# Missing date metadata
+"""
+    monkeypatch.setattr(create_translation_pr, "fetch_text", lambda _url: "<html></html>")
+    monkeypatch.setattr(
+        create_translation_pr,
+        "extract_source_markdown",
+        lambda _post_url, _source_html, allow_html_fallback=False, feed_url=create_translation_pr.DEFAULT_FEED_URL: source_markdown,
+    )
+    fallback_dt = datetime(2026, 5, 11, 12, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr(
+        create_translation_pr,
+        "resolve_published_at_from_feed",
+        lambda _post_url, _feed_url: fallback_dt,
+    )
+
+    post = create_translation_pr.resolve_post_from_source(
+        "https://huggingface.co/blog/open-asr-leaderboard-private-data",
+        allow_html_fallback=False,
+    )
+
+    assert post.title == "From Source"
+    assert post.published_at == fallback_dt
+
+
+def test_resolve_post_from_source_raises_when_date_missing_after_feed_fallback(monkeypatch) -> None:
+    source_markdown = """---
+title: "From Source"
+---
+
+# Missing date metadata
+"""
+    monkeypatch.setattr(create_translation_pr, "fetch_text", lambda _url: "<html></html>")
+    monkeypatch.setattr(
+        create_translation_pr,
+        "extract_source_markdown",
+        lambda _post_url, _source_html, allow_html_fallback=False, feed_url=create_translation_pr.DEFAULT_FEED_URL: source_markdown,
+    )
+    monkeypatch.setattr(create_translation_pr, "resolve_published_at_from_feed", lambda *_: None)
+
+    with pytest.raises(RuntimeError, match="Missing `date`/`published`"):
+        create_translation_pr.resolve_post_from_source(
+            "https://huggingface.co/blog/open-asr-leaderboard-private-data",
+            allow_html_fallback=False,
+        )
+
+
+def test_extract_source_markdown_skips_for_feed_listed_post_without_raw_markdown(monkeypatch) -> None:
+    post_url = "https://huggingface.co/blog/ibm-granite/granite-embedding-multilingual-r2"
+    source_html = "<h1>Granite Title</h1><p>Body content</p>"
+    monkeypatch.setattr(
+        create_translation_pr,
+        "discover_markdown_urls",
+        lambda _post_url, _source_html: ["https://raw.githubusercontent.com/huggingface/blog/main/granite-embedding-multilingual-r2.md"],
+    )
+
+    def fail_fetch(_url: str) -> str:
+        raise RuntimeError("404")
+
+    monkeypatch.setattr(create_translation_pr, "fetch_text", fail_fetch)
+    monkeypatch.setattr(
+        create_translation_pr,
+        "resolve_feed_post_by_url",
+        lambda _post_url, _feed_url: FeedPost(
+            "Granite",
+            post_url,
+            datetime(2026, 5, 14, tzinfo=timezone.utc),
+            "granite-embedding-multilingual-r2",
+        ),
+    )
+
+    with pytest.raises(create_translation_pr.SourceMarkdownSkipError) as excinfo:
+        create_translation_pr.extract_source_markdown(post_url, source_html, allow_html_fallback=False)
+    assert excinfo.value.reason == "enterprise_article"
+
+
+def test_extract_source_markdown_skips_for_community_article(monkeypatch) -> None:
+    post_url = "https://huggingface.co/blog/RikkaBotan/stable-static-embedding-v2-technical-report"
+    source_html = "<h1>Community Article</h1><p>Body</p>"
+    monkeypatch.setattr(create_translation_pr, "discover_markdown_urls", lambda _post_url, _source_html: [])
+
+    with pytest.raises(create_translation_pr.SourceMarkdownSkipError) as excinfo:
+        create_translation_pr.extract_source_markdown(post_url, source_html, allow_html_fallback=False)
+    assert excinfo.value.reason == "community_article"
+
+
+def test_main_post_url_skips_when_raw_markdown_missing_by_policy(
+    monkeypatch, tmp_path: Path
+) -> None:
+    summary_path = tmp_path / "run-summary.json"
+    post_url = "https://huggingface.co/blog/lablab-ai-amd-developer-hackathon/machinacheck"
+
+    def fail_resolve(_post_url: str, allow_html_fallback: bool, feed_url: str):
+        raise create_translation_pr.SourceMarkdownSkipError(
+            "enterprise_article",
+            [
+                "https://raw.githubusercontent.com/huggingface/blog/main/lablab-ai-amd-developer-hackathon/machinacheck.md"
+            ],
+        )
+
+    monkeypatch.setattr(create_translation_pr, "resolve_post_from_source", fail_resolve)
+
+    result = create_translation_pr.main(
+        [
+            "--target-worktree",
+            str(tmp_path),
+            "--post-url",
+            post_url,
+            "--run-summary",
+            str(summary_path),
+        ]
+    )
+
+    assert result == 0
+    summary = json.loads(summary_path.read_text())
+    assert summary["results"][0]["status"] == "skipped_enterprise"
+    assert summary["results"][0]["slug"] == "machinacheck"
+
+
+def test_main_post_url_raises_when_frontmatter_metadata_missing(
+    monkeypatch, tmp_path: Path
+) -> None:
+    summary_path = tmp_path / "run-summary.json"
+    post_url = "https://huggingface.co/blog/community/example"
+
+    def fail_resolve(_post_url: str, allow_html_fallback: bool, feed_url: str):
+        raise RuntimeError(
+            "Missing `title` in source markdown frontmatter for --post-url mode: "
+            f"{post_url}"
+        )
+
+    monkeypatch.setattr(create_translation_pr, "resolve_post_from_source", fail_resolve)
+
+    with pytest.raises(RuntimeError, match="Missing `title`"):
+        create_translation_pr.main(
+            [
+                "--target-worktree",
+                str(tmp_path),
+                "--post-url",
+                post_url,
+                "--run-summary",
+                str(summary_path),
+            ]
+        )
+    assert not summary_path.exists()
 
 
 def test_placeholder_adapter_keeps_source_markdown() -> None:
@@ -259,7 +617,7 @@ def test_main_writes_empty_run_summary_when_no_posts(monkeypatch, tmp_path: Path
 
     monkeypatch.setattr(create_translation_pr, "fetch_text", lambda url: "<rss><channel></channel></rss>")
 
-    result = main(
+    result = create_translation_pr.main(
         [
             "--date",
             "2026-05-18",
