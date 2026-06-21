@@ -130,7 +130,6 @@ Disable it with `ECL_GUIDE_COMPRESSION=off`.
 
 The compressed guide is separate from the glossary. It should contain style,
 preservation, and risk guidance, not concrete source-to-target term mappings.
-See `docs/context-compression.md` for the detailed design.
 
 ## Local glossary
 
