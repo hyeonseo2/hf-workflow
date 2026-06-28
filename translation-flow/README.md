@@ -24,8 +24,7 @@ post and translation file to operate on.
 
 See:
 
-- `docs/manifest.md`
-- `../reports/pr-XXX/manifest.yaml`
+- `manifests/example.yaml`
 
 ## Initial command shape
 
@@ -50,7 +49,8 @@ Dry-run today's RSS selection:
 ```bash
 uv run python scripts/create_translation_pr.py \
   --timezone Asia/Seoul \
-  --target-worktree /path/to/hf-blog-ko \
+  --target-worktree /path/to/hf-blog-translation-intern \
+  --posts-dir output/posts \
   --no-pr \
   --no-push \
   --dry-run
@@ -63,12 +63,13 @@ manifest without pushing or opening a PR:
 uv run python scripts/create_translation_pr.py \
   --date 2026-05-11 \
   --timezone Asia/Seoul \
-  --target-worktree /path/to/hf-blog-ko \
-  --target-repo your-org/hf-blog-ko \
+  --target-worktree /path/to/hf-blog-translation-intern \
+  --target-repo hyeonseo2/hf-blog-translation-intern \
+  --posts-dir output/posts \
   --translator openai \
   --no-pr \
   --no-push \
-  --output-manifest ../reports/pr-local-example/manifest.yaml
+  --output-manifest output/manifests/2026-05-11-example.yaml
 ```
 
 Open a PR by omitting `--no-pr` and `--no-push`. This requires a configured
@@ -80,8 +81,9 @@ To exercise the flow without calling a translation API, use:
 uv run python scripts/create_translation_pr.py \
   --date 2026-05-11 \
   --timezone Asia/Seoul \
-  --target-worktree /path/to/hf-blog-ko \
-  --target-repo your-org/hf-blog-ko \
+  --target-worktree /path/to/hf-blog-translation-intern \
+  --target-repo hyeonseo2/hf-blog-translation-intern \
+  --posts-dir output/posts \
   --translator none \
   --no-pr \
   --no-push
@@ -91,10 +93,8 @@ uv run python scripts/create_translation_pr.py \
 
 `scripts/translation_adapters.py` defines the adapter interface.
 
-- `openai`: implemented with the OpenAI Responses API
+- `openai`: implemented with the OpenAI Responses API + ECL block translation pipeline
 - `none` / `placeholder`: implemented for local workflow testing
-- `gemini`: reserved adapter slot
-- `local`: reserved adapter slot
 
 The default translation prompt lives at:
 
@@ -107,6 +107,46 @@ uv run python scripts/create_translation_pr.py \
   --translation-prompt docs/translation_prompt.md \
   ...
 ```
+
+## Translation guidance
+
+Broader reviewer guidance lives in `docs/hf_ko_translation_best_practice.md`.
+The ECL runtime does not inject that full guide into each prompt; it keeps the
+prompt context focused on source structure, glossary hits, and block labels.
+
+Guide compression is enabled by default for the OpenAI adapter. It splits the
+Markdown guidance docs into sections, selects source-relevant guide sections,
+and compresses them into a short article-specific guide capsule before
+translation:
+
+```bash
+ECL_GUIDE_COMPRESSION=llm
+ECL_GUIDE_CONTEXT_MAX_CHARS=1200
+ECL_GUIDE_SOURCE_EXCERPT_CHARS=2500
+ECL_GUIDE_DOCS=docs/hf_translation_conventions.md,docs/hf_ko_translation_best_practice.md
+```
+
+Disable it with `ECL_GUIDE_COMPRESSION=off`.
+
+The compressed guide is separate from the glossary. It should contain style,
+preservation, and risk guidance, not concrete source-to-target term mappings.
+
+## Local glossary
+
+When present, TSV files under `skills/quality/glossary/` are merged into the ECL
+glossary before translation:
+
+```text
+skills/quality/glossary/ko.tsv
+skills/quality/glossary/ml_terms.tsv
+skills/quality/glossary/product_terms.tsv
+```
+
+Each TSV file uses `source_term`, `ko_term`, and `policy` columns. The current
+runtime uses `source_term -> ko_term` for prompt glossary mappings. Local TSV
+entries override the built-in glossary and can be overridden by an explicit
+runtime glossary. Override the directory with `ECL_LOCAL_GLOSSARY_DIR`.
+
 
 ## GitHub Actions
 

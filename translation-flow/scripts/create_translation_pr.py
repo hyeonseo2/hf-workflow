@@ -39,7 +39,6 @@ TABLE_SEPARATOR_RE = re.compile(
 )
 TABLE_ROW_RE = re.compile(r"^\s*\|.*\|\s*$")
 IMAGE_RE = re.compile(r"!\[[^\]]*\]\([^)]+\)")
-PR_URL_RE = re.compile(r"/pull/(\d+)(?:$|[/?#])")
 
 
 @dataclass(frozen=True)
@@ -963,23 +962,6 @@ handoff:
     manifest_path.write_text(content)
 
 
-def pr_number_from_url(pr_url: str) -> str:
-    match = PR_URL_RE.search(pr_url or "")
-    return match.group(1) if match else ""
-
-
-def resolve_manifest_write_path(manifest_path: Path) -> Path:
-    if manifest_path.is_absolute():
-        return manifest_path
-    if (
-        manifest_path.parts
-        and manifest_path.parts[0] == "reports"
-        and Path.cwd().name == "translation-flow"
-    ):
-        return Path("..") / manifest_path
-    return manifest_path
-
-
 def ensure_clean_worktree(worktree: Path) -> None:
     result = run_cmd(["git", "status", "--porcelain"], cwd=worktree)
     if result.stdout.strip():
@@ -1073,14 +1055,7 @@ def create_pr(
 
 
 def default_manifest_path(post: FeedPost, target_date: date) -> Path:
-    return Path("reports") / f"{target_date.isoformat()}-{post.slug}" / "manifest.yaml"
-
-
-def manifest_path_for_pr(pr_url: str, fallback: Path) -> Path:
-    pr_number = pr_number_from_url(pr_url)
-    if not pr_number:
-        return fallback
-    return Path("reports") / f"pr-{pr_number}" / "manifest.yaml"
+    return Path("manifests") / f"{target_date.isoformat()}-{post.slug}.yaml"
 
 
 def default_translation_file_path(posts_dir: str, post: FeedPost, target_date: date) -> str:
@@ -1194,6 +1169,11 @@ def main(argv: Optional[list[str]] = None) -> int:
         selected = select_posts(posts, target_date, None, local_tz)
     if not selected:
         log(f"No posts found for {target_date.isoformat()}.")
+        if args.run_summary:
+            summary_path = Path(args.run_summary)
+            summary_path.parent.mkdir(parents=True, exist_ok=True)
+            summary_path.write_text(json.dumps({"results": run_results}, indent=2))
+            log(f"Wrote run summary: {summary_path}")
         return 0
     if len(selected) > 1 and args.output_manifest:
         parser.error("--output-manifest can only be used when one post is selected")
@@ -1360,11 +1340,6 @@ def main(argv: Optional[list[str]] = None) -> int:
             push=not args.no_push,
             open_pr=not args.no_pr,
         )
-        manifest_path = (
-            Path(args.output_manifest)
-            if args.output_manifest
-            else manifest_path_for_pr(pr_url, manifest_path)
-        )
         create_manifest(
             post,
             args.feed_url,
@@ -1373,7 +1348,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             file_path,
             pr_url,
             target_date,
-            resolve_manifest_write_path(manifest_path),
+            manifest_path,
         )
         log(f"Wrote manifest: {manifest_path}")
         run_results.append(
