@@ -1169,6 +1169,11 @@ def main(argv: Optional[list[str]] = None) -> int:
         selected = select_posts(posts, target_date, None, local_tz)
     if not selected:
         log(f"No posts found for {target_date.isoformat()}.")
+        if args.run_summary:
+            summary_path = Path(args.run_summary)
+            summary_path.parent.mkdir(parents=True, exist_ok=True)
+            summary_path.write_text(json.dumps({"results": run_results}, indent=2))
+            log(f"Wrote run summary: {summary_path}")
         return 0
     if len(selected) > 1 and args.output_manifest:
         parser.error("--output-manifest can only be used when one post is selected")
