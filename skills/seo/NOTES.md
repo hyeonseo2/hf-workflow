@@ -41,6 +41,24 @@ The review proposes a richer state model than the current binary pass/fail:
 - **Render-based structure checks.** Re-base D1/D2 on the rendered HTML (post
   Jekyll layout) rather than raw markdown, then promote back to a hard gate.
 
+### Synthetic negative fixtures ready for the BLOCKED tier
+
+`tests/fixtures/mutated/` (+ `generated/blocked-post.md`) hold one-mutation
+negative samples, wired into the golden set and asserted in
+`tests/test_mutated_fixtures.py`. Their current vs intended outcomes:
+
+| Fixture | Current | Intended | Note |
+|---|---|---|---|
+| `mutated/missing-alt` | FAIL | FAIL | already gated (D6) ✅ |
+| `mutated/missing-description` | PASS | PASS | metadata advisory ✅ |
+| `mutated/short-opening` | PASS | PASS* | *short lede masked by 3-paragraph window — calibration gap |
+| `mutated/noindex` | PASS | BLOCKED | needs BLOCKED tier |
+| `generated/blocked-post` | PASS | BLOCKED | needs BLOCKED tier |
+| `mutated/broken-internal-link` | PASS | BLOCKED | needs link resolution w/ `target_root` |
+
+When the BLOCKED tier lands, flip the `TODO(BLOCKED tier)` asserts and
+re-baseline the affected golden files.
+
 ## Deferred (out of stage-1 scope)
 
 - Rubric R1–R6 LLM scoring + `deterministic AND rubric` integration.
