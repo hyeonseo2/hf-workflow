@@ -17,5 +17,7 @@ Workflow:
 Rules:
 - Eval gates the **body** only (structure / keyword / images). Frontmatter is
   written after a pass, never gated.
+- v1 gate is conservative: only image alt/file (D6/D7) and keyword-in-opening
+  (D5) block; structure checks (D1–D4) are advisory (see `NOTES.md`, PR #8).
 - Do not create translation files here — that belongs to `translation-flow`.
 - Keep everything deterministic and offline-testable: `python -m pytest tests`.

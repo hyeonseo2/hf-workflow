@@ -3,6 +3,47 @@
     "advisory": {
       "checks": [
         {
+          "message": "Opening 3 paragraphs: 612 chars (recommend ≥150 for KO/GEO)",
+          "name": "opening_summary",
+          "passed": true,
+          "severity": "recommended",
+          "value": "Transformer 모델은 자연어 처리(NLP) 분야에서 혁신적인 발전을 이끌어낸 아키텍처입니다. 그러나 이러한 모델들은 대량의 데이터와 높은 계산 자원을 요구해 최적화가 필요합니다. 최적화 기법을 통해 학습 시간과 추론 속도를 개선하고, 자원 소모를 최소화할 수 있습니다. 본 포스트에서는 Transformer 모델의 다양한 최적화 기법에 대해 다뤄보겠습..."
+        },
+        {
+          "message": "Heading hierarchy: Valid",
+          "name": "heading_hierarchy",
+          "passed": true,
+          "severity": "recommended",
+          "value": [
+            [
+              1,
+              "Transformer 모델 최적화 기법: 성능 향상 전략"
+            ],
+            [
+              2,
+              "Transformer 최적화 기법은 무엇인가?"
+            ],
+            [
+              2,
+              "Transformer 모델은 어떻게 최적화하나?"
+            ]
+          ]
+        },
+        {
+          "message": "Body H1 count: 1 (0 or 1 OK — layout renders title as H1; never multiple)",
+          "name": "h1_count",
+          "passed": true,
+          "severity": "recommended",
+          "value": 1
+        },
+        {
+          "message": "Citations/statistics: 2 (recommend ≥1 for GEO)",
+          "name": "citations",
+          "passed": true,
+          "severity": "recommended",
+          "value": 2
+        },
+        {
           "message": "Scannable H2/H3 (question or keyword): 2 (2 question, 0 keyword)",
           "name": "question_headings",
           "passed": true,
@@ -54,11 +95,11 @@
     "checkers": {
       "content": {
         "passed": true,
-        "score": 0.875,
+        "score": 0.8611111111111112,
         "summary": {
           "optional": "1/1",
-          "recommended": "1/2",
-          "required": "4/4"
+          "recommended": "5/6",
+          "required": "0/0"
         }
       },
       "images": {
@@ -80,47 +121,6 @@
     },
     "required": {
       "checks": [
-        {
-          "message": "Opening 3 paragraphs: 612 chars (recommend ≥150 for KO/GEO)",
-          "name": "opening_summary",
-          "passed": true,
-          "severity": "required",
-          "value": "Transformer 모델은 자연어 처리(NLP) 분야에서 혁신적인 발전을 이끌어낸 아키텍처입니다. 그러나 이러한 모델들은 대량의 데이터와 높은 계산 자원을 요구해 최적화가 필요합니다. 최적화 기법을 통해 학습 시간과 추론 속도를 개선하고, 자원 소모를 최소화할 수 있습니다. 본 포스트에서는 Transformer 모델의 다양한 최적화 기법에 대해 다뤄보겠습..."
-        },
-        {
-          "message": "Heading hierarchy: Valid",
-          "name": "heading_hierarchy",
-          "passed": true,
-          "severity": "required",
-          "value": [
-            [
-              1,
-              "Transformer 모델 최적화 기법: 성능 향상 전략"
-            ],
-            [
-              2,
-              "Transformer 최적화 기법은 무엇인가?"
-            ],
-            [
-              2,
-              "Transformer 모델은 어떻게 최적화하나?"
-            ]
-          ]
-        },
-        {
-          "message": "H1 count: 1 (must be exactly 1)",
-          "name": "h1_count",
-          "passed": true,
-          "severity": "required",
-          "value": 1
-        },
-        {
-          "message": "Citations/statistics: 2 (recommend ≥1 for GEO)",
-          "name": "citations",
-          "passed": true,
-          "severity": "required",
-          "value": 2
-        },
         {
           "message": "Alt text coverage: 2/2 images",
           "name": "alt_text_coverage",

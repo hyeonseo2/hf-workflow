@@ -24,20 +24,28 @@ def test_gate_passes_on_good_post(tmp_path):
     assert r["gate"]["passed"]
 
 
-def test_gate_fails_without_h1(tmp_path):
-    bad = "---\ntitle: x\n---\n## 소제목만\n\n" + "본문 문장입니다. " * 20
-    r = evaluate_path(_write(tmp_path, bad))
-    assert not r["gate"]["passed"]
-    failed = {c["name"] for c in r["deterministic"]["required"]["checks"] if not c["passed"]}
-    assert "h1_count" in failed
+def test_gate_passes_without_body_h1(tmp_path):
+    # KREW posts start at `##` (Jekyll renders the frontmatter title as the H1),
+    # so a body with no H1 must NOT block the gate (PR #8 review). h1_count is now
+    # advisory and a body H1 of 0 passes.
+    body = "---\ntitle: x\n---\n## 소제목만\n\n" + "본문 문장입니다. " * 20
+    r = evaluate_path(_write(tmp_path, body))
+    assert r["gate"]["passed"]
+    h1 = next(c for c in r["deterministic"]["advisory"]["checks"] if c["name"] == "h1_count")
+    assert h1["passed"] and h1["value"] == 0
 
 
-def test_required_set_excludes_recommended_and_optional(tmp_path):
+def test_structure_checks_are_advisory_not_gated(tmp_path):
+    # D1–D4 (h1/heading/opening/citations) were downgraded to advisory in v1 so
+    # the gate no longer over-blocks on raw-markdown structure assumptions.
     r = evaluate_path(_write(tmp_path, GOOD_KO))
     required = {c["name"] for c in r["deterministic"]["required"]["checks"]}
-    assert "word_count" not in required          # optional (D11)
-    assert "internal_links" not in required       # recommended (D9)
-    assert {"h1_count", "heading_hierarchy", "opening_summary", "citations"} <= required
+    advisory = {c["name"] for c in r["deterministic"]["advisory"]["checks"]}
+    downgraded = {"h1_count", "heading_hierarchy", "opening_summary", "citations"}
+    assert downgraded.isdisjoint(required)
+    assert downgraded <= advisory
+    assert "word_count" not in required           # optional (D11)
+    assert "internal_links" not in required        # recommended (D9)
 
 
 def test_rubric_is_skeleton_and_gate_falls_back(tmp_path):

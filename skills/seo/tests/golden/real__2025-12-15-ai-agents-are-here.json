@@ -3,84 +3,17 @@
     "advisory": {
       "checks": [
         {
-          "message": "Scannable H2/H3 (question or keyword): 0 (0 question, 0 keyword)",
-          "name": "question_headings",
-          "passed": false,
-          "severity": "recommended",
-          "value": []
-        },
-        {
-          "message": "Internal links: 0 (recommend 2-3)",
-          "name": "internal_links",
-          "passed": false,
-          "severity": "recommended",
-          "value": []
-        },
-        {
-          "message": "Body length: 22286 chars (recommend ≥800 for KO)",
-          "name": "word_count",
-          "passed": true,
-          "severity": "optional",
-          "value": 22286
-        },
-        {
-          "message": "No primary_keyword in manifest — keyword check skipped",
-          "name": "primary_keyword",
-          "passed": true,
-          "severity": "info",
-          "value": null
-        },
-        {
-          "message": "No images found (optional)",
-          "name": "no_images",
-          "passed": true,
-          "severity": "info",
-          "value": 0
-        }
-      ]
-    },
-    "checkers": {
-      "content": {
-        "passed": false,
-        "score": 0.39999999999999997,
-        "summary": {
-          "optional": "1/1",
-          "recommended": "0/2",
-          "required": "2/4"
-        }
-      },
-      "images": {
-        "passed": true,
-        "score": 1.0,
-        "summary": {
-          "optional": "0/0",
-          "recommended": "0/0",
-          "required": "0/0"
-        }
-      },
-      "keywords": {
-        "passed": true,
-        "score": 1.0,
-        "summary": {
-          "recommended": "0/0",
-          "required": "0/0"
-        }
-      }
-    },
-    "required": {
-      "checks": [
-        {
-          "message": "Opening 3 paragraphs: 730 chars (recommend ≥150 for KO/GEO)",
+          "message": "Opening 3 paragraphs: 706 chars (recommend ≥150 for KO/GEO)",
           "name": "opening_summary",
           "passed": true,
-          "severity": "required",
-          "value": "* TOC\n{:toc}\n<!--toc-->\n_이 글은 2025년 1월에 업로드된 Hugging Face 블로그의 [AI Agents Are Here. What Now?](https://huggingface.co/blog/ethics-soc-7)를 한국어로 번역한 글입니다._\n---\n# **서론**\n\n최근 대규모 언어 모델(LLM)이 유창하게 문장을 생성하고..."
+          "severity": "recommended",
+          "value": "_이 글은 2025년 1월에 업로드된 Hugging Face 블로그의 [AI Agents Are Here. What Now?](https://huggingface.co/blog/ethics-soc-7)를 한국어로 번역한 글입니다._\n---\n# **서론**\n\n최근 대규모 언어 모델(LLM)이 유창하게 문장을 생성하고, 각종 벤치마크에서 매우 높은 성능을 기록..."
         },
         {
           "message": "Heading hierarchy: Invalid - Skip from H1 to H3: \"**1. 자율성(Autonomy)**\"; Skip from H1 to H3: \"가치: 정확성 (Accuracy)\"",
           "name": "heading_hierarchy",
           "passed": false,
-          "severity": "required",
+          "severity": "recommended",
           "value": [
             [
               1,
@@ -237,21 +170,87 @@
           ]
         },
         {
-          "message": "H1 count: 6 (must be exactly 1)",
+          "message": "Body H1 count: 6 (0 or 1 OK — layout renders title as H1; never multiple)",
           "name": "h1_count",
           "passed": false,
-          "severity": "required",
+          "severity": "recommended",
           "value": 6
         },
         {
           "message": "Citations/statistics: 65 (recommend ≥1 for GEO)",
           "name": "citations",
           "passed": true,
-          "severity": "required",
+          "severity": "recommended",
           "value": 65
+        },
+        {
+          "message": "Scannable H2/H3 (question or keyword): 0 (0 question, 0 keyword)",
+          "name": "question_headings",
+          "passed": false,
+          "severity": "recommended",
+          "value": []
+        },
+        {
+          "message": "Internal links: 0 (recommend 2-3)",
+          "name": "internal_links",
+          "passed": false,
+          "severity": "recommended",
+          "value": []
+        },
+        {
+          "message": "Body length: 22286 chars (recommend ≥800 for KO)",
+          "name": "word_count",
+          "passed": true,
+          "severity": "optional",
+          "value": 22286
+        },
+        {
+          "message": "No primary_keyword in manifest — keyword check skipped",
+          "name": "primary_keyword",
+          "passed": true,
+          "severity": "info",
+          "value": null
+        },
+        {
+          "message": "No images found (optional)",
+          "name": "no_images",
+          "passed": true,
+          "severity": "info",
+          "value": 0
         }
-      ],
-      "passed": false
+      ]
+    },
+    "checkers": {
+      "content": {
+        "passed": true,
+        "score": 0.4444444444444445,
+        "summary": {
+          "optional": "1/1",
+          "recommended": "2/6",
+          "required": "0/0"
+        }
+      },
+      "images": {
+        "passed": true,
+        "score": 1.0,
+        "summary": {
+          "optional": "0/0",
+          "recommended": "0/0",
+          "required": "0/0"
+        }
+      },
+      "keywords": {
+        "passed": true,
+        "score": 1.0,
+        "summary": {
+          "recommended": "0/0",
+          "required": "0/0"
+        }
+      }
+    },
+    "required": {
+      "checks": [],
+      "passed": true
     }
   },
   "frontmatter_advisory": {
@@ -303,9 +302,9 @@
     }
   },
   "gate": {
-    "deterministic_passed": false,
-    "passed": false,
-    "reason": "deterministic REQUIRED checks failed",
+    "deterministic_passed": true,
+    "passed": true,
+    "reason": "deterministic gate only (rubric is stage-1 skeleton)",
     "rubric_passed": null
   },
   "input": {

@@ -3,6 +3,47 @@
     "advisory": {
       "checks": [
         {
+          "message": "Opening 3 paragraphs: 305 chars (recommend ≥150 for KO/GEO)",
+          "name": "opening_summary",
+          "passed": true,
+          "severity": "recommended",
+          "value": "Transformer 모델은 자연어 처리에서 혁신적인 변화를 가져왔습니다. 그러나 이러한 모델은 대량의 데이터와 계산 자원을 요구하기 때문에 최적화가 필수적입니다. 이 글에서는 Transformer 모델의 최적화 기법을 살펴보겠습니다.\n\n하이퍼파라미터 조정은 모델 성능을 극대화하는 데 중요한 역할을 합니다. 학습률, 배치 크기, 층 수 등을 조정함으로써 모..."
+        },
+        {
+          "message": "Heading hierarchy: Valid",
+          "name": "heading_hierarchy",
+          "passed": true,
+          "severity": "recommended",
+          "value": [
+            [
+              1,
+              "Transformer 모델 최적화 기법"
+            ],
+            [
+              2,
+              "하이퍼파라미터 조정"
+            ],
+            [
+              2,
+              "지식 증류"
+            ]
+          ]
+        },
+        {
+          "message": "Body H1 count: 1 (0 or 1 OK — layout renders title as H1; never multiple)",
+          "name": "h1_count",
+          "passed": true,
+          "severity": "recommended",
+          "value": 1
+        },
+        {
+          "message": "Citations/statistics: 0 (recommend ≥1 for GEO)",
+          "name": "citations",
+          "passed": false,
+          "severity": "recommended",
+          "value": 0
+        },
+        {
           "message": "Scannable H2/H3 (question or keyword): 0 (0 question, 0 keyword)",
           "name": "question_headings",
           "passed": false,
@@ -48,12 +89,12 @@
     },
     "checkers": {
       "content": {
-        "passed": false,
-        "score": 0.5249999999999999,
+        "passed": true,
+        "score": 0.4166666666666667,
         "summary": {
           "optional": "0/1",
-          "recommended": "0/2",
-          "required": "3/4"
+          "recommended": "3/6",
+          "required": "0/0"
         }
       },
       "images": {
@@ -75,47 +116,6 @@
     },
     "required": {
       "checks": [
-        {
-          "message": "Opening 3 paragraphs: 305 chars (recommend ≥150 for KO/GEO)",
-          "name": "opening_summary",
-          "passed": true,
-          "severity": "required",
-          "value": "Transformer 모델은 자연어 처리에서 혁신적인 변화를 가져왔습니다. 그러나 이러한 모델은 대량의 데이터와 계산 자원을 요구하기 때문에 최적화가 필수적입니다. 이 글에서는 Transformer 모델의 최적화 기법을 살펴보겠습니다.\n\n하이퍼파라미터 조정은 모델 성능을 극대화하는 데 중요한 역할을 합니다. 학습률, 배치 크기, 층 수 등을 조정함으로써 모..."
-        },
-        {
-          "message": "Heading hierarchy: Valid",
-          "name": "heading_hierarchy",
-          "passed": true,
-          "severity": "required",
-          "value": [
-            [
-              1,
-              "Transformer 모델 최적화 기법"
-            ],
-            [
-              2,
-              "하이퍼파라미터 조정"
-            ],
-            [
-              2,
-              "지식 증류"
-            ]
-          ]
-        },
-        {
-          "message": "H1 count: 1 (must be exactly 1)",
-          "name": "h1_count",
-          "passed": true,
-          "severity": "required",
-          "value": 1
-        },
-        {
-          "message": "Citations/statistics: 0 (recommend ≥1 for GEO)",
-          "name": "citations",
-          "passed": false,
-          "severity": "required",
-          "value": 0
-        },
         {
           "message": "Alt text coverage: 1/1 images",
           "name": "alt_text_coverage",
@@ -144,7 +144,7 @@
           }
         }
       ],
-      "passed": false
+      "passed": true
     }
   },
   "frontmatter_advisory": {
@@ -195,9 +195,9 @@
     }
   },
   "gate": {
-    "deterministic_passed": false,
-    "passed": false,
-    "reason": "deterministic REQUIRED checks failed",
+    "deterministic_passed": true,
+    "passed": true,
+    "reason": "deterministic gate only (rubric is stage-1 skeleton)",
     "rubric_passed": null
   },
   "input": {

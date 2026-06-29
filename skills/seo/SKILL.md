@@ -31,9 +31,15 @@ SEO eval (body only) ──fail──> return feedback (failing REQUIRED checks)
 ```
 - Eval gates the **body** only (structure / keyword / images). Frontmatter is
   **not** gated — the metadata writer generates it after a pass (avoids deadlock).
-- Gate = `(all REQUIRED deterministic D1–D7 pass) AND (rubric mean ≥4 & min ≥3)`.
+- Gate = `(all REQUIRED deterministic checks pass) AND (rubric mean ≥4 & min ≥3)`.
   Stage 1: the rubric is a skeleton, so the gate runs on the deterministic part
   alone and the report marks the rubric as not-run.
+- **v1 gate is conservative** (PR #8 review): only image alt/file checks (D6/D7)
+  and keyword-in-opening (D5, when a keyword is supplied) block. Structure checks
+  (D1 H1 / D2 hierarchy / D3 opening / D4 citations) are **advisory** — they
+  assume raw-markdown structure that clashes with the Jekyll layout (which renders
+  the frontmatter `title` as the H1), so they're reported but don't block until
+  re-based on the rendered output.
 
 ## Inputs
 - PR / pre-publish: `--manifest <translation-flow manifest.yaml>`
@@ -56,12 +62,13 @@ python skills/seo/tools/seo_eval.py ... --benchmark heuristic
 ```
 
 ## Deterministic items (body only)
-- **REQUIRED (hard gate):** D1 H1 count == 1 · D2 heading hierarchy (no skips) ·
-  D3 opening length (KO ≥150 chars / EN ≥50 words) · D4 ≥1 citation ·
-  D5 primary keyword in H1 + opening (skipped if no keyword) ·
+- **REQUIRED (hard gate):** D5 primary keyword in opening (skipped if no keyword) ·
   D6 alt coverage 100% + descriptive · D7 image files exist (with `--target-root`).
-- **RECOMMENDED:** D8 question-or-keyword subheading · D9 internal links 2–3 ·
-  D10 secondary keyword coverage. **OPTIONAL:** D11 body length · D12 WebP · D13 lazy.
+- **ADVISORY (reported, not gated):** D1 body H1 count (0 or 1 OK — layout renders
+  title as H1; only multiple H1s flag) · D2 heading hierarchy (no skips) ·
+  D3 opening length (KO ≥150 chars / EN ≥50 words, TOC/boilerplate skipped) ·
+  D4 ≥1 citation · D8 question-or-keyword subheading · D9 internal links 2–3 ·
+  D10 secondary keyword coverage · D11 body length · D12 WebP · D13 lazy.
 
 ## Rubric items (LLM — stage 2)
 R1 opening answerability · R2 heading search-intent · R3 alt accuracy ·

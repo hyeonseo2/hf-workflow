@@ -47,7 +47,9 @@ def check_content_structure(content: str, body: str, primary_keyword: str = "") 
     checks.append({
         'name': 'opening_summary',
         'passed': opening_passed,
-        'severity': 'required',
+        # Advisory in v1: TOC/boilerplate handling still maturing; tighten then
+        # promote to a hard gate (PR #8 review).
+        'severity': 'recommended',
         'message': opening_msg,
         'value': opening[:200] + '...' if len(opening) > 200 else opening
     })
@@ -68,27 +70,31 @@ def check_content_structure(content: str, body: str, primary_keyword: str = "") 
     checks.append({
         'name': 'heading_hierarchy',
         'passed': hierarchy_valid,
-        'severity': 'required',
+        # Advisory in v1: measured on raw markdown, not the rendered tree (PR #8).
+        'severity': 'recommended',
         'message': f'Heading hierarchy: {"Valid" if hierarchy_valid else "Invalid - " + "; ".join(hierarchy_issues)}',
         'value': headings
     })
 
-    # 3. H1 check (REQUIRED)
+    # 3. H1 check (ADVISORY) — body H1 of 0 OR 1 is fine.
+    # The Jekyll layout renders frontmatter `title` as the page H1, so KREW
+    # bodies legitimately start at `##` with zero body H1; only *multiple* body
+    # H1s are a real structure problem (PR #8 review).
     h1_count = sum(1 for level, _ in headings if level == 1)
     checks.append({
         'name': 'h1_count',
-        'passed': h1_count == 1,
-        'severity': 'required',
-        'message': f'H1 count: {h1_count} (must be exactly 1)',
+        'passed': h1_count <= 1,
+        'severity': 'recommended',
+        'message': f'Body H1 count: {h1_count} (0 or 1 OK — layout renders title as H1; never multiple)',
         'value': h1_count
     })
 
-    # 4. Citations check (REQUIRED for GEO)
+    # 4. Citations check (ADVISORY for GEO) — varies widely by article type (PR #8).
     citation_count = check_citations(body)
     checks.append({
         'name': 'citations',
         'passed': citation_count >= 1,
-        'severity': 'required',
+        'severity': 'recommended',
         'message': f'Citations/statistics: {citation_count} (recommend ≥1 for GEO)',
         'value': citation_count
     })
@@ -159,14 +165,20 @@ def check_content_structure(content: str, body: str, primary_keyword: str = "") 
     recommended_passed = sum(1 for c in recommended_checks if c['passed'])
     optional_passed = sum(1 for c in optional_checks if c['passed'])
 
-    # Score: required 70%, recommended 25%, optional 5%
+    # Score: required 70%, recommended 25%, optional 5%, renormalized over the
+    # tiers that actually have checks (so the score stays 0–1 even when a tier is
+    # empty — e.g. after the D1–D4 advisory downgrade left no required checks).
+    tiers = [
+        (0.7, required_checks, required_passed),
+        (0.25, recommended_checks, recommended_passed),
+        (0.05, optional_checks, optional_passed),
+    ]
+    total_weight = sum(w for w, items, _ in tiers if items)
     score = 0.0
-    if required_checks:
-        score += 0.7 * (required_passed / len(required_checks))
-    if recommended_checks:
-        score += 0.25 * (recommended_passed / len(recommended_checks))
-    if optional_checks:
-        score += 0.05 * (optional_passed / len(optional_checks))
+    if total_weight:
+        for weight, items, passed_count in tiers:
+            if items:
+                score += (weight / total_weight) * (passed_count / len(items))
 
     passed = all(c['passed'] for c in required_checks)
 

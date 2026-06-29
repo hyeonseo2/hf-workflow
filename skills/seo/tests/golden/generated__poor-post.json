@@ -3,6 +3,39 @@
     "advisory": {
       "checks": [
         {
+          "message": "Opening 3 paragraphs: 152 chars (recommend ≥150 for KO/GEO)",
+          "name": "opening_summary",
+          "passed": true,
+          "severity": "recommended",
+          "value": "Transformer 모델의 성능을 향상시키기 위해 다양한 최적화 기법이 개발되고 있습니다. 대표적으로는 학습률 조정, 정규화 기법, 그리고 모델 경량화 방법이 있습니다. 이러한 기법들은 모델의 일반화 능력을 높이고, 훈련 시간을 단축시킵니다.\n\n![](image.png)"
+        },
+        {
+          "message": "Heading hierarchy: Valid",
+          "name": "heading_hierarchy",
+          "passed": true,
+          "severity": "recommended",
+          "value": [
+            [
+              3,
+              "Transformer 모델 최적화 기법"
+            ]
+          ]
+        },
+        {
+          "message": "Body H1 count: 0 (0 or 1 OK — layout renders title as H1; never multiple)",
+          "name": "h1_count",
+          "passed": true,
+          "severity": "recommended",
+          "value": 0
+        },
+        {
+          "message": "Citations/statistics: 0 (recommend ≥1 for GEO)",
+          "name": "citations",
+          "passed": false,
+          "severity": "recommended",
+          "value": 0
+        },
+        {
           "message": "Scannable H2/H3 (question or keyword): 0 (0 question, 0 keyword)",
           "name": "question_headings",
           "passed": false,
@@ -48,12 +81,12 @@
     },
     "checkers": {
       "content": {
-        "passed": false,
-        "score": 0.35,
+        "passed": true,
+        "score": 0.4166666666666667,
         "summary": {
           "optional": "0/1",
-          "recommended": "0/2",
-          "required": "2/4"
+          "recommended": "3/6",
+          "required": "0/0"
         }
       },
       "images": {
@@ -75,39 +108,6 @@
     },
     "required": {
       "checks": [
-        {
-          "message": "Opening 3 paragraphs: 152 chars (recommend ≥150 for KO/GEO)",
-          "name": "opening_summary",
-          "passed": true,
-          "severity": "required",
-          "value": "Transformer 모델의 성능을 향상시키기 위해 다양한 최적화 기법이 개발되고 있습니다. 대표적으로는 학습률 조정, 정규화 기법, 그리고 모델 경량화 방법이 있습니다. 이러한 기법들은 모델의 일반화 능력을 높이고, 훈련 시간을 단축시킵니다.\n\n![](image.png)"
-        },
-        {
-          "message": "Heading hierarchy: Valid",
-          "name": "heading_hierarchy",
-          "passed": true,
-          "severity": "required",
-          "value": [
-            [
-              3,
-              "Transformer 모델 최적화 기법"
-            ]
-          ]
-        },
-        {
-          "message": "H1 count: 0 (must be exactly 1)",
-          "name": "h1_count",
-          "passed": false,
-          "severity": "required",
-          "value": 0
-        },
-        {
-          "message": "Citations/statistics: 0 (recommend ≥1 for GEO)",
-          "name": "citations",
-          "passed": false,
-          "severity": "required",
-          "value": 0
-        },
         {
           "message": "Alt text coverage: 0/1 images",
           "name": "alt_text_coverage",

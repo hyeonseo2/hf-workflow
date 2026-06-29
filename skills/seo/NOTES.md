@@ -4,26 +4,42 @@ Stage 1 = Module 1 deterministic gate + repeatable test harness. The rubric
 (R1–R6) and Module 2 (metadata writer) are interface skeletons
 (`tools/rubric.py`, `tools/metadata.py`).
 
-## Observations from verifying real KREW posts (for stage 2)
+## Applied from the PR #8 review (v1 gate tuning)
 
-Found while baselining `tests/fixtures/real/*`. None are blockers; they inform
-stage-2 tuning and were recorded so they aren't re-discovered later.
+The review ran the gate over 31 real KREW posts and found most failures came from
+checker assumptions clashing with the Jekyll rendering, not bad content. Applied:
 
-- **Citation dedup is now strict (correct).** `utils.extract_links` no longer
-  counts embedded images, so `medium-post` (whose only "citation" was its image
-  URL) correctly fails D4 with 0 real citations. The old design-doc baseline
-  (medium = PASS) rode on the buggy count.
-- **Opening extraction is boilerplate-sensitive.** `get_opening_paragraphs`
-  takes the first non-heading paragraphs, which on KREW posts can be the `* TOC`
-  / `_이 글은 … 번역한 글입니다._` lines rather than the real lede — e.g.
-  `smolvla` reads as 24 *English* words and fails D3. Stage 2: skip the TOC and
-  the source-attribution line before measuring the opening.
-- **`<img>` without `alt` is not detected.** `utils.extract_images` only matches
-  `<img>` tags that have BOTH `src` and `alt`. `rteb` uses `<figure><img src=…>`
-  with no `alt`, so D6 alt-coverage is silently skipped and the post passes.
-  Stage 2: detect alt-less `<img>` and fail D6.
-- **Multiple H1s correctly fail.** `ai-agents-are-here` has 6 `#` headings →
-  D1/D2 fail (genuinely poor structure).
+- **Structure checks are now advisory, not gating.** D1 H1 count, D2 heading
+  hierarchy, D3 opening length, D4 citations were downgraded `required → recommended`
+  so they're reported but don't block. The Jekyll layout renders frontmatter
+  `title` as the page H1, so KREW bodies legitimately start at `##`.
+- **Body H1 of 0 is allowed.** `h1_count` passes for 0 or 1; only *multiple* body
+  H1s flag (e.g. `ai-agents-are-here`, 6 `#`). The post no longer fails the gate.
+- **Opening extraction skips boilerplate.** `get_opening_paragraphs` now skips
+  HTML comments / `<!--toc-->` / `{:toc}` / `* TOC` / Liquid tags and the italic
+  source-attribution line, so the opening reflects the real lede.
+- **Alt-less `<img>` is detected.** `extract_images` reads `src`/`alt`
+  independently, so `<figure><img src=…>` with no alt is captured (alt='') and
+  fails D6 alt-coverage. `rteb` correctly fails now (it previously passed on the
+  bug).
+- **Keyword gate no longer needs a body H1.** `primary_keyword` (D5) gates on the
+  opening paragraph only; H1 placement is reported for the metadata writer.
+- **Citation dedup stays strict (correct).** `extract_links` doesn't count
+  embedded images, so `medium-post`'s only "citation" (an image URL) doesn't
+  count; D4 is now advisory anyway.
+
+## Deferred gate-policy work (from the PR #8 review)
+
+The review proposes a richer state model than the current binary pass/fail:
+
+- **A `BLOCKED` tier for hard publish-blockers** not yet implemented: `robots:
+  noindex`, broken internal links (resolved against the repo root), frontmatter
+  parse failure, unreadable file. These should block regardless of body quality.
+- **A `NEEDS_CHANGES` vs `ADVISORY` split** instead of one advisory bucket:
+  description/alt/empty-body → NEEDS_CHANGES (comment, optionally block by team
+  policy); H1/heading/opening/citations → ADVISORY.
+- **Render-based structure checks.** Re-base D1/D2 on the rendered HTML (post
+  Jekyll layout) rather than raw markdown, then promote back to a hard gate.
 
 ## Deferred (out of stage-1 scope)
 

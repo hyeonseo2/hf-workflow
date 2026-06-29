@@ -3,84 +3,17 @@
     "advisory": {
       "checks": [
         {
-          "message": "Scannable H2/H3 (question or keyword): 0 (0 question, 0 keyword)",
-          "name": "question_headings",
-          "passed": false,
-          "severity": "recommended",
-          "value": []
-        },
-        {
-          "message": "Internal links: 0 (recommend 2-3)",
-          "name": "internal_links",
-          "passed": false,
-          "severity": "recommended",
-          "value": []
-        },
-        {
-          "message": "Body length: 11927 chars (recommend ≥800 for KO)",
-          "name": "word_count",
-          "passed": true,
-          "severity": "optional",
-          "value": 11927
-        },
-        {
-          "message": "No primary_keyword in manifest — keyword check skipped",
-          "name": "primary_keyword",
-          "passed": true,
-          "severity": "info",
-          "value": null
-        },
-        {
-          "message": "No images found (optional)",
-          "name": "no_images",
-          "passed": true,
-          "severity": "info",
-          "value": 0
-        }
-      ]
-    },
-    "checkers": {
-      "content": {
-        "passed": true,
-        "score": 0.75,
-        "summary": {
-          "optional": "1/1",
-          "recommended": "0/2",
-          "required": "4/4"
-        }
-      },
-      "images": {
-        "passed": true,
-        "score": 1.0,
-        "summary": {
-          "optional": "0/0",
-          "recommended": "0/0",
-          "required": "0/0"
-        }
-      },
-      "keywords": {
-        "passed": true,
-        "score": 1.0,
-        "summary": {
-          "recommended": "0/0",
-          "required": "0/0"
-        }
-      }
-    },
-    "required": {
-      "checks": [
-        {
-          "message": "Opening 3 paragraphs: 573 chars (recommend ≥150 for KO/GEO)",
+          "message": "Opening 3 paragraphs: 583 chars (recommend ≥150 for KO/GEO)",
           "name": "opening_summary",
           "passed": true,
-          "severity": "required",
-          "value": "* TOC\n{:toc}\n<!--toc-->\n_이 글은 Hugging Face 블로그의 [Introducing RTEB: A New Standard for Retrieval Evaluation](https://huggingface.co/blog/rteb)를 한국어로 번역한 글입니다._\n\n---\n# RTEB: 검색 평가의 새로운 표준\n\n**요약 –** 여러분께..."
+          "severity": "recommended",
+          "value": "---\n# RTEB: 검색 평가의 새로운 표준\n\n**요약 –** 여러분께 새로운 벤치마크, [RTEB(Retrieval Embedding Benchmark, 검색 임베딩 벤치마크)](https://huggingface.co/spaces/mteb/leaderboard?benchmark_name=RTEB%28beta%29)의 베타 버전을 소개합니다. RTEB는..."
         },
         {
           "message": "Heading hierarchy: Valid",
           "name": "heading_hierarchy",
           "passed": true,
-          "severity": "required",
+          "severity": "recommended",
           "value": [
             [
               1,
@@ -121,21 +54,111 @@
           ]
         },
         {
-          "message": "H1 count: 1 (must be exactly 1)",
+          "message": "Body H1 count: 1 (0 or 1 OK — layout renders title as H1; never multiple)",
           "name": "h1_count",
           "passed": true,
-          "severity": "required",
+          "severity": "recommended",
           "value": 1
         },
         {
           "message": "Citations/statistics: 8 (recommend ≥1 for GEO)",
           "name": "citations",
           "passed": true,
-          "severity": "required",
+          "severity": "recommended",
           "value": 8
+        },
+        {
+          "message": "Scannable H2/H3 (question or keyword): 0 (0 question, 0 keyword)",
+          "name": "question_headings",
+          "passed": false,
+          "severity": "recommended",
+          "value": []
+        },
+        {
+          "message": "Internal links: 0 (recommend 2-3)",
+          "name": "internal_links",
+          "passed": false,
+          "severity": "recommended",
+          "value": []
+        },
+        {
+          "message": "Body length: 11927 chars (recommend ≥800 for KO)",
+          "name": "word_count",
+          "passed": true,
+          "severity": "optional",
+          "value": 11927
+        },
+        {
+          "message": "No primary_keyword in manifest — keyword check skipped",
+          "name": "primary_keyword",
+          "passed": true,
+          "severity": "info",
+          "value": null
+        },
+        {
+          "message": "WebP format: 0/2 images (≥50% recommend)",
+          "name": "webp_format",
+          "passed": false,
+          "severity": "optional",
+          "value": []
+        },
+        {
+          "message": "Lazy loading: 0 images (optional)",
+          "name": "lazy_loading",
+          "passed": false,
+          "severity": "optional",
+          "value": 0
+        }
+      ]
+    },
+    "checkers": {
+      "content": {
+        "passed": true,
+        "score": 0.7222222222222223,
+        "summary": {
+          "optional": "1/1",
+          "recommended": "4/6",
+          "required": "0/0"
+        }
+      },
+      "images": {
+        "passed": false,
+        "score": 0.0,
+        "summary": {
+          "optional": "0/2",
+          "required": "0/2"
+        }
+      },
+      "keywords": {
+        "passed": true,
+        "score": 1.0,
+        "summary": {
+          "recommended": "0/0",
+          "required": "0/0"
+        }
+      }
+    },
+    "required": {
+      "checks": [
+        {
+          "message": "Alt text coverage: 0/2 images",
+          "name": "alt_text_coverage",
+          "passed": false,
+          "severity": "required",
+          "value": []
+        },
+        {
+          "message": "Descriptive alt text: 0/0 (≥80% recommend)",
+          "name": "descriptive_alt_text",
+          "passed": false,
+          "severity": "required",
+          "value": {
+            "descriptive": [],
+            "non_descriptive": []
+          }
         }
       ],
-      "passed": true
+      "passed": false
     }
   },
   "frontmatter_advisory": {
@@ -188,9 +211,9 @@
     }
   },
   "gate": {
-    "deterministic_passed": true,
-    "passed": true,
-    "reason": "deterministic gate only (rubric is stage-1 skeleton)",
+    "deterministic_passed": false,
+    "passed": false,
+    "reason": "deterministic REQUIRED checks failed",
     "rubric_passed": null
   },
   "input": {

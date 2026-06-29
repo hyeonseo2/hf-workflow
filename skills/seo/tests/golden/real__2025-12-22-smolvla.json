@@ -3,115 +3,17 @@
     "advisory": {
       "checks": [
         {
-          "message": "Scannable H2/H3 (question or keyword): 1 (1 question, 0 keyword)",
-          "name": "question_headings",
-          "passed": true,
-          "severity": "recommended",
-          "value": [
-            "🚀 How to Use SmolVLA?"
-          ]
-        },
-        {
-          "message": "Internal links: 22 (recommend 2-3)",
-          "name": "internal_links",
-          "passed": true,
-          "severity": "recommended",
-          "value": [
-            "#tl-dr",
-            "#introduction",
-            "#meet-smolvla",
-            "#-how-to-use-smolvla",
-            "#install",
-            "#finetune-the-pretrained-model",
-            "#train-from-scratch",
-            "#method",
-            "#main-architecture",
-            "#vision-language-model-vlm",
-            "#action-expert-flow-matching-transformer",
-            "#design-choices-for-efficiency-and-robustness",
-            "#visual-token-reduction",
-            "#faster-inference-via-layer-skipping",
-            "#interleaved-cross-and-self-attention",
-            "#asynchronous-inference",
-            "#community-datasets",
-            "#improving-task-annotations",
-            "#standardizing-camera-views",
-            "#results",
-            "#conclusion",
-            "#call-to-action"
-          ]
-        },
-        {
-          "message": "Word count: 2633 (recommend ≥300)",
-          "name": "word_count",
-          "passed": true,
-          "severity": "optional",
-          "value": 2633
-        },
-        {
-          "message": "No primary_keyword in manifest — keyword check skipped",
-          "name": "primary_keyword",
-          "passed": true,
-          "severity": "info",
-          "value": null
-        },
-        {
-          "message": "WebP format: 0/8 images (≥50% recommend)",
-          "name": "webp_format",
-          "passed": false,
-          "severity": "optional",
-          "value": []
-        },
-        {
-          "message": "Lazy loading: 0 images (optional)",
-          "name": "lazy_loading",
-          "passed": false,
-          "severity": "optional",
-          "value": 0
-        }
-      ]
-    },
-    "checkers": {
-      "content": {
-        "passed": false,
-        "score": 0.825,
-        "summary": {
-          "optional": "1/1",
-          "recommended": "2/2",
-          "required": "3/4"
-        }
-      },
-      "images": {
-        "passed": true,
-        "score": 0.85,
-        "summary": {
-          "optional": "0/2",
-          "required": "2/2"
-        }
-      },
-      "keywords": {
-        "passed": true,
-        "score": 1.0,
-        "summary": {
-          "recommended": "0/0",
-          "required": "0/0"
-        }
-      }
-    },
-    "required": {
-      "checks": [
-        {
-          "message": "Opening 3 paragraphs: 24 words (recommend ≥50 for GEO)",
+          "message": "Opening 3 paragraphs: 18 words (recommend ≥50 for GEO)",
           "name": "opening_summary",
           "passed": false,
-          "severity": "required",
-          "value": "* TOC\n{:toc}\n<!--toc-->\n_이 글은 Hugging Face 블로그의 [SmolVLA: Efficient Vision-Language-Action Model trained on Lerobot Community Data](https://huggingface.co/blog/smolvla)를 한국어로 번역한 글입니다._\n\n---\n\n**Useful..."
+          "severity": "recommended",
+          "value": "---\n\n**Useful links**:\n\n- SO-100/101 학습 및 평가에 사용된 하드웨어: https://github.com/TheRobotStudio/SO-ARM100  \n- Base model https://huggingface.co/lerobot/smolvla_base\n- Paper: https://huggingface.co/papers/25..."
         },
         {
           "message": "Heading hierarchy: Valid",
           "name": "heading_hierarchy",
           "passed": true,
-          "severity": "required",
+          "severity": "recommended",
           "value": [
             [
               1,
@@ -212,23 +114,121 @@
           ]
         },
         {
-          "message": "H1 count: 1 (must be exactly 1)",
+          "message": "Body H1 count: 1 (0 or 1 OK — layout renders title as H1; never multiple)",
           "name": "h1_count",
           "passed": true,
-          "severity": "required",
+          "severity": "recommended",
           "value": 1
         },
         {
           "message": "Citations/statistics: 25 (recommend ≥1 for GEO)",
           "name": "citations",
           "passed": true,
-          "severity": "required",
+          "severity": "recommended",
           "value": 25
         },
         {
-          "message": "Alt text coverage: 8/8 images",
-          "name": "alt_text_coverage",
+          "message": "Scannable H2/H3 (question or keyword): 1 (1 question, 0 keyword)",
+          "name": "question_headings",
           "passed": true,
+          "severity": "recommended",
+          "value": [
+            "🚀 How to Use SmolVLA?"
+          ]
+        },
+        {
+          "message": "Internal links: 22 (recommend 2-3)",
+          "name": "internal_links",
+          "passed": true,
+          "severity": "recommended",
+          "value": [
+            "#tl-dr",
+            "#introduction",
+            "#meet-smolvla",
+            "#-how-to-use-smolvla",
+            "#install",
+            "#finetune-the-pretrained-model",
+            "#train-from-scratch",
+            "#method",
+            "#main-architecture",
+            "#vision-language-model-vlm",
+            "#action-expert-flow-matching-transformer",
+            "#design-choices-for-efficiency-and-robustness",
+            "#visual-token-reduction",
+            "#faster-inference-via-layer-skipping",
+            "#interleaved-cross-and-self-attention",
+            "#asynchronous-inference",
+            "#community-datasets",
+            "#improving-task-annotations",
+            "#standardizing-camera-views",
+            "#results",
+            "#conclusion",
+            "#call-to-action"
+          ]
+        },
+        {
+          "message": "Word count: 2633 (recommend ≥300)",
+          "name": "word_count",
+          "passed": true,
+          "severity": "optional",
+          "value": 2633
+        },
+        {
+          "message": "No primary_keyword in manifest — keyword check skipped",
+          "name": "primary_keyword",
+          "passed": true,
+          "severity": "info",
+          "value": null
+        },
+        {
+          "message": "WebP format: 0/9 images (≥50% recommend)",
+          "name": "webp_format",
+          "passed": false,
+          "severity": "optional",
+          "value": []
+        },
+        {
+          "message": "Lazy loading: 0 images (optional)",
+          "name": "lazy_loading",
+          "passed": false,
+          "severity": "optional",
+          "value": 0
+        }
+      ]
+    },
+    "checkers": {
+      "content": {
+        "passed": true,
+        "score": 0.8611111111111112,
+        "summary": {
+          "optional": "1/1",
+          "recommended": "5/6",
+          "required": "0/0"
+        }
+      },
+      "images": {
+        "passed": false,
+        "score": 0.425,
+        "summary": {
+          "optional": "0/2",
+          "required": "1/2"
+        }
+      },
+      "keywords": {
+        "passed": true,
+        "score": 1.0,
+        "summary": {
+          "recommended": "0/0",
+          "required": "0/0"
+        }
+      }
+    },
+    "required": {
+      "checks": [
+        {
+          "message": "Alt text coverage: 8/9 images",
+          "name": "alt_text_coverage",
+          "passed": false,
           "severity": "required",
           "value": [
             {
