@@ -24,6 +24,7 @@ except ModuleNotFoundError:
 
 
 DEFAULT_FEED_URL = "https://huggingface.co/blog/feed.xml"
+DEFAULT_BLOG_ORIGIN = "https://huggingface.co"
 DEFAULT_LOCALE = "ko"
 HEADING_RE = re.compile(r"^(?P<marks>#{1,6})\s+(?P<text>.+?)\s*$")
 EXPLICIT_HEADING_ID_RE = re.compile(
@@ -242,13 +243,13 @@ translation_status: "draft"
 translator: "{translator_name}"
 ---
 
-> Source: {post.url}
-
 * TOC
 {{:toc}}
 <!--toc-->
 
 _이 글은 Hugging Face 블로그의 [{post.title}]({source_url})를 한국어로 번역한 글입니다._
+
+<!-- Source: {post.url} -->
 
 ---
 
@@ -268,11 +269,23 @@ def render_source_frontmatter_lines(source_frontmatter: Optional[SourceFrontmatt
         return []
     lines: list[str] = []
     if source_frontmatter.thumbnail:
-        lines.append(f"thumbnail: {source_frontmatter.thumbnail}")
+        lines.append(f"thumbnail: {normalize_thumbnail_url(source_frontmatter.thumbnail)}")
     if source_frontmatter.authors:
         lines.append("authors:")
         lines.extend(f"  - {author}" for author in source_frontmatter.authors)
     return lines
+
+
+def normalize_thumbnail_url(thumbnail: str) -> str:
+    value = unquote_yaml_scalar(thumbnail.strip())
+    if not value:
+        return value
+    parsed = urlparse(value)
+    if parsed.scheme and parsed.netloc:
+        return value
+    if value.startswith("/"):
+        return f"{DEFAULT_BLOG_ORIGIN}{value}"
+    return value
 
 
 def unquote_yaml_scalar(value: str) -> str:
