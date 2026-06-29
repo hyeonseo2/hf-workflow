@@ -1,0 +1,221 @@
+{
+  "deterministic": {
+    "advisory": {
+      "checks": [
+        {
+          "message": "Opening 3 paragraphs: 475 chars (recommend ≥150 for KO/GEO)",
+          "name": "opening_summary",
+          "passed": true,
+          "severity": "recommended",
+          "value": "Transformer 모델 최적화 기법은 대규모 언어 모델을 더 빠르고 저렴하게 운영하기 위한 핵심 전략입니다. 이 글은 학습률 조정, 모델 압축, 전이 학습, 하드웨어 최적화를 통해 모델 성능을 유지하면서 비용을 줄이는 방법을 설명합니다. [Hugging Face 블로그](https://huggingface.co/blog)와 공개 연구 사례를 함께 참고하..."
+        },
+        {
+          "message": "Heading hierarchy: Valid",
+          "name": "heading_hierarchy",
+          "passed": true,
+          "severity": "recommended",
+          "value": [
+            [
+              1,
+              "Transformer 모델 최적화 기법: 차단된 게시 예시"
+            ],
+            [
+              2,
+              "Transformer 최적화는 무엇인가?"
+            ],
+            [
+              2,
+              "Transformer 모델은 어떻게 최적화하나?"
+            ]
+          ]
+        },
+        {
+          "message": "Body H1 count: 1 (0 or 1 OK — layout renders title as H1; never multiple)",
+          "name": "h1_count",
+          "passed": true,
+          "severity": "recommended",
+          "value": 1
+        },
+        {
+          "message": "Citations/statistics: 1 (recommend ≥1 for GEO)",
+          "name": "citations",
+          "passed": true,
+          "severity": "recommended",
+          "value": 1
+        },
+        {
+          "message": "Scannable H2/H3 (question or keyword): 2 (2 question, 0 keyword)",
+          "name": "question_headings",
+          "passed": true,
+          "severity": "recommended",
+          "value": [
+            "Transformer 최적화는 무엇인가?",
+            "Transformer 모델은 어떻게 최적화하나?"
+          ]
+        },
+        {
+          "message": "Internal links: 0 (recommend 2-3)",
+          "name": "internal_links",
+          "passed": false,
+          "severity": "recommended",
+          "value": []
+        },
+        {
+          "message": "Body length: 648 chars (recommend ≥800 for KO)",
+          "name": "word_count",
+          "passed": false,
+          "severity": "optional",
+          "value": 648
+        },
+        {
+          "message": "No primary_keyword in manifest — keyword check skipped",
+          "name": "primary_keyword",
+          "passed": true,
+          "severity": "info",
+          "value": null
+        },
+        {
+          "message": "WebP format: 0/1 images (≥50% recommend)",
+          "name": "webp_format",
+          "passed": false,
+          "severity": "optional",
+          "value": []
+        },
+        {
+          "message": "Lazy loading: 0 images (optional)",
+          "name": "lazy_loading",
+          "passed": false,
+          "severity": "optional",
+          "value": 0
+        }
+      ]
+    },
+    "checkers": {
+      "content": {
+        "passed": true,
+        "score": 0.6944444444444445,
+        "summary": {
+          "optional": "0/1",
+          "recommended": "5/6",
+          "required": "0/0"
+        }
+      },
+      "images": {
+        "passed": true,
+        "score": 0.85,
+        "summary": {
+          "optional": "0/2",
+          "required": "2/2"
+        }
+      },
+      "keywords": {
+        "passed": true,
+        "score": 1.0,
+        "summary": {
+          "recommended": "0/0",
+          "required": "0/0"
+        }
+      }
+    },
+    "required": {
+      "checks": [
+        {
+          "message": "Alt text coverage: 1/1 images",
+          "name": "alt_text_coverage",
+          "passed": true,
+          "severity": "required",
+          "value": [
+            {
+              "alt": "Transformer 모델 최적화 예시",
+              "src": "/assets/images/transformer-optimization-example.png"
+            }
+          ]
+        },
+        {
+          "message": "Descriptive alt text: 1/1 (≥80% recommend)",
+          "name": "descriptive_alt_text",
+          "passed": true,
+          "severity": "required",
+          "value": {
+            "descriptive": [
+              {
+                "alt": "Transformer 모델 최적화 예시",
+                "src": "/assets/images/transformer-optimization-example.png"
+              }
+            ],
+            "non_descriptive": []
+          }
+        }
+      ],
+      "passed": true
+    }
+  },
+  "frontmatter_advisory": {
+    "checks": [
+      {
+        "message": "Title: 32 chars (recommend ≤60)",
+        "name": "title",
+        "passed": true,
+        "severity": "required",
+        "value": "Transformer 모델 최적화 기법: 차단된 게시 예시"
+      },
+      {
+        "message": "Description: 74 chars (recommend 150-160)",
+        "name": "description",
+        "passed": false,
+        "severity": "required",
+        "value": "Transformer 모델 최적화 기법을 통해 AI 성능을 높이는 방법과 모델 압축, 전이 학습, 하드웨어 최적화 전략을 정리합니다."
+      },
+      {
+        "message": "OG image: /assets/images/transformer-optimization.png",
+        "name": "image",
+        "passed": true,
+        "severity": "required",
+        "value": "/assets/images/transformer-optimization.png"
+      },
+      {
+        "message": "Categories: 2 (recommend 2-3)",
+        "name": "categories",
+        "passed": true,
+        "severity": "recommended",
+        "value": [
+          "AI",
+          "Tutorial"
+        ]
+      },
+      {
+        "message": "Author: test_author",
+        "name": "author",
+        "passed": true,
+        "severity": "recommended",
+        "value": "test_author"
+      }
+    ],
+    "passed": false,
+    "score": 0.7333333333333334,
+    "summary": {
+      "recommended": "2/2",
+      "required": "2/3"
+    }
+  },
+  "gate": {
+    "deterministic_passed": true,
+    "passed": true,
+    "reason": "deterministic gate only (rubric is stage-1 skeleton)",
+    "rubric_passed": null
+  },
+  "input": {
+    "file_path": "blocked-post.md",
+    "mode": "file",
+    "primary_keyword": "",
+    "source_url": ""
+  },
+  "rubric": {
+    "available": false,
+    "mean": null,
+    "min": null,
+    "passed": null,
+    "reason": "rubric not run (stage-1 skeleton)",
+    "scores": {}
+  }
+}

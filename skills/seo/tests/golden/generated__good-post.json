@@ -1,0 +1,222 @@
+{
+  "deterministic": {
+    "advisory": {
+      "checks": [
+        {
+          "message": "Opening 3 paragraphs: 427 chars (recommend ≥150 for KO/GEO)",
+          "name": "opening_summary",
+          "passed": true,
+          "severity": "recommended",
+          "value": "Transformer 모델은 자연어 처리 및 다양한 머신러닝 분야에서 혁신적인 성과를 이루어내고 있습니다. 그러나 이러한 모델의 성능을 극대화하기 위해서는 여러 최적화 기법이 필요합니다.\n\nTransformer 모델의 성능을 높이기 위해 가장 먼저 고려해야 할 것은 파라미터 조정입니다. 학습률, 배치 크기, 드롭아웃 비율 등 다양한 파라미터가 모델의 성능에..."
+        },
+        {
+          "message": "Heading hierarchy: Valid",
+          "name": "heading_hierarchy",
+          "passed": true,
+          "severity": "recommended",
+          "value": [
+            [
+              1,
+              "Transformer 모델 최적화 기법"
+            ],
+            [
+              2,
+              "1. 파라미터 조정"
+            ],
+            [
+              2,
+              "2. 전이 학습 활용"
+            ],
+            [
+              2,
+              "3. 하드웨어 최적화"
+            ]
+          ]
+        },
+        {
+          "message": "Body H1 count: 1 (0 or 1 OK — layout renders title as H1; never multiple)",
+          "name": "h1_count",
+          "passed": true,
+          "severity": "recommended",
+          "value": 1
+        },
+        {
+          "message": "Citations/statistics: 2 (recommend ≥1 for GEO)",
+          "name": "citations",
+          "passed": true,
+          "severity": "recommended",
+          "value": 2
+        },
+        {
+          "message": "Scannable H2/H3 (question or keyword): 0 (0 question, 0 keyword)",
+          "name": "question_headings",
+          "passed": false,
+          "severity": "recommended",
+          "value": []
+        },
+        {
+          "message": "Internal links: 0 (recommend 2-3)",
+          "name": "internal_links",
+          "passed": false,
+          "severity": "recommended",
+          "value": []
+        },
+        {
+          "message": "Body length: 823 chars (recommend ≥800 for KO)",
+          "name": "word_count",
+          "passed": true,
+          "severity": "optional",
+          "value": 823
+        },
+        {
+          "message": "No primary_keyword in manifest — keyword check skipped",
+          "name": "primary_keyword",
+          "passed": true,
+          "severity": "info",
+          "value": null
+        },
+        {
+          "message": "WebP format: 0/1 images (≥50% recommend)",
+          "name": "webp_format",
+          "passed": false,
+          "severity": "optional",
+          "value": []
+        },
+        {
+          "message": "Lazy loading: 0 images (optional)",
+          "name": "lazy_loading",
+          "passed": false,
+          "severity": "optional",
+          "value": 0
+        }
+      ]
+    },
+    "checkers": {
+      "content": {
+        "passed": true,
+        "score": 0.7222222222222223,
+        "summary": {
+          "optional": "1/1",
+          "recommended": "4/6",
+          "required": "0/0"
+        }
+      },
+      "images": {
+        "passed": true,
+        "score": 0.85,
+        "summary": {
+          "optional": "0/2",
+          "required": "2/2"
+        }
+      },
+      "keywords": {
+        "passed": true,
+        "score": 1.0,
+        "summary": {
+          "recommended": "0/0",
+          "required": "0/0"
+        }
+      }
+    },
+    "required": {
+      "checks": [
+        {
+          "message": "Alt text coverage: 1/1 images",
+          "name": "alt_text_coverage",
+          "passed": true,
+          "severity": "required",
+          "value": [
+            {
+              "alt": "Transformer 모델 최적화",
+              "src": "https://example.com/assets/images/transformer-optimization.jpg \"Transformer 모델 최적화\""
+            }
+          ]
+        },
+        {
+          "message": "Descriptive alt text: 1/1 (≥80% recommend)",
+          "name": "descriptive_alt_text",
+          "passed": true,
+          "severity": "required",
+          "value": {
+            "descriptive": [
+              {
+                "alt": "Transformer 모델 최적화",
+                "src": "https://example.com/assets/images/transformer-optimization.jpg \"Transformer 모델 최적화\""
+              }
+            ],
+            "non_descriptive": []
+          }
+        }
+      ],
+      "passed": true
+    }
+  },
+  "frontmatter_advisory": {
+    "checks": [
+      {
+        "message": "Title: 21 chars (recommend ≤60)",
+        "name": "title",
+        "passed": true,
+        "severity": "required",
+        "value": "Transformer 모델 최적화 기법"
+      },
+      {
+        "message": "Description: 44 chars (recommend 150-160)",
+        "name": "description",
+        "passed": false,
+        "severity": "required",
+        "value": "Transformer 모델의 성능을 극대화하는 다양한 최적화 기법을 탐구합니다."
+      },
+      {
+        "message": "OG image: /assets/images/transformer-optimization.jpg",
+        "name": "image",
+        "passed": true,
+        "severity": "required",
+        "value": "/assets/images/transformer-optimization.jpg"
+      },
+      {
+        "message": "Categories: 2 (recommend 2-3)",
+        "name": "categories",
+        "passed": true,
+        "severity": "recommended",
+        "value": [
+          "AI",
+          "Machine Learning"
+        ]
+      },
+      {
+        "message": "Author: 김철수",
+        "name": "author",
+        "passed": true,
+        "severity": "recommended",
+        "value": "김철수"
+      }
+    ],
+    "passed": false,
+    "score": 0.7333333333333334,
+    "summary": {
+      "recommended": "2/2",
+      "required": "2/3"
+    }
+  },
+  "gate": {
+    "deterministic_passed": true,
+    "passed": true,
+    "reason": "deterministic gate only (rubric is stage-1 skeleton)",
+    "rubric_passed": null
+  },
+  "input": {
+    "file_path": "good-post.md",
+    "mode": "file",
+    "primary_keyword": "",
+    "source_url": ""
+  },
+  "rubric": {
+    "available": false,
+    "mean": null,
+    "min": null,
+    "passed": null,
+    "reason": "rubric not run (stage-1 skeleton)",
+    "scores": {}
+  }
+}

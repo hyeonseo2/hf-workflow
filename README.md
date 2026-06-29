@@ -5,7 +5,7 @@ ecosystem, but keeps the reusable skills in one workflow repository for now.
 
 - `hugging-face-krew.github.io/`: local checkout of the target publishing repo
 - `translation-flow/`: creates translation work from Hugging Face Blog RSS and opens PRs
-- `skills/seo/`: reusable SEO review skill
+- `skills/seo/`: reusable SEO/GEO evaluation skill (entry: `tools/seo_eval.py`) with an offline pytest harness
 - `skills/quality/`: reusable quality review skill
 - `reports/`: stored run outputs, grouped by PR
 
@@ -16,34 +16,34 @@ translation file, branch, and PR they should work on.
 ## Current shape
 
 ```text
-translation-flow/
-  scripts/
-  docs/
+translation-flow/        # RSS -> translation draft -> PR + manifest
+  manifests/  scripts/  docs/
 
 skills/
-  seo/
-    SKILL.md
+  seo/                   # SEO/GEO evaluation (entry: tools/seo_eval.py)
+    SKILL.md  AGENTS.md  README.md  NOTES.md
     tools/
-    tests/
-    examples/
+      seo_eval.py        # body-only eval gate (--manifest | --file)
+      report.py
+      rubric.py          # R1-R6 rubric seam (stage 2)
+      metadata.py        # metadata-writer seam (stage 2)
+      checkers/  utils.py  heuristic.py  benchmark.py
+    tests/               # offline, deterministic pytest harness
+      fixtures/  golden/  test_*.py
+  quality/               # translation quality review
+    SKILL.md  tools/  tests/  examples/
 
-  quality/
-    SKILL.md
-    tools/
-    tests/
-    examples/
-
-reports/
+reports/                 # stored run outputs, grouped by PR
   pr-130/
-    manifest.yaml
-    seo-report.md
-    quality-report.md
+    manifest.yaml  request.md
+    seo-report.md  seo-report.json  quality-report.md
 ```
 
 ## Harness note
 
-A verification harness is not required for SEO or quality skills to run. It can
-be added later if the workflow needs replayable PR gates and stored run results.
+A replayable PR-gate verification harness (stored run results per PR) is not
+required for the skills to run; it can be added later. This is separate from the
+SEO skill's developer test harness — see [Testing](#testing).
 
 ## Local review replay
 
@@ -55,11 +55,39 @@ python3 scripts/run_local_review.py \
   --target-root hugging-face-krew.github.io
 ```
 
-Reports are written to:
+Reports are written per PR, e.g.:
 
 ```text
 reports/pr-130/
+  manifest.yaml  request.md
+  seo-report.md  seo-report.json    # from skills/seo/tools/seo_eval.py
+  quality-report.md
 ```
+
+To evaluate a single already-published post (no manifest), call the SEO entry
+directly with `--file`:
+
+```bash
+python3 skills/seo/tools/seo_eval.py \
+  --file _posts/2025-12-01-rteb.md \
+  --target-root hugging-face-krew.github.io \
+  --output /tmp/seo-report.md
+```
+
+## Testing
+
+`skills/seo/` ships an offline, deterministic pytest harness — functional unit
+tests for each checker plus golden-snapshot regression over fixed posts. It needs
+no network, target checkout, or API key.
+
+```bash
+pip install -e "skills/seo[dev]"      # pyyaml + pytest + markdown + beautifulsoup4
+python -m pytest skills/seo/tests      # functional + golden regression
+UPDATE_GOLDEN=1 python -m pytest skills/seo/tests/test_golden_regression.py  # re-baseline golden
+```
+
+Structure and per-tool usage live in `skills/seo/README.md`; the full spec is in
+`skills/seo/SKILL.md`.
 
 ## GitHub Action
 

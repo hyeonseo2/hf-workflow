@@ -1,0 +1,221 @@
+{
+  "deterministic": {
+    "advisory": {
+      "checks": [
+        {
+          "message": "Opening 3 paragraphs: 394 chars (recommend ≥150 for KO/GEO)",
+          "name": "opening_summary",
+          "passed": true,
+          "severity": "recommended",
+          "value": "검색 임베딩 벤치마크는 임베딩 모델이 실제 검색 문제에서 얼마나 정확하게 동작하는지 확인하는 평가 절차입니다. 이 글은 데이터셋 구성, 평가 지표, 모델 비교 기준을 함께 설명해 실무자가 어떤 모델을 선택해야 하는지 빠르게 판단하도록 돕습니다. 자세한 배경은 [Hugging Face 블로그](https://huggingface.co/blog/rteb)에서 ..."
+        },
+        {
+          "message": "Heading hierarchy: Valid",
+          "name": "heading_hierarchy",
+          "passed": true,
+          "severity": "recommended",
+          "value": [
+            [
+              1,
+              "검색 임베딩 벤치마크 입문"
+            ],
+            [
+              2,
+              "검색 임베딩 벤치마크는 무엇을 측정하나?"
+            ],
+            [
+              2,
+              "검색 모델은 어떻게 비교하나?"
+            ]
+          ]
+        },
+        {
+          "message": "Body H1 count: 1 (0 or 1 OK — layout renders title as H1; never multiple)",
+          "name": "h1_count",
+          "passed": true,
+          "severity": "recommended",
+          "value": 1
+        },
+        {
+          "message": "Citations/statistics: 1 (recommend ≥1 for GEO)",
+          "name": "citations",
+          "passed": true,
+          "severity": "recommended",
+          "value": 1
+        },
+        {
+          "message": "Scannable H2/H3 (question or keyword): 2 (2 question, 0 keyword)",
+          "name": "question_headings",
+          "passed": true,
+          "severity": "recommended",
+          "value": [
+            "검색 임베딩 벤치마크는 무엇을 측정하나?",
+            "검색 모델은 어떻게 비교하나?"
+          ]
+        },
+        {
+          "message": "Internal links: 0 (recommend 2-3)",
+          "name": "internal_links",
+          "passed": false,
+          "severity": "recommended",
+          "value": []
+        },
+        {
+          "message": "Body length: 514 chars (recommend ≥800 for KO)",
+          "name": "word_count",
+          "passed": false,
+          "severity": "optional",
+          "value": 514
+        },
+        {
+          "message": "No primary_keyword in manifest — keyword check skipped",
+          "name": "primary_keyword",
+          "passed": true,
+          "severity": "info",
+          "value": null
+        },
+        {
+          "message": "WebP format: 0/1 images (≥50% recommend)",
+          "name": "webp_format",
+          "passed": false,
+          "severity": "optional",
+          "value": []
+        },
+        {
+          "message": "Lazy loading: 0 images (optional)",
+          "name": "lazy_loading",
+          "passed": false,
+          "severity": "optional",
+          "value": 0
+        }
+      ]
+    },
+    "checkers": {
+      "content": {
+        "passed": true,
+        "score": 0.6944444444444445,
+        "summary": {
+          "optional": "0/1",
+          "recommended": "5/6",
+          "required": "0/0"
+        }
+      },
+      "images": {
+        "passed": true,
+        "score": 0.85,
+        "summary": {
+          "optional": "0/2",
+          "required": "2/2"
+        }
+      },
+      "keywords": {
+        "passed": true,
+        "score": 1.0,
+        "summary": {
+          "recommended": "0/0",
+          "required": "0/0"
+        }
+      }
+    },
+    "required": {
+      "checks": [
+        {
+          "message": "Alt text coverage: 1/1 images",
+          "name": "alt_text_coverage",
+          "passed": true,
+          "severity": "required",
+          "value": [
+            {
+              "alt": "검색 임베딩 벤치마크 구조",
+              "src": "/assets/images/rteb/thumbnail.png"
+            }
+          ]
+        },
+        {
+          "message": "Descriptive alt text: 1/1 (≥80% recommend)",
+          "name": "descriptive_alt_text",
+          "passed": true,
+          "severity": "required",
+          "value": {
+            "descriptive": [
+              {
+                "alt": "검색 임베딩 벤치마크 구조",
+                "src": "/assets/images/rteb/thumbnail.png"
+              }
+            ],
+            "non_descriptive": []
+          }
+        }
+      ],
+      "passed": true
+    }
+  },
+  "frontmatter_advisory": {
+    "checks": [
+      {
+        "message": "Title: 14 chars (recommend ≤60)",
+        "name": "title",
+        "passed": true,
+        "severity": "required",
+        "value": "검색 임베딩 벤치마크 입문"
+      },
+      {
+        "message": "Description: 73 chars (recommend 150-160)",
+        "name": "description",
+        "passed": false,
+        "severity": "required",
+        "value": "검색 임베딩 벤치마크의 평가 기준과 모델 비교 방법을 설명하고, 한국어 검색 품질을 검증할 때 확인해야 할 핵심 지표를 정리합니다."
+      },
+      {
+        "message": "OG image: /assets/images/rteb/thumbnail.png",
+        "name": "image",
+        "passed": true,
+        "severity": "required",
+        "value": "/assets/images/rteb/thumbnail.png"
+      },
+      {
+        "message": "Categories: 2 (recommend 2-3)",
+        "name": "categories",
+        "passed": true,
+        "severity": "recommended",
+        "value": [
+          "AI",
+          "Benchmark"
+        ]
+      },
+      {
+        "message": "Author: test_author",
+        "name": "author",
+        "passed": true,
+        "severity": "recommended",
+        "value": "test_author"
+      }
+    ],
+    "passed": false,
+    "score": 0.7333333333333334,
+    "summary": {
+      "recommended": "2/2",
+      "required": "2/3"
+    }
+  },
+  "gate": {
+    "deterministic_passed": true,
+    "passed": true,
+    "reason": "deterministic gate only (rubric is stage-1 skeleton)",
+    "rubric_passed": null
+  },
+  "input": {
+    "file_path": "noindex.md",
+    "mode": "file",
+    "primary_keyword": "",
+    "source_url": ""
+  },
+  "rubric": {
+    "available": false,
+    "mean": null,
+    "min": null,
+    "passed": null,
+    "reason": "rubric not run (stage-1 skeleton)",
+    "scores": {}
+  }
+}

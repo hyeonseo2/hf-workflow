@@ -1,33 +1,84 @@
+---
+name: blog-seo
+description: >-
+  Evaluate and improve a Hugging Face KREW blog post (Korean translation or
+  already-published post) for SEO/GEO. Use when asked to run an SEO
+  review/audit, give SEO feedback on a post body, check a PR's translated post
+  before publishing, or write SEO metadata. Runs from a translation-flow
+  manifest (PR flow) or a direct file path (published flow). Out of scope:
+  translation quality (fidelity/fluency/terminology).
+---
+
 # HF Blog SEO Skill
 
-Use this skill when optimizing a specific Korean Hugging Face Blog translation
-file for SEO.
+SEO/GEO review for `Hugging-Face-KREW/hugging-face-krew.github.io` posts. The
+skill is two modules; **stage 1** ships Module 1's deterministic gate plus a
+rubric seam. The LLM rubric and Module 2 (metadata writer) are interface
+skeletons for now.
+
+## When to use
+- "SEO 평가/감사", "이 포스트 SEO 봐줘", "발행 전 PR SEO 체크", "메타데이터 작성".
+- Applies to both **published** posts and **unpublished** (PR) posts.
+
+## Out of scope
+- Translation quality (fidelity / fluency / terminology) → separate quality skill.
+  The rubric's R6 only checks keyword/term **search integrity**, not fluency.
+
+## Workflow
+```
+SEO eval (body only) ──fail──> return feedback (failing REQUIRED checks)
+                     └─pass──> write metadata (Module 2 — stage 2)
+```
+- Eval gates the **body** only (structure / keyword / images). Frontmatter is
+  **not** gated — the metadata writer generates it after a pass (avoids deadlock).
+- Gate = `(all REQUIRED deterministic checks pass) AND (rubric mean ≥4 & min ≥3)`.
+  Stage 1: the rubric is a skeleton, so the gate runs on the deterministic part
+  alone and the report marks the rubric as not-run.
+- **v1 gate is conservative** (PR #8 review): only image alt/file checks (D6/D7)
+  and keyword-in-opening (D5, when a keyword is supplied) block. Structure checks
+  (D1 H1 / D2 hierarchy / D3 opening / D4 citations) are **advisory** — they
+  assume raw-markdown structure that clashes with the Jekyll layout (which renders
+  the frontmatter `title` as the H1), so they're reported but don't block until
+  re-based on the rendered output.
 
 ## Inputs
+- PR / pre-publish: `--manifest <translation-flow manifest.yaml>`
+- Published: `--file <_posts/...md> --target-root <repo>` (+ `--source-url`, `--primary-keyword`)
+- The manifest's `handoff.seo.primary_keyword` is empty in practice; pass
+  `--primary-keyword` to enable D5/D10, otherwise they are skipped (non-blocking).
 
-Prefer a `translation-flow` manifest. If no manifest is provided, ask for:
+## Run
+```bash
+# PR flow — writes <output> and <output>.json; exit 0 (pass) / 1 (fail)
+python skills/seo/tools/seo_eval.py --manifest reports/pr-130/manifest.yaml \
+  --target-root ../hugging-face-krew.github.io --output reports/pr-130/seo-report.md
 
-- source blog URL
-- translation file path
-- target keyword, if any
+# Published flow
+python skills/seo/tools/seo_eval.py --file _posts/2025-12-01-rteb.md \
+  --target-root ../hugging-face-krew.github.io --output /tmp/seo.md
 
-## Procedure
+# Optional informational Lighthouse SEO benchmark (Tier A real / Tier B heuristic)
+python skills/seo/tools/seo_eval.py ... --benchmark heuristic
+```
 
-1. Read the manifest and the target translation file.
-2. Inspect frontmatter fields such as title, description, tags, and slug.
-3. Compare the Korean title and description against the source post intent.
-4. Improve search clarity without changing the technical meaning.
-5. Check heading hierarchy and make headings scannable.
-6. Suggest or add relevant internal links only when they are contextually useful.
-7. Preserve code blocks, links, frontmatter structure, and technical terms.
+## Deterministic items (body only)
+- **REQUIRED (hard gate):** D5 primary keyword in opening (skipped if no keyword) ·
+  D6 alt coverage 100% + descriptive · D7 image files exist (with `--target-root`).
+- **ADVISORY (reported, not gated):** D1 body H1 count (0 or 1 OK — layout renders
+  title as H1; only multiple H1s flag) · D2 heading hierarchy (no skips) ·
+  D3 opening length (KO ≥150 chars / EN ≥50 words, TOC/boilerplate skipped) ·
+  D4 ≥1 citation · D8 question-or-keyword subheading · D9 internal links 2–3 ·
+  D10 secondary keyword coverage · D11 body length · D12 WebP · D13 lazy.
 
-## Output
+## Rubric items (LLM — stage 2)
+R1 opening answerability · R2 heading search-intent · R3 alt accuracy ·
+R4 citation authority · R5 quotability · R6 keyword/term search integrity.
 
-When editing files, summarize:
-
-- title or description changes
-- heading changes
-- link changes
-- any SEO concerns left unresolved
-
-When reviewing only, produce a concise findings list with file references.
+## Tests (repeatable, offline)
+```bash
+python -m pytest skills/seo/tests        # functional unit tests + golden regression
+UPDATE_GOLDEN=1 python -m pytest skills/seo/tests/test_golden_regression.py  # re-baseline
+```
+Verifies tool behavior and stability (not output quality). Golden fixtures are
+drop-in and provisional. `tools/` holds the checkers; `tools/rubric.py` and
+`tools/metadata.py` are the stage-2 seams.

@@ -35,9 +35,10 @@ def report_id_for_manifest(manifest: dict[str, str], fallback: str) -> str:
     return Path(fallback).stem
 
 
-def run(cmd: list[str], cwd: Path) -> None:
+def run(cmd: list[str], cwd: Path, check: bool = True) -> int:
     print("+", " ".join(cmd))
-    subprocess.run(cmd, cwd=cwd, check=True)
+    proc = subprocess.run(cmd, cwd=cwd, check=check)
+    return proc.returncode
 
 
 def main() -> int:
@@ -74,10 +75,12 @@ def main() -> int:
     )
     (report_dir / "request.md").write_text(request)
 
-    run(
+    # The SEO eval gate exits non-zero when the post fails; we still want the
+    # report written, so don't raise — surface the gate result instead.
+    seo_code = run(
         [
             "python3",
-            "skills/seo/tools/simple_seo_report.py",
+            "skills/seo/tools/seo_eval.py",
             "--manifest",
             str(manifest_copy),
             "--target-root",
@@ -86,7 +89,9 @@ def main() -> int:
             str(report_dir / "seo-report.md"),
         ],
         cwd=repo_root,
+        check=False,
     )
+    print(f"SEO gate: {'PASS' if seo_code == 0 else 'FAIL'} (exit {seo_code})")
     run(
         [
             "python3",
