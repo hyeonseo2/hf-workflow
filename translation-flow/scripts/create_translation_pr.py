@@ -253,7 +253,6 @@ translator: "{translator_name}"
 * TOC
 {{:toc}}
 <!--toc-->
-
 _이 글은 Hugging Face 블로그의 [{post.title}]({source_url})를 한국어로 번역한 글입니다._
 
 <!-- Source: {post.url} -->
