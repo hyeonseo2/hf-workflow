@@ -60,6 +60,7 @@ class SourceFrontmatter:
     title: str = ""
     published_at: Optional[datetime] = None
     thumbnail: str = ""
+    image: str = ""
     authors: tuple[str, ...] = ()
 
 
@@ -115,6 +116,12 @@ def fetch_text(url: str) -> str:
     with urllib.request.urlopen(request, timeout=30) as response:
         charset = response.headers.get_content_charset() or "utf-8"
         return response.read().decode(charset, errors="replace")
+
+
+def fetch_binary(url: str) -> bytes:
+    request = urllib.request.Request(url, headers={"User-Agent": "translation-flow/0.1"})
+    with urllib.request.urlopen(request, timeout=30) as response:
+        return response.read()
 
 
 def local_name(tag: str) -> str:
@@ -268,8 +275,8 @@ def render_source_frontmatter_lines(source_frontmatter: Optional[SourceFrontmatt
     if source_frontmatter is None:
         return []
     lines: list[str] = []
-    if source_frontmatter.thumbnail:
-        lines.append(f"thumbnail: {normalize_thumbnail_url(source_frontmatter.thumbnail)}")
+    if source_frontmatter.image:
+        lines.append(f"image: {source_frontmatter.image}")
     if source_frontmatter.authors:
         lines.append("authors:")
         lines.extend(f"  - {author}" for author in source_frontmatter.authors)
@@ -286,6 +293,53 @@ def normalize_thumbnail_url(thumbnail: str) -> str:
     if value.startswith("/"):
         return f"{DEFAULT_BLOG_ORIGIN}{value}"
     return value
+
+
+def thumbnail_asset_extension(thumbnail_url: str) -> str:
+    path = urlparse(thumbnail_url).path
+    suffix = Path(path).suffix.lower()
+    if suffix in {".png", ".jpg", ".jpeg", ".webp", ".gif"}:
+        return suffix
+    return ".png"
+
+
+def thumbnail_asset_repo_path(post: FeedPost, thumbnail_url: str) -> str:
+    asset_dir = f"{post.published_date.isoformat()}-{post.slug}"
+    return str(
+        Path("assets")
+        / "images"
+        / "blog"
+        / "posts"
+        / asset_dir
+        / f"thumbnail{thumbnail_asset_extension(thumbnail_url)}"
+    )
+
+
+def prepare_thumbnail_asset(
+    target_worktree: Path,
+    post: FeedPost,
+    source_frontmatter: SourceFrontmatter,
+) -> tuple[SourceFrontmatter, str]:
+    if not source_frontmatter.thumbnail:
+        return source_frontmatter, ""
+
+    source_url = normalize_thumbnail_url(source_frontmatter.thumbnail)
+    repo_path = thumbnail_asset_repo_path(post, source_url)
+    output_path = target_worktree / repo_path
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_bytes(fetch_binary(source_url))
+    log(f"Wrote thumbnail asset: {output_path}")
+
+    return (
+        SourceFrontmatter(
+            title=source_frontmatter.title,
+            published_at=source_frontmatter.published_at,
+            thumbnail=source_frontmatter.thumbnail,
+            image=repo_path,
+            authors=source_frontmatter.authors,
+        ),
+        repo_path,
+    )
 
 
 def unquote_yaml_scalar(value: str) -> str:
@@ -1027,13 +1081,19 @@ def current_branch(worktree: Path) -> str:
     return run_cmd(["git", "branch", "--show-current"], cwd=worktree).stdout.strip()
 
 
-def commit_file(worktree: Path, file_path: str, message: str) -> None:
-    run_cmd(["git", "add", file_path], cwd=worktree)
+def commit_paths(worktree: Path, file_paths: list[str], message: str) -> None:
+    if not file_paths:
+        return
+    run_cmd(["git", "add", *file_paths], cwd=worktree)
     diff = run_cmd(["git", "diff", "--cached", "--quiet"], cwd=worktree, check=False)
     if diff.returncode == 0:
         log("No staged changes to commit.")
         return
     run_cmd(["git", "commit", "-m", message], cwd=worktree)
+
+
+def commit_file(worktree: Path, file_path: str, message: str) -> None:
+    commit_paths(worktree, [file_path], message)
 
 
 def create_pr(
@@ -1315,6 +1375,15 @@ def main(argv: Optional[list[str]] = None) -> int:
         enforce_structure_preservation(source_markdown, translated_markdown)
         log(f"Translated markdown chars: {len(translated_markdown)}")
 
+        output_frontmatter = source_frontmatter
+        thumbnail_file_path = ""
+        if source_frontmatter.thumbnail:
+            output_frontmatter, thumbnail_file_path = prepare_thumbnail_asset(
+                target_worktree,
+                post,
+                source_frontmatter,
+            )
+
         full_path.parent.mkdir(parents=True, exist_ok=True)
         full_path.write_text(
             build_translation_markdown(
@@ -1322,14 +1391,14 @@ def main(argv: Optional[list[str]] = None) -> int:
                 translated_markdown,
                 translator.name,
                 post.url,
-                source_frontmatter=source_frontmatter,
+                source_frontmatter=output_frontmatter,
             )
         )
         log(f"Wrote translated file: {full_path}")
 
-        commit_file(
+        commit_paths(
             target_worktree,
-            file_path,
+            [path for path in [file_path, thumbnail_file_path] if path],
             f"Add Korean translation draft for {post.slug}",
         )
 
