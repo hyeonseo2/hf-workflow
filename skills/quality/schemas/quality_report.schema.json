@@ -78,6 +78,8 @@
         "model": { "type": "string" },
         "prompt_path": { "type": "string" },
         "fixture_path": { "type": "string" },
+        "prompt_hash": { "type": "string" },
+        "style_guide_hash": { "type": "string" },
         "reasoning_effort": { "type": "string" },
         "requested_segment_count": { "type": "integer" },
         "segment_count": { "type": "integer" },

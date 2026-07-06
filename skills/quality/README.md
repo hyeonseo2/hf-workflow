@@ -129,6 +129,12 @@ comment summaries, and written under `mqm_judge` in `quality-report.json`. When
 hash, target segment hash, prompt content hash, and model. This keeps repeated
 runs stable and avoids paying for unchanged segment reviews.
 
+The OpenAI judge prompt embeds a digest of
+`style/hf-blog-ko-translation-guide.md`; the model does not merely receive a
+local file path. `quality-report.json` records both `prompt_hash` and
+`style_guide_hash` under `mqm_judge` so reviewers can audit which guide version
+was used.
+
 Install the optional OpenAI dependency only when real LLM judging is needed:
 
 ```bash

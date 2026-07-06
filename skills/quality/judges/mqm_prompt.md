@@ -8,6 +8,17 @@ Be conservative. Report only clear, actionable translation defects. If a
 segment is acceptable or you are unsure whether a change is required, return no
 error and keep scores high.
 
+When a segment contains multiple clear defects, report all of them in the
+`errors` array. Do not stop after the first issue. If several spans violate the
+same guide rule, either create separate errors or include all relevant spans in
+one explanation.
+
+Before returning JSON, scan every sentence in the segment for modal, certainty,
+condition, and scope markers such as `may`, `can`, `should`, `must`, `only`, `up
+to`, `in our experiments`, `not always`, and `in some cases`. If two independent
+markers are mistranslated in one segment, create two independent errors rather
+than reporting only the first one.
+
 Use the project style guide at:
 
 ```text
@@ -63,6 +74,10 @@ Severity and score calibration:
 - Scores below 0.5 mean severe mistranslation, omitted content, or unusable
   Korean. Do not assign near-zero scores for optional alt-text or minor style
   issues.
+- `source_span` and `target_span` must be copied verbatim from the supplied
+  `source_text` and `target_text`. Do not correct, normalize, translate, or
+  paraphrase spans. If a shorter exact span is uncertain, use the full sentence
+  exactly as it appears in the input.
 
 Return strict JSON only:
 

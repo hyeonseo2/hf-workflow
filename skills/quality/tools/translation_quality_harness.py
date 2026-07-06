@@ -1664,13 +1664,48 @@ def clamp_score(value: object, default: float = 1.0) -> float:
     return round(max(0.0, min(1.0, score)), 4)
 
 
-def load_mqm_prompt(path: Path | None) -> str:
+def style_guide_digest(path: Path | None, max_chars: int = 24000) -> tuple[str, str]:
+    if path is None or not path.exists():
+        return "", ""
+    text = path.read_text(encoding="utf-8")
+    digest_lines: list[str] = []
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line.startswith("#") or line.startswith("- "):
+            digest_lines.append(raw_line)
+        elif line.startswith("|") and len(line) <= 220:
+            digest_lines.append(raw_line)
+    digest = "\n".join(digest_lines)
+    if len(digest) > max_chars:
+        digest = digest[:max_chars].rstrip() + "\n\n[Guide digest truncated for prompt budget.]"
+    return digest, hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def load_mqm_prompt(path: Path | None, style_guide_path: Path | None = DEFAULT_STYLE_GUIDE_PATH) -> str:
     prompt_path = path or DEFAULT_MQM_PROMPT_PATH
     if prompt_path.exists():
-        return prompt_path.read_text(encoding="utf-8")
+        prompt = prompt_path.read_text(encoding="utf-8")
+    else:
+        prompt = (
+            "You are a Korean localization QA reviewer for Hugging Face technical blog posts. "
+            "Return strict JSON with segment_id, adequacy_score, fluency_score, technical_score, and errors."
+        )
+    digest, digest_hash = style_guide_digest(style_guide_path)
+    if not digest:
+        return prompt
     return (
-        "You are a Korean localization QA reviewer for Hugging Face technical blog posts. "
-        "Return strict JSON with segment_id, adequacy_score, fluency_score, technical_score, and errors."
+        prompt.rstrip()
+        + "\n\n## Embedded Korean Translation Guide Digest\n\n"
+        + "The following digest is extracted from the project Korean translation guide. "
+        + "Use it as the authoritative style and localization rubric for this MQM review.\n\n"
+        + f"- guide_path: {style_guide_path}\n"
+        + f"- guide_sha256: {digest_hash}\n\n"
+        + "```text\n"
+        + digest
+        + "\n```\n\n"
+        + "Remember: return strict JSON only, using the guide digest above as the review rubric.\n"
     )
 
 
@@ -1725,6 +1760,26 @@ def calibrate_mqm_error(
     warnings: list[str],
 ) -> dict[str, str]:
     if error["category"] != "accuracy" or error["severity"] not in {"major", "critical"}:
+        return error
+    guide_rule = normalize_lookup_text(error.get("guide_rule", ""))
+    guide_section = normalize_lookup_text(error.get("guide_section", ""))
+    semantic_rule_terms = [
+        "modal",
+        "certainty",
+        "condition",
+        "overstatement",
+        "omission",
+        "missing",
+        "added",
+        "factual",
+        "number",
+        "unit",
+    ]
+    semantic_section_terms = [
+        "의미·조건·확신의 강도",
+        "의미 조건 확신의 강도",
+    ]
+    if any(term in guide_rule for term in semantic_rule_terms) or any(term in guide_section for term in semantic_section_terms):
         return error
     if adequacy_score < 0.85 or technical_score < 0.90:
         return error
@@ -1891,7 +1946,7 @@ def run_openai_mqm_judge(
     config: MetricConfig,
     warnings: list[str],
 ) -> tuple[list[dict[str, object]], int, int]:
-    prompt = load_mqm_prompt(config.llm_judge_prompt_path)
+    prompt = load_mqm_prompt(config.llm_judge_prompt_path, config.style_guide_path)
     prompt_hash = hashlib.sha256(prompt.encode("utf-8")).hexdigest()
     cache = load_metric_cache(config.metric_cache_path)
     cache_hits = 0
@@ -1979,6 +2034,8 @@ def summarize_mqm_judge(
     requested_segment_count: int,
     results: list[dict[str, object]],
     warnings: list[str],
+    prompt_hash: str = "",
+    style_guide_hash: str = "",
     reasoning_effort: str = "",
     cache_hits: int = 0,
     cache_misses: int = 0,
@@ -1994,6 +2051,8 @@ def summarize_mqm_judge(
         "model": model if provider == "openai" else "",
         "prompt_path": str(prompt_path or "") if enabled else "",
         "fixture_path": str(fixture_path or "") if provider == "fixture" else "",
+        "prompt_hash": prompt_hash if provider == "openai" else "",
+        "style_guide_hash": style_guide_hash if provider == "openai" else "",
         "reasoning_effort": reasoning_effort if provider == "openai" else "",
         "requested_segment_count": requested_segment_count,
         "segment_count": len(results),
@@ -2020,6 +2079,8 @@ def evaluate_mqm_judge(alignment: list[dict[str, str]], config: MetricConfig) ->
     results: list[dict[str, object]] = []
     cache_hits = 0
     cache_misses = 0
+    prompt_hash = ""
+    style_guide_hash = ""
     if not enabled:
         return summarize_mqm_judge(
             enabled=False,
@@ -2037,6 +2098,9 @@ def evaluate_mqm_judge(alignment: list[dict[str, str]], config: MetricConfig) ->
     elif provider == "fixture":
         results = run_fixture_mqm_judge(alignment, config, warnings)
     elif provider == "openai":
+        prompt_text = load_mqm_prompt(config.llm_judge_prompt_path, config.style_guide_path)
+        prompt_hash = hashlib.sha256(prompt_text.encode("utf-8")).hexdigest()
+        style_guide_hash = style_guide_digest(config.style_guide_path)[1]
         results, cache_hits, cache_misses = run_openai_mqm_judge(alignment, config, warnings)
     else:
         warnings.append(f"MQM judge skipped: unknown provider `{provider}`.")
@@ -2050,6 +2114,8 @@ def evaluate_mqm_judge(alignment: list[dict[str, str]], config: MetricConfig) ->
         requested_segment_count=requested,
         results=results,
         warnings=warnings,
+        prompt_hash=prompt_hash,
+        style_guide_hash=style_guide_hash,
         cache_hits=cache_hits,
         cache_misses=cache_misses,
     )
@@ -2450,6 +2516,10 @@ def markdown_report(report: dict[str, object]) -> str:
         lines.append(f"- Reasoning effort: `{mqm_summary.get('reasoning_effort')}`")
     if mqm_summary.get("prompt_path"):
         lines.append(f"- Prompt: `{mqm_summary.get('prompt_path')}`")
+    if mqm_summary.get("prompt_hash"):
+        lines.append(f"- Prompt hash: `{mqm_summary.get('prompt_hash')}`")
+    if mqm_summary.get("style_guide_hash"):
+        lines.append(f"- Style guide hash: `{mqm_summary.get('style_guide_hash')}`")
     lines.append(f"- Requested segments: {mqm_summary.get('requested_segment_count', 0)}")
     lines.append(f"- Evaluated segments: {mqm_summary.get('segment_count', 0)}")
     lines.append(f"- MQM errors: {mqm_summary.get('error_count', 0)}")

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from tools.translation_quality_harness import (
     DEFAULT_MQM_PROMPT_PATH,
+    DEFAULT_STYLE_GUIDE_PATH,
     MetricConfig,
     align_segments,
     build_report,
@@ -14,7 +15,9 @@ from tools.translation_quality_harness import (
     markdown_doc,
     metric_cache_key,
     normalized_numbers,
+    normalize_mqm_result,
     openai_mqm_task,
+    style_guide_digest,
 )
 
 
@@ -569,6 +572,39 @@ def test_mqm_judge_downgrades_wording_only_accuracy_major(tmp_path: Path) -> Non
     assert any(issue["message"] == "MQM judge reported fluency issue." for issue in report["issues"])
 
 
+def test_mqm_judge_keeps_modal_strength_accuracy_major() -> None:
+    warnings: list[str] = []
+
+    result = normalize_mqm_result(
+        {
+            "segment_id": "p_002",
+            "adequacy_score": 0.92,
+            "fluency_score": 0.88,
+            "technical_score": 1.0,
+            "errors": [
+                {
+                    "guide_rule": "modal_strength",
+                    "guide_section": "4. 의미·조건·확신의 강도는 절대 바꾸지 않습니다",
+                    "category": "accuracy",
+                    "severity": "major",
+                    "source_span": "may improve throughput; must set the token",
+                    "target_span": "처리량을 개선합니다; 토큰을 설정하는 것이 좋습니다",
+                    "explanation": "가능성 표현과 의무 표현의 강도가 달라진 표현입니다.",
+                    "suggested_fix": "개선할 수 있습니다. 반드시 토큰을 설정해야 합니다.",
+                }
+            ],
+        },
+        "p_002",
+        warnings,
+    )
+
+    assert result is not None
+    [error] = result["errors"]
+    assert error["category"] == "accuracy"
+    assert error["severity"] == "major"
+    assert not warnings
+
+
 def test_openai_mqm_judge_skips_without_api_key(tmp_path: Path) -> None:
     manifest = manifest_for(tmp_path, "target_good.md")
     config = MetricConfig(
@@ -602,13 +638,26 @@ def test_openai_mqm_task_requests_json_object() -> None:
     assert "output_contract" in task
 
 
+def test_mqm_prompt_embeds_translation_guide_digest() -> None:
+    prompt = load_mqm_prompt(DEFAULT_MQM_PROMPT_PATH, DEFAULT_STYLE_GUIDE_PATH)
+    digest, digest_hash = style_guide_digest(DEFAULT_STYLE_GUIDE_PATH)
+
+    assert "Embedded Korean Translation Guide Digest" in prompt
+    assert digest_hash in prompt
+    assert "의미·조건·확신의 강도" in prompt
+    assert "Hugging Face Space" in prompt
+    assert "copied verbatim" in prompt
+    assert "Return strict JSON only" in prompt
+    assert digest
+
+
 def test_openai_mqm_judge_reuses_cached_segments_without_api_key(tmp_path: Path) -> None:
     manifest = manifest_for(tmp_path, "target_good.md")
     cache_path = tmp_path / "metric-cache.json"
     source = markdown_doc((FIXTURES / "source.md").read_text(encoding="utf-8"))
     target = markdown_doc((FIXTURES / "target_good.md").read_text(encoding="utf-8"))
     first_alignment = align_segments(source, target)[0]
-    prompt_hash = hashlib.sha256(load_mqm_prompt(DEFAULT_MQM_PROMPT_PATH).encode("utf-8")).hexdigest()
+    prompt_hash = hashlib.sha256(load_mqm_prompt(DEFAULT_MQM_PROMPT_PATH, DEFAULT_STYLE_GUIDE_PATH).encode("utf-8")).hexdigest()
     cache_key = metric_cache_key(
         f"mqm:gpt-5-nano:{prompt_hash}",
         str(first_alignment["source_hash"]),
@@ -644,6 +693,7 @@ def test_openai_mqm_judge_reuses_cached_segments_without_api_key(tmp_path: Path)
     assert report["mqm_judge"]["segment_count"] == 1
     assert report["mqm_judge"]["cache_hits"] == 1
     assert report["mqm_judge"]["cache_misses"] == 0
+    assert report["mqm_judge"]["style_guide_hash"] == style_guide_digest(DEFAULT_STYLE_GUIDE_PATH)[1]
     assert not report["mqm_judge"]["warnings"]
 
 
