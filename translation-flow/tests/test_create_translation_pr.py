@@ -8,6 +8,7 @@ import scripts.create_translation_pr as create_translation_pr
 from scripts.create_translation_pr import (
     FeedPost,
     build_translation_markdown,
+    create_manifest,
     create_or_update_branch,
     create_pr,
     html_to_markdown,
@@ -170,6 +171,33 @@ def test_default_translation_prompt_is_stored_in_docs() -> None:
     assert "Hugging Face technical blog posts" in prompt
     assert "Output Korean Markdown only" in prompt
     assert "Chunking Rules" in prompt
+
+
+def test_create_manifest_records_source_snapshot_metadata(tmp_path: Path) -> None:
+    post = FeedPost(
+        title="Hello",
+        url="https://huggingface.co/blog/hello",
+        published_at=datetime(2026, 5, 11, tzinfo=timezone.utc),
+        slug="hello",
+    )
+    manifest = tmp_path / "manifests" / "hello.yaml"
+
+    create_manifest(
+        post,
+        "https://huggingface.co/blog/feed.xml",
+        "owner/repo",
+        "translate/hello",
+        "_posts/hello.md",
+        "https://github.com/owner/repo/pull/1",
+        date(2026, 5, 11),
+        manifest,
+        source_file_path="../source-snapshots/hello.md",
+        source_hash="abc123",
+    )
+
+    text = manifest.read_text()
+    assert "file_path: ../source-snapshots/hello.md" in text
+    assert "hash: abc123" in text
 
 
 def init_git_repo(path: Path) -> None:

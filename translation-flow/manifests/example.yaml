@@ -8,6 +8,8 @@ run:
 source:
   feed_url: https://huggingface.co/blog/feed.xml
   url: https://huggingface.co/blog/example-post
+  file_path: ../source-snapshots/2026-05-11-example-post.md
+  hash: example-source-sha256
   slug: example-post
   title: Example Post
   published_date: 2026-05-11
