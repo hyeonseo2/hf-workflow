@@ -14,6 +14,7 @@ from tools.translation_quality_harness import (
     markdown_doc,
     metric_cache_key,
     normalized_numbers,
+    openai_mqm_task,
 )
 
 
@@ -522,6 +523,52 @@ def test_fixture_mqm_judge_routes_feedback_into_report(tmp_path: Path) -> None:
     assert any(issue["message"] == "MQM judge reported accuracy issue." for issue in report["issues"])
 
 
+def test_mqm_judge_downgrades_wording_only_accuracy_major(tmp_path: Path) -> None:
+    manifest = manifest_for(tmp_path, "target_good.md")
+    fixture = tmp_path / "mqm-wording-fixture.jsonl"
+    fixture.write_text(
+        json.dumps(
+            {
+                "segment_id": "p_002",
+                "adequacy_score": 0.92,
+                "fluency_score": 0.88,
+                "technical_score": 0.95,
+                "errors": [
+                    {
+                        "guide_rule": "preserve_meaning",
+                        "guide_section": "MQM judge",
+                        "category": "accuracy",
+                        "severity": "major",
+                        "source_span": "What you cannot profile",
+                        "target_span": "프로파일링할 수 없는 것은",
+                        "explanation": "의미는 유지되지만 직역이라 다소 어색한 표현입니다.",
+                        "suggested_fix": "더 자연스럽게 다듬습니다.",
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    config = MetricConfig(
+        qe_metric="off",
+        enable_embedding_similarity=False,
+        llm_judge_provider="fixture",
+        llm_judge_fixture_path=fixture,
+        llm_judge_max_segments=3,
+    )
+
+    report = build_report(manifest, FIXTURES, source_path=FIXTURES / "source.md", metric_config=config)
+
+    [segment] = report["mqm_judge"]["segments"]
+    [error] = segment["errors"]
+    assert error["category"] == "fluency"
+    assert error["severity"] == "minor"
+    assert any("downgraded" in warning for warning in report["mqm_judge"]["warnings"])
+    assert any(issue["message"] == "MQM judge reported fluency issue." for issue in report["issues"])
+
+
 def test_openai_mqm_judge_skips_without_api_key(tmp_path: Path) -> None:
     manifest = manifest_for(tmp_path, "target_good.md")
     config = MetricConfig(
@@ -537,8 +584,22 @@ def test_openai_mqm_judge_skips_without_api_key(tmp_path: Path) -> None:
     assert report["status"] == "auto_pass"
     assert report["mqm_judge"]["enabled"] is True
     assert report["mqm_judge"]["provider"] == "openai"
+    assert report["mqm_judge"]["reasoning_effort"] == "minimal"
     assert report["mqm_judge"]["segment_count"] == 0
     assert any("HF_WORKFLOW_TEST_MISSING_OPENAI_KEY" in warning for warning in report["mqm_judge"]["warnings"])
+
+
+def test_openai_mqm_task_requests_json_object() -> None:
+    task = openai_mqm_task(
+        {
+            "target_id": "p_001",
+            "source_text": "The model can run locally.",
+            "target_text": "모델은 로컬에서 실행할 수 있습니다.",
+        }
+    )
+
+    assert "JSON object" in task
+    assert "output_contract" in task
 
 
 def test_openai_mqm_judge_reuses_cached_segments_without_api_key(tmp_path: Path) -> None:

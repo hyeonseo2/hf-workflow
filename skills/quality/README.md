@@ -117,6 +117,9 @@ LLM MQM judge evaluation is optional and disabled by default:
   used for OpenAI authentication.
 - `--llm-judge-base-url URL`: optionally points the OpenAI client at a compatible
   endpoint.
+- `--llm-judge-reasoning-effort minimal`: reasoning effort for GPT-5/o-series
+  judge calls. The default keeps short segment checks from spending the whole
+  output budget on hidden reasoning.
 - `--output-mqm-judge-jsonl path.jsonl`: writes raw normalized MQM segment
   results for audit/debugging.
 

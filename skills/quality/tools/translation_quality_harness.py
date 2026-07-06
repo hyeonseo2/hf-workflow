@@ -106,6 +106,7 @@ class MetricConfig:
     llm_judge_base_url: str = ""
     llm_judge_timeout_seconds: float = 60.0
     llm_judge_max_output_tokens: int = 1200
+    llm_judge_reasoning_effort: str = "minimal"
 
 
 @dataclass
@@ -1715,6 +1716,57 @@ def normalize_mqm_error(raw: object, warnings: list[str], segment_id: str) -> di
     }
 
 
+def calibrate_mqm_error(
+    error: dict[str, str],
+    *,
+    adequacy_score: float,
+    technical_score: float,
+    segment_id: str,
+    warnings: list[str],
+) -> dict[str, str]:
+    if error["category"] != "accuracy" or error["severity"] not in {"major", "critical"}:
+        return error
+    if adequacy_score < 0.85 or technical_score < 0.90:
+        return error
+    explanation = normalize_lookup_text(error.get("explanation", ""))
+    wording_terms = [
+        "awkward",
+        "natural",
+        "phrasing",
+        "wording",
+        "literal",
+        "어색",
+        "자연",
+        "표현",
+        "직역",
+        "다듬",
+    ]
+    risk_terms = [
+        "incorrect",
+        "wrong",
+        "misleading",
+        "omission",
+        "added",
+        "inverted",
+        "오역",
+        "누락",
+        "추가",
+        "반대",
+        "강화",
+        "약화",
+        "왜곡",
+    ]
+    if any(term in explanation for term in wording_terms) and not any(term in explanation for term in risk_terms):
+        calibrated = dict(error)
+        calibrated["category"] = "fluency"
+        calibrated["severity"] = "minor"
+        warnings.append(
+            f"MQM error for segment {segment_id} was downgraded from accuracy/major to fluency/minor because scores were high and the explanation described wording only."
+        )
+        return calibrated
+    return error
+
+
 def normalize_mqm_result(raw: object, expected_segment_id: str, warnings: list[str]) -> dict[str, object] | None:
     if not isinstance(raw, dict):
         warnings.append(f"Skipped non-object MQM result for segment {expected_segment_id}.")
@@ -1731,11 +1783,24 @@ def normalize_mqm_result(raw: object, expected_segment_id: str, warnings: list[s
         for item in raw_errors
         if (normalized := normalize_mqm_error(item, warnings, segment_id)) is not None
     ]
+    adequacy_score = clamp_score(raw.get("adequacy_score"), default=1.0)
+    fluency_score = clamp_score(raw.get("fluency_score"), default=1.0)
+    technical_score = clamp_score(raw.get("technical_score"), default=1.0)
+    errors = [
+        calibrate_mqm_error(
+            error,
+            adequacy_score=adequacy_score,
+            technical_score=technical_score,
+            segment_id=segment_id,
+            warnings=warnings,
+        )
+        for error in errors
+    ]
     return {
         "segment_id": segment_id,
-        "adequacy_score": clamp_score(raw.get("adequacy_score"), default=1.0),
-        "fluency_score": clamp_score(raw.get("fluency_score"), default=1.0),
-        "technical_score": clamp_score(raw.get("technical_score"), default=1.0),
+        "adequacy_score": adequacy_score,
+        "fluency_score": fluency_score,
+        "technical_score": technical_score,
         "errors": errors,
     }
 
@@ -1809,6 +1874,7 @@ def openai_mqm_task(item: dict[str, str]) -> str:
         "target_kind": item.get("target_kind"),
         "source_text": item.get("source_text"),
         "target_text": item.get("target_text"),
+        "response_format": "Return exactly one JSON object that follows output_contract. Do not wrap it in Markdown.",
         "output_contract": {
             "segment_id": "same as input segment_id",
             "adequacy_score": "0.0 to 1.0",
@@ -1869,15 +1935,27 @@ def run_openai_mqm_judge(
     cache_dirty = False
     for item, target_id, cache_key in pending:
         try:
-            response = client.responses.create(
-                model=config.llm_judge_model,
-                instructions=prompt,
-                input=openai_mqm_task(item),
-                max_output_tokens=config.llm_judge_max_output_tokens,
-                text={"format": {"type": "json_object"}},
-                timeout=config.llm_judge_timeout_seconds,
-            )
-            raw = parse_json_object(response.output_text)
+            request_kwargs: dict[str, Any] = {
+                "model": config.llm_judge_model,
+                "instructions": prompt,
+                "input": openai_mqm_task(item),
+                "max_output_tokens": config.llm_judge_max_output_tokens,
+                "text": {"format": {"type": "json_object"}},
+                "timeout": config.llm_judge_timeout_seconds,
+            }
+            if config.llm_judge_reasoning_effort and config.llm_judge_model.startswith(("gpt-5", "o1", "o3", "o4")):
+                request_kwargs["reasoning"] = {"effort": config.llm_judge_reasoning_effort}
+            response = client.responses.create(**request_kwargs)
+            status = str(getattr(response, "status", "") or "")
+            if status and status != "completed":
+                details = getattr(response, "incomplete_details", None)
+                warnings.append(f"OpenAI MQM judge incomplete for segment {target_id}: status={status}, details={details}")
+                continue
+            output_text = str(getattr(response, "output_text", "") or "")
+            if not output_text.strip():
+                warnings.append(f"OpenAI MQM judge returned empty output for segment {target_id}.")
+                continue
+            raw = parse_json_object(output_text)
         except Exception as exc:
             warnings.append(f"OpenAI MQM judge failed for segment {target_id}: {exc}")
             continue
@@ -1901,6 +1979,7 @@ def summarize_mqm_judge(
     requested_segment_count: int,
     results: list[dict[str, object]],
     warnings: list[str],
+    reasoning_effort: str = "",
     cache_hits: int = 0,
     cache_misses: int = 0,
 ) -> dict[str, object]:
@@ -1915,6 +1994,7 @@ def summarize_mqm_judge(
         "model": model if provider == "openai" else "",
         "prompt_path": str(prompt_path or "") if enabled else "",
         "fixture_path": str(fixture_path or "") if provider == "fixture" else "",
+        "reasoning_effort": reasoning_effort if provider == "openai" else "",
         "requested_segment_count": requested_segment_count,
         "segment_count": len(results),
         "skipped_segment_count": max(0, requested_segment_count - len(results)),
@@ -1947,6 +2027,7 @@ def evaluate_mqm_judge(alignment: list[dict[str, str]], config: MetricConfig) ->
             model="",
             prompt_path=None,
             fixture_path=None,
+            reasoning_effort="",
             requested_segment_count=0,
             results=[],
             warnings=[],
@@ -1965,6 +2046,7 @@ def evaluate_mqm_judge(alignment: list[dict[str, str]], config: MetricConfig) ->
         model=config.llm_judge_model,
         prompt_path=config.llm_judge_prompt_path,
         fixture_path=config.llm_judge_fixture_path,
+        reasoning_effort=config.llm_judge_reasoning_effort,
         requested_segment_count=requested,
         results=results,
         warnings=warnings,
@@ -2364,6 +2446,8 @@ def markdown_report(report: dict[str, object]) -> str:
     lines.append(f"- Provider: `{mqm_summary.get('provider', 'off')}`")
     if mqm_summary.get("model"):
         lines.append(f"- Model: `{mqm_summary.get('model')}`")
+    if mqm_summary.get("reasoning_effort"):
+        lines.append(f"- Reasoning effort: `{mqm_summary.get('reasoning_effort')}`")
     if mqm_summary.get("prompt_path"):
         lines.append(f"- Prompt: `{mqm_summary.get('prompt_path')}`")
     lines.append(f"- Requested segments: {mqm_summary.get('requested_segment_count', 0)}")
@@ -2586,6 +2670,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--llm-judge-base-url", default=os.environ.get("OPENAI_BASE_URL", ""), help="Optional OpenAI-compatible base URL.")
     parser.add_argument("--llm-judge-timeout", type=float, default=60.0, help="Timeout in seconds for each MQM judge API call.")
     parser.add_argument("--llm-judge-max-output-tokens", type=int, default=1200, help="Maximum output tokens for each MQM judge response.")
+    parser.add_argument("--llm-judge-reasoning-effort", default="minimal", help="Reasoning effort for GPT-5/o-series MQM judge calls.")
     parser.add_argument("--no-fetch-source-url", action="store_true", help="Do not fetch source.url when no source Markdown file is available.")
     parser.add_argument("--fail-on-reject", action="store_true", help="Exit non-zero when status is reject.")
     args = parser.parse_args(argv)
@@ -2616,6 +2701,7 @@ def main(argv: list[str] | None = None) -> int:
         llm_judge_base_url=args.llm_judge_base_url,
         llm_judge_timeout_seconds=args.llm_judge_timeout,
         llm_judge_max_output_tokens=args.llm_judge_max_output_tokens,
+        llm_judge_reasoning_effort=args.llm_judge_reasoning_effort,
     )
     report = build_report(
         manifest_path,

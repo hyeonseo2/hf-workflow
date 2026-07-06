@@ -78,6 +78,7 @@
         "model": { "type": "string" },
         "prompt_path": { "type": "string" },
         "fixture_path": { "type": "string" },
+        "reasoning_effort": { "type": "string" },
         "requested_segment_count": { "type": "integer" },
         "segment_count": { "type": "integer" },
         "skipped_segment_count": { "type": "integer" },
