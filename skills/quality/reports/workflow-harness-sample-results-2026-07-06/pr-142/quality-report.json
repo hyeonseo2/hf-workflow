@@ -1,0 +1,1286 @@
+{
+  "status": "reject",
+  "quality_score": 39.0,
+  "hard_failures": [
+    {
+      "id": "QL-002",
+      "category": "formatting",
+      "severity": "critical",
+      "message": "Front matter key `thumbnail` changed or is missing.",
+      "segment_id": "",
+      "source_span": "/blog/assets/openenv/thumbnail3.png",
+      "target_span": "/blog/assets/openenv/thumbnail_expansion.png",
+      "suggested_fix": "Preserve front matter `thumbnail` exactly.",
+      "reason": "",
+      "guide_rule": "",
+      "guide_section": ""
+    },
+    {
+      "id": "QL-003",
+      "category": "formatting",
+      "severity": "critical",
+      "message": "link target mismatch.",
+      "segment_id": "",
+      "source_span": "https://github.com/huggingface/OpenEnv/pull/794, https://github.com/huggingface/OpenEnv/pull/795",
+      "target_span": "https://github.com/huggingface/OpenEnv/pull/727, https://github.com/huggingface/OpenEnv/pull/731",
+      "suggested_fix": "Preserve source link target exactly.",
+      "reason": "Hard gate exact-match validator failed: missing=['https://github.com/huggingface/OpenEnv/pull/794', 'https://github.com/huggingface/OpenEnv/pull/795']; extra=['https://github.com/huggingface/OpenEnv/pull/727', 'https://github.com/huggingface/OpenEnv/pull/731']",
+      "guide_rule": "",
+      "guide_section": ""
+    }
+  ],
+  "dimension_scores": {
+    "adequacy": 74.27,
+    "technical_accuracy": 80.0,
+    "completeness": 100.0,
+    "terminology": 60.0,
+    "fluency": 0.0,
+    "publishing_integrity": 40.0,
+    "style_locale": 60.0
+  },
+  "issues": [
+    {
+      "id": "QL-001",
+      "category": "formatting",
+      "severity": "major",
+      "message": "Front matter key `authors` changed or is missing.",
+      "segment_id": "",
+      "source_span": "user: burtenshaw\nuser: spisakjo\nuser: lysandre\nuser: darktex\nuser: willcb\nuser: qjoy\nuser: pawalt\nuser: cwing-nv\nuser: danielhanchen\nuser: andrewzhou\nuser: thegovind\nuser: shimmyshimmer\nuser: Hamid-Nazeri\nuser: Sanyam\nuser: zkwentz\nuser: emre0\nuser: lewtun\nuser: sergiopaniego\nuser: banghua\nuser: unseenmars",
+      "target_span": "user: burtenshaw\nuser: spisakjo\nuser: lysandre\nuser: darktex\nuser: willcb\nuser: charlesfrye\nuser: cwing-nv\nuser: danielhanchen\nuser: andrewzhou\nuser: shimmyshimmer\nuser: Hamid-Nazeri\nuser: Sanyam\nuser: zkwentz\nuser: emre0\nuser: lewtun\nuser: sergiopaniego",
+      "suggested_fix": "Preserve front matter `authors` exactly.",
+      "reason": "",
+      "guide_rule": "",
+      "guide_section": ""
+    },
+    {
+      "id": "QL-002",
+      "category": "formatting",
+      "severity": "critical",
+      "message": "Front matter key `thumbnail` changed or is missing.",
+      "segment_id": "",
+      "source_span": "/blog/assets/openenv/thumbnail3.png",
+      "target_span": "/blog/assets/openenv/thumbnail_expansion.png",
+      "suggested_fix": "Preserve front matter `thumbnail` exactly.",
+      "reason": "",
+      "guide_rule": "",
+      "guide_section": ""
+    },
+    {
+      "id": "QL-003",
+      "category": "formatting",
+      "severity": "critical",
+      "message": "link target mismatch.",
+      "segment_id": "",
+      "source_span": "https://github.com/huggingface/OpenEnv/pull/794, https://github.com/huggingface/OpenEnv/pull/795",
+      "target_span": "https://github.com/huggingface/OpenEnv/pull/727, https://github.com/huggingface/OpenEnv/pull/731",
+      "suggested_fix": "Preserve source link target exactly.",
+      "reason": "Hard gate exact-match validator failed: missing=['https://github.com/huggingface/OpenEnv/pull/794', 'https://github.com/huggingface/OpenEnv/pull/795']; extra=['https://github.com/huggingface/OpenEnv/pull/727', 'https://github.com/huggingface/OpenEnv/pull/731']",
+      "guide_rule": "",
+      "guide_section": ""
+    },
+    {
+      "id": "QL-004",
+      "category": "technical",
+      "severity": "major",
+      "message": "number/unit token mismatch.",
+      "segment_id": "",
+      "source_span": "",
+      "target_span": "1",
+      "suggested_fix": "Preserve source number/unit token exactly.",
+      "reason": "Review gate exact-match validator failed: extra=['1']",
+      "guide_rule": "",
+      "guide_section": ""
+    },
+    {
+      "id": "QL-005",
+      "category": "terminology",
+      "severity": "minor",
+      "message": "First-mention glossary policy was not satisfied.",
+      "segment_id": "",
+      "source_span": "Hub",
+      "target_span": "Hugging Face Hub",
+      "suggested_fix": "Use `Hugging Face Hub` on first mention or preserve `Hub`.",
+      "reason": "Glossary policy allows preservation or first-mention form.",
+      "guide_rule": "",
+      "guide_section": ""
+    },
+    {
+      "id": "QL-006",
+      "category": "terminology",
+      "severity": "major",
+      "message": "Product or library name was not preserved.",
+      "segment_id": "",
+      "source_span": "Datasets",
+      "target_span": "",
+      "suggested_fix": "Preserve `Datasets` exactly.",
+      "reason": "Glossary policy requires preserving this product/library/model term.",
+      "guide_rule": "",
+      "guide_section": ""
+    },
+    {
+      "id": "QL-007",
+      "category": "fluency",
+      "severity": "minor",
+      "message": "Translationese expression found.",
+      "segment_id": "",
+      "source_span": "",
+      "target_span": "에 의해",
+      "suggested_fix": "Rewrite the sentence in natural Korean.",
+      "reason": "The style guide lists this expression as translationese to avoid.",
+      "guide_rule": "translationese",
+      "guide_section": "17. 번역투를 줄입니다"
+    },
+    {
+      "id": "QL-008",
+      "category": "accuracy",
+      "severity": "major",
+      "message": "Modal or certainty strength may have changed.",
+      "segment_id": "p_003",
+      "source_span": "can",
+      "target_span": "OpenEnv는 터미널, 브라우저 또는 에이전트가 상호작용할 수 있는 그 밖의 실행 환경처럼 에이전트형 실행 환경을 만드는 도구입니다. 그리고 오늘, OpenEnv가 더 개방적으로 바뀌어 에이전트를 학습하는 미래를 오픈 소스로 만들게 되었음을 발표하게 되어 기쁩니다.",
+      "suggested_fix": "Preserve the strength of `can` using: 수 있습니다.",
+      "reason": "The style guide requires preserving may/can/should/must/up to/in some cases/not always strength.",
+      "guide_rule": "modal_strength",
+      "guide_section": "4. 의미·조건·확신의 강도는 절대 바꾸지 않습니다"
+    },
+    {
+      "id": "QL-009",
+      "category": "accuracy",
+      "severity": "major",
+      "message": "Modal or certainty strength may have changed.",
+      "segment_id": "p_010",
+      "source_span": "can",
+      "target_span": "프런티어 연구소들은 모델과 하네스가 대체로 손발이 맞게 함께 작동하도록 학습합니다. 모델은 하네스를 사용하도록 학습되며 그 특성에 맞게 최적화됩니다. 모델은 이 하네스들 너머로 다소 일반화될 수 있지만, 학습의 효율성을 능가하는 것은 아무것도 없습니다.",
+      "suggested_fix": "Preserve the strength of `can` using: 수 있습니다.",
+      "reason": "The style guide requires preserving may/can/should/must/up to/in some cases/not always strength.",
+      "guide_rule": "modal_strength",
+      "guide_section": "4. 의미·조건·확신의 강도는 절대 바꾸지 않습니다"
+    },
+    {
+      "id": "QL-010",
+      "category": "accuracy",
+      "severity": "major",
+      "message": "Modal or certainty strength may have changed.",
+      "segment_id": "p_016",
+      "source_span": "can",
+      "target_span": "최근 릴리스에서 OpenEnv는 **RL 환경 간 상호 운용성 계층**이 되었습니다. 그것의 역할은 환경이 게시되고 배포되며 에이전트에 의해 소비되는 방식을 표준화하는 것입니다. 보상 정의나 학습 루프가 어떻게 작동하는지를 지시하지는 않습니다. 보상 정의, 채점 기준, 트레이너별 로직은 이에 특화된 라이브러리에 속합니다. OpenEnv는 모두가 연결할 수 있는 공통 소켓입니다.",
+      "suggested_fix": "Preserve the strength of `can` using: 수 있습니다.",
+      "reason": "The style guide requires preserving may/can/should/must/up to/in some cases/not always strength.",
+      "guide_rule": "modal_strength",
+      "guide_section": "4. 의미·조건·확신의 강도는 절대 바꾸지 않습니다"
+    },
+    {
+      "id": "QL-011",
+      "category": "accuracy",
+      "severity": "major",
+      "message": "Modal or certainty strength may have changed.",
+      "segment_id": "p_019",
+      "source_span": "can",
+      "target_span": "익숙한 프로토콜과 표준 패키징. 환경은 HTTP와 WebSocket 같은 표준 프로토콜로 서비스되며 Docker로 패키징됩니다. MCP는 1급 시민으로서, OpenEnv 환경은 MCP 서버와 즉시 호환되며 동일한 환경이 시뮬레이션(훈련/평가)과 생산 모드에서 일관되게 동작합니다.",
+      "suggested_fix": "Preserve the strength of `can` using: 수 있습니다.",
+      "reason": "The style guide requires preserving may/can/should/must/up to/in some cases/not always strength.",
+      "guide_rule": "modal_strength",
+      "guide_section": "4. 의미·조건·확신의 강도는 절대 바꾸지 않습니다"
+    },
+    {
+      "id": "QL-012",
+      "category": "fluency",
+      "severity": "minor",
+      "message": "Image alt text appears untranslated.",
+      "segment_id": "",
+      "source_span": "Thumbnail for the blog post",
+      "target_span": "Thumbnail for the blog post",
+      "suggested_fix": "Translate image alt text while preserving the image path.",
+      "reason": "The style guide requires translating image alt text and captions.",
+      "guide_rule": "alt_text_caption",
+      "guide_section": "20.5 이미지 캡션과 alt text도 번역합니다"
+    },
+    {
+      "id": "QL-013",
+      "category": "fluency",
+      "severity": "minor",
+      "message": "Image alt text appears untranslated.",
+      "segment_id": "",
+      "source_span": "the open source reinforcement learning ecosystem",
+      "target_span": "the open source reinforcement learning ecosystem",
+      "suggested_fix": "Translate image alt text while preserving the image path.",
+      "reason": "The style guide requires translating image alt text and captions.",
+      "guide_rule": "alt_text_caption",
+      "guide_section": "20.5 이미지 캡션과 alt text도 번역합니다"
+    },
+    {
+      "id": "QL-014",
+      "category": "fluency",
+      "severity": "minor",
+      "message": "Link text appears untranslated.",
+      "segment_id": "",
+      "source_span": "github.com/huggingface/OpenEnv",
+      "target_span": "github.com/huggingface/OpenEnv",
+      "suggested_fix": "Translate link text while preserving the URL target.",
+      "reason": "The style guide requires translating link text while preserving the link target.",
+      "guide_rule": "link_text_translation",
+      "guide_section": "14. 링크: 텍스트는 번역하고 target은 유지합니다"
+    },
+    {
+      "id": "QL-015",
+      "category": "fluency",
+      "severity": "minor",
+      "message": "Link text appears untranslated.",
+      "segment_id": "",
+      "source_span": "RFC 006",
+      "target_span": "",
+      "suggested_fix": "Translate link text while preserving the URL target.",
+      "reason": "The style guide requires translating link text while preserving the link target.",
+      "guide_rule": "link_text_translation",
+      "guide_section": "14. 링크: 텍스트는 번역하고 target은 유지합니다"
+    },
+    {
+      "id": "QL-016",
+      "category": "fluency",
+      "severity": "minor",
+      "message": "Link text appears untranslated.",
+      "segment_id": "",
+      "source_span": "RFC 007",
+      "target_span": "",
+      "suggested_fix": "Translate link text while preserving the URL target.",
+      "reason": "The style guide requires translating link text while preserving the link target.",
+      "guide_rule": "link_text_translation",
+      "guide_section": "14. 링크: 텍스트는 번역하고 target은 유지합니다"
+    },
+    {
+      "id": "QL-017",
+      "category": "fluency",
+      "severity": "minor",
+      "message": "Link text appears untranslated.",
+      "segment_id": "",
+      "source_span": "RFC 008",
+      "target_span": "RFC 008",
+      "suggested_fix": "Translate link text while preserving the URL target.",
+      "reason": "The style guide requires translating link text while preserving the link target.",
+      "guide_rule": "link_text_translation",
+      "guide_section": "14. 링크: 텍스트는 번역하고 target은 유지합니다"
+    }
+  ],
+  "segments": {
+    "source": [
+      {
+        "id": "h_001",
+        "kind": "heading",
+        "text": "The Open Source Community is backing OpenEnv for Agentic RL",
+        "hash": "ecf57f431d70e9eedc9bf5ca957bf1137ba8d87a91ef61e86b6ac4cd1610bc83",
+        "path": "heading:3"
+      },
+      {
+        "id": "p_002",
+        "kind": "paragraph",
+        "text": "Thumbnail for the blog post",
+        "hash": "7aa4b2f3a80f228e400ccae4d70818c8530a83f26aa4ea458d21f8342dd53d3a",
+        "path": "paragraph:5"
+      },
+      {
+        "id": "p_003",
+        "kind": "paragraph",
+        "text": "OpenEnv is a tool for creating an agentic execution environment like terminals, browsers, or anything an agent can interact with. And today, we’re excited to announce that OpenEnv is becoming even more open, to make the future of training agents open source.",
+        "hash": "19e5b25979d7294b05552f96f34ea4106a1b3a552d726bd4fa2f0de4f83d9a7d",
+        "path": "paragraph:7"
+      },
+      {
+        "id": "p_004",
+        "kind": "paragraph",
+        "text": "Starting today, OpenEnv will be coordinated by a committee that so far includes Meta-PyTorch, Reflection, Unsloth, Modal, Prime Intellect, Nvidia, Mercor, Fleet AI, Microsoft, Hugging Face, and RadixArk. OpenEnv now lives at huggingface/OpenEnv",
+        "hash": "34e69d6ac213a1369734f683be2994611752272186243ca6a0351d57775dadfe",
+        "path": "paragraph:9"
+      },
+      {
+        "id": "p_005",
+        "kind": "paragraph",
+        "text": "OpenEnv project is supported and adopted by some of the leading organizations in the AI ecosystem, including PyTorch Foundation, vLLM, SkyRL (UCB), Lightning AI, Axolotl AI, Stanford Scaling Intelligence Lab, Mithril, OpenMined, Scaler AI Labs, Scale AI, Patronus AI, Surge AI, Halluminate, Turing, Scorecard, Snorkel AI, SGLang, and Miles.",
+        "hash": "58faf29c0b0be122d1182875dd43eb4bbfce016ab70f1223d3a4c5ba5fe8816c",
+        "path": "paragraph:11"
+      },
+      {
+        "id": "h_006",
+        "kind": "heading",
+        "text": "Why we need OpenEnv to train open source agents",
+        "hash": "2ac74169a9eb07f81e47810afe1f5c29e4bc17f64b59886b0b303c7c08a08f8b",
+        "path": "heading:13"
+      },
+      {
+        "id": "p_007",
+        "kind": "paragraph",
+        "text": "Agent harnesses like Claude Code, Codex, OpenClaw, and Hermes just keep improving. One reason for their improvement is that models like GPT-5.5 and Opus 4.8 are trained to use their respective harnesses.",
+        "hash": "736395276fbd298453a4d6af9e7d8b80c63ed781c05bc7e2844cbce93b566f94",
+        "path": "paragraph:15"
+      },
+      {
+        "id": "p_008",
+        "kind": "paragraph",
+        "text": "We want those gains with open source models too: training local models that use harnesses effectively, and saving compute by specializing models for specific tasks.",
+        "hash": "af84a1fc9304065f3fd0993f24a613bb9cc262f2dd7a621654e7cbc908fa0685",
+        "path": "paragraph:17"
+      },
+      {
+        "id": "h_009",
+        "kind": "heading",
+        "text": "Why we need to be (even) more open",
+        "hash": "9a3d9877e1b17c20e75dc506db2161386c011e474fa889910b65b54feac02adb",
+        "path": "heading:19"
+      },
+      {
+        "id": "p_010",
+        "kind": "paragraph",
+        "text": "Frontier labs train models and harnesses that, for the most part, work like hand in glove. The model is trained to use the harness and optimised for its characteristics. Models can generalise beyond these harnesses, to some extent, but nothing beats the efficiency of training.",
+        "hash": "7df06a4901db9bca00f161b1b90fe4f05cb93c6098bc6d2333dac418fb287bd8",
+        "path": "paragraph:21"
+      },
+      {
+        "id": "p_011",
+        "kind": "paragraph",
+        "text": "the open source reinforcement learning ecosystem",
+        "hash": "231d29b32abdc1ec087d8db53593f98c9237d8c8c40e97d7559408bf3ad08eae",
+        "path": "paragraph:23"
+      },
+      {
+        "id": "p_012",
+        "kind": "paragraph",
+        "text": "In the open, this isn’t the case. Developers use any harness, any model, any inference engine, on whatever use case they value. This is fundamental to the community, but it’s also a challenge that requires infrastructure and tooling to tackle.",
+        "hash": "e29d3868dbccd4956abd0c1cce01316b6c8a396a1aa99465a1b244945b4c5f2f",
+        "path": "paragraph:25"
+      },
+      {
+        "id": "p_013",
+        "kind": "paragraph",
+        "text": "That’s where OpenEnv comes in. It’s a library to interface between harness, environment, and trainer, which works on any model. For this to stick, it will need to be owned by all the major stakeholders.",
+        "hash": "a0a2056837ed49a214ea066fa642e7c390b1bd5b688aa7719bed29dc61ce84ee",
+        "path": "paragraph:27"
+      },
+      {
+        "id": "h_014",
+        "kind": "heading",
+        "text": "A protocol layer, not a reward framework",
+        "hash": "d6cc4d7091a3dedc0d781710e1edbda4a5531db39797cbf943b8c6582f1a7e67",
+        "path": "heading:29"
+      },
+      {
+        "id": "p_015",
+        "kind": "paragraph",
+        "text": "Alongside the governance change, we're tightening what OpenEnv *is*.",
+        "hash": "ddc2190fd6dc3d3771af13eeade78ba75cf0b2ef1a989bb60fb4f7e077d477dd",
+        "path": "paragraph:31"
+      },
+      {
+        "id": "p_016",
+        "kind": "paragraph",
+        "text": "In recent releases, OpenEnv has become an **interoperability layer for RL environments**. Its job is to standardize how environments are published, deployed, and consumed by agents. It will not dictate how rewards are defined or how training loops work. Reward definition, scoring rubrics, and trainer-specific logic belong in the libraries that specialize in them. OpenEnv is the common socket they can all plug into.",
+        "hash": "dc15a1b5c1099a0653ee39512e1932cce41fcf87cadde8ef05f5d48ccca7f1e7",
+        "path": "paragraph:33"
+      },
+      {
+        "id": "p_017",
+        "kind": "paragraph",
+        "text": "In practice this means:",
+        "hash": "9d58eb3bcf5b012d080099831a4118a52be5a6e9c357eceac18ed2d861fa2c8d",
+        "path": "paragraph:35"
+      },
+      {
+        "id": "p_018",
+        "kind": "paragraph",
+        "text": "One interface, many environments which all expose the familiar Gymnasium-style API (reset(), step(), state()) running on a client/server architecture. A trainer that speaks OpenEnv can drive any compliant environment without bespoke code.",
+        "hash": "2fb0bc3eba94dc57f4c01dd7ed44af965c3d697e6451d7c69c49f974946d9eb4",
+        "path": "paragraph:37"
+      },
+      {
+        "id": "p_019",
+        "kind": "paragraph",
+        "text": "Familiar protocols and canonical packaging. Environments are served over standard protocols like HTTP and WebSocket and packaged with Docker. MCP is a first-class citizen, so OpenEnv environments are instantly compatible with MCP servers and the same environment behaves consistently in both simulation (train/eval) and production modes.",
+        "hash": "c74ff3e23a074a09ecb9f91f161b65882283cdb30557bc51fdcec28bbb69a677",
+        "path": "paragraph:39"
+      },
+      {
+        "id": "p_020",
+        "kind": "paragraph",
+        "text": "Interop across env libraries. You can define and consume environments across different ecosystems (verifiers, harbor, and others) and on the infrastructure and hub of your choice. OpenEnv is the deployment and interface layer underneath them, rather than a competitor to them.",
+        "hash": "d2e1ffa02daf7ca6a132825eb22b04549b2d6ac71aa6a5079735f31cc2e87173",
+        "path": "paragraph:41"
+      },
+      {
+        "id": "h_021",
+        "kind": "heading",
+        "text": "What's next",
+        "hash": "eaf380e7f60489b7d687971d73fa8687ed68ef0aa7cc9a38310c146b06538067",
+        "path": "heading:43"
+      },
+      {
+        "id": "p_022",
+        "kind": "paragraph",
+        "text": "Over the coming months we will focus on the things that turn OpenEnv from a fast-growing project into a dependable standard:",
+        "hash": "7c04d235e8252e0f0097af33f6eafe6036550d924c6da99f16191b7407285a6a",
+        "path": "paragraph:45"
+      },
+      {
+        "id": "l_023",
+        "kind": "list_item",
+        "text": "External rewards: letting rewards be defined in whichever library you already use, with OpenEnv as the deployment layer (RFC 006).",
+        "hash": "5c4b7a8df145bdda27d387e794836cf103e0970e3579df29d0dbbdbeb4b36bb9",
+        "path": "list_item:47"
+      },
+      {
+        "id": "l_024",
+        "kind": "list_item",
+        "text": "Tasksets via datasets: wiring environment tasks to Hugging Face datasets so environments and benchmarks compose cleanly (RFC 007).",
+        "hash": "71e10356c34aeffdb06e0b9754ab4cfa27de2c19e5d9dc03180cb9b3ee539ed9",
+        "path": "list_item:48"
+      },
+      {
+        "id": "l_025",
+        "kind": "list_item",
+        "text": "Continued Harness integration: first-class support for agentic harnesses.",
+        "hash": "0dfe71872f3b3e1327234174f535918848796d2c818f4bfcdb81aa2e211ef4cd",
+        "path": "list_item:49"
+      },
+      {
+        "id": "l_026",
+        "kind": "list_item",
+        "text": "End-to-end examples: full training and evaluation walkthroughs in TRL, Unsloth, Miles, and beyond.",
+        "hash": "6e65e129802f745ce95a80e549e730f24e12d82c4fba83435a68cbcabccb7eb6",
+        "path": "list_item:50"
+      },
+      {
+        "id": "l_027",
+        "kind": "list_item",
+        "text": "Auto-validation: measure environment quality and contribution to model learning. This will give the community a scalable way to evaluate their environments and drive up quality (think hackathons!). RFC 008.",
+        "hash": "9bd88087603a68995d9582920d63183c055685f541975f70fe42903c161c380a",
+        "path": "list_item:51"
+      },
+      {
+        "id": "h_028",
+        "kind": "heading",
+        "text": "Get involved",
+        "hash": "2cba40c2541b3e2a0499139957f8bdb81085ec14c6f85ea8d35b509b1cc61c6d",
+        "path": "heading:53"
+      },
+      {
+        "id": "p_029",
+        "kind": "paragraph",
+        "text": "OpenEnv is community-centric by design, and it's still early — expect rough edges, and help us smooth them. Check out the code and RFCs: github.com/huggingface/OpenEnv",
+        "hash": "9a4c625194cda0b82bc855a76798f22601aeaccd65d82aeb4a77a36fe56ccdbf",
+        "path": "paragraph:55"
+      },
+      {
+        "id": "p_030",
+        "kind": "paragraph",
+        "text": "Thanks to everyone who helped make this transition happen. Let's build the common substrate for open-source agentic RL together.",
+        "hash": "a55e7771eb75963e9e796233cdfe19889db1bbe4af4d1e27f280486933d0145a",
+        "path": "paragraph:57"
+      }
+    ],
+    "target": [
+      {
+        "id": "h_001",
+        "kind": "heading",
+        "text": "오픈 소스 커뮤니티는 Agentic RL을 위한 OpenEnv를 뒷받침하고 있습니다",
+        "hash": "55d7815a123cac72db47be433ed8e9d29ac00666fbf14ec7a117fbfe041c7e29",
+        "path": "heading:7"
+      },
+      {
+        "id": "p_002",
+        "kind": "paragraph",
+        "text": "Thumbnail for the blog post",
+        "hash": "7aa4b2f3a80f228e400ccae4d70818c8530a83f26aa4ea458d21f8342dd53d3a",
+        "path": "paragraph:9"
+      },
+      {
+        "id": "p_003",
+        "kind": "paragraph",
+        "text": "OpenEnv는 터미널, 브라우저 또는 에이전트가 상호작용할 수 있는 그 밖의 실행 환경처럼 에이전트형 실행 환경을 만드는 도구입니다. 그리고 오늘, OpenEnv가 더 개방적으로 바뀌어 에이전트를 학습하는 미래를 오픈 소스로 만들게 되었음을 발표하게 되어 기쁩니다.",
+        "hash": "3174fe4e7c0c375e07eb049afffc4e7e884d1a9b55b1821b385c6b3d69d63876",
+        "path": "paragraph:11"
+      },
+      {
+        "id": "p_004",
+        "kind": "paragraph",
+        "text": "Starting today, OpenEnv will be coordinated by a committee that so far includes Meta-PyTorch, Reflection, Unsloth, Modal, Prime Intellect, Nvidia, Mercor, Fleet AI, and Hugging Face. OpenEnv now lives at huggingface/OpenEnv",
+        "hash": "dd5ba83afd3b0a487d98357c16132b3979a70c39e6bd5c65f37f122d368646e0",
+        "path": "paragraph:13"
+      },
+      {
+        "id": "p_005",
+        "kind": "paragraph",
+        "text": "OpenEnv 프로젝트는 AI 생태계의 선두 기관들에 의해 지원되고 채택되고 있습니다. 포함하여 PyTorch Foundation, vLLM, SkyRL (UCB), Lightning AI, Axolotl AI, Stanford Scaling Intelligence Lab, Mithril, OpenMined, Scaler AI Labs, Scale AI, Patronus AI, Surge AI, Halluminate, Turing, Scorecard, 그리고 Snorkel AI.",
+        "hash": "f9a9f7af14d6c2c56cf3a2394991ae65212b642791cb816612d6a6b096d396d2",
+        "path": "paragraph:15"
+      },
+      {
+        "id": "h_006",
+        "kind": "heading",
+        "text": "왜 OpenEnv가 오픈 소스 에이전트를 학습시키는 데 필요한가",
+        "hash": "4189867c6c262ee0b2bfa902d77a8a15af54ae5777eded3066686188907fc224",
+        "path": "heading:17"
+      },
+      {
+        "id": "p_007",
+        "kind": "paragraph",
+        "text": "Claude Code, Codex, OpenClaw, Hermes와 같은 에이전트 하네스는 계속 개선되고 있습니다. 그들의 향상의 한 가지 이유는 GPT-5.5와 Opus 4.8 같은 모델이 각자의 하네스를 사용하도록 학습되었기 때문입니다.",
+        "hash": "e14e1e4907bb652460b69356249d5f013cd7fdbb15d1ae33a501e469e85bf096",
+        "path": "paragraph:19"
+      },
+      {
+        "id": "p_008",
+        "kind": "paragraph",
+        "text": "우리는 이러한 이득을 오픈 소스 모델에서도 얻고자 합니다: 하네스를 효과적으로 사용하는 로컬 모델을 학습하고, 특정 작업에 맞게 모델을 특화시켜 계산 자원을 절약하는 것.",
+        "hash": "ea5f6d4298ad7e233fedbe7665f17667cfd8b9eb45cfbdd1f9ca980eda875b18",
+        "path": "paragraph:21"
+      },
+      {
+        "id": "h_009",
+        "kind": "heading",
+        "text": "왜 우리가 (더) 더 개방적이어야 하는가",
+        "hash": "1a21265b4b2d6862fcc8e3275c7a77812ee761a6cab46a086c09c90a6fbc5072",
+        "path": "heading:23"
+      },
+      {
+        "id": "p_010",
+        "kind": "paragraph",
+        "text": "프런티어 연구소들은 모델과 하네스가 대체로 손발이 맞게 함께 작동하도록 학습합니다. 모델은 하네스를 사용하도록 학습되며 그 특성에 맞게 최적화됩니다. 모델은 이 하네스들 너머로 다소 일반화될 수 있지만, 학습의 효율성을 능가하는 것은 아무것도 없습니다.",
+        "hash": "220992697dc8e8accbc9c2b426732b2884abd2c485f9b0fc4b7b673a2f967123",
+        "path": "paragraph:25"
+      },
+      {
+        "id": "p_011",
+        "kind": "paragraph",
+        "text": "the open source reinforcement learning ecosystem",
+        "hash": "231d29b32abdc1ec087d8db53593f98c9237d8c8c40e97d7559408bf3ad08eae",
+        "path": "paragraph:27"
+      },
+      {
+        "id": "p_012",
+        "kind": "paragraph",
+        "text": "개방된 환경에서는 그렇지 않습니다. 개발자들은 어떤 하네스든, 어떤 모델이든, 어떤 추론 엔진이든, 그들이 가치 있게 여기는 어떤 사용 사례에도 맞춰 사용합니다. 이것은 커뮤니티의 기본 원칙이지만, 이를 해결하려면 인프라와 도구가 필요한 도전 과제이기도 합니다.",
+        "hash": "9eb6320f121456f9dcd0490d84fe4afe0a7331fa3ff33ace0f56b6229bf0a7e6",
+        "path": "paragraph:29"
+      },
+      {
+        "id": "p_013",
+        "kind": "paragraph",
+        "text": "그렇다면 OpenEnv가 등장합니다. 이는 하네스, 환경, 트레이너 간의 인터페이스 역할을 하는 라이브러리로, 어떤 모델에서도 작동합니다. 이것이 자리 잡으려면 주요 이해관계자 모두의 소유가 필요합니다.",
+        "hash": "68ba2a5ae98224049d8ab877a6cb9c721190a1200141d90c828201f83c61f6f8",
+        "path": "paragraph:31"
+      },
+      {
+        "id": "h_014",
+        "kind": "heading",
+        "text": "보상 프레임워크가 아닌 프로토콜 계층",
+        "hash": "0eb2ba78488fe56623d6b05371a7d1d1f0f80232d1b3fe9b5e4bb7a865faed97",
+        "path": "heading:33"
+      },
+      {
+        "id": "p_015",
+        "kind": "paragraph",
+        "text": "거버넌스 변화와 함께 OpenEnv가 무엇인지 더 명확하게 정의하고 있습니다.",
+        "hash": "e59e8f94d018dc0286b8a90ef03c103c7934fcb104f08d757c6c39d875ca8a9e",
+        "path": "paragraph:35"
+      },
+      {
+        "id": "p_016",
+        "kind": "paragraph",
+        "text": "최근 릴리스에서 OpenEnv는 **RL 환경 간 상호 운용성 계층**이 되었습니다. 그것의 역할은 환경이 게시되고 배포되며 에이전트에 의해 소비되는 방식을 표준화하는 것입니다. 보상 정의나 학습 루프가 어떻게 작동하는지를 지시하지는 않습니다. 보상 정의, 채점 기준, 트레이너별 로직은 이에 특화된 라이브러리에 속합니다. OpenEnv는 모두가 연결할 수 있는 공통 소켓입니다.",
+        "hash": "e578b21e1ab173a1c7081439c60c7bb6c0abd50e97cf7cfaa25687ca30a5e0db",
+        "path": "paragraph:37"
+      },
+      {
+        "id": "p_017",
+        "kind": "paragraph",
+        "text": "실제로 이것은 다음을 의미합니다:",
+        "hash": "b87905a303fc90b54494db7be36aa3dc5c940523740e7f8e20dbd472cc855f34",
+        "path": "paragraph:39"
+      },
+      {
+        "id": "p_018",
+        "kind": "paragraph",
+        "text": "하나의 인터페이스로, 모두가 익숙한 Gymnasium 스타일의 API(reset(), step(), state())를 노출하는 여러 환경들이 클라이언트-서버 아키텍처에서 실행됩니다. OpenEnv를 사용하는 트레이너는 맞춤형 코드 없이도 어떤 호환되는 환경이든 구동할 수 있습니다.",
+        "hash": "e00fc994ddb21906f2ea0e93c7a300c86ad9df30b04fa952a4b2cc359d6c6474",
+        "path": "paragraph:41"
+      },
+      {
+        "id": "p_019",
+        "kind": "paragraph",
+        "text": "익숙한 프로토콜과 표준 패키징. 환경은 HTTP와 WebSocket 같은 표준 프로토콜로 서비스되며 Docker로 패키징됩니다. MCP는 1급 시민으로서, OpenEnv 환경은 MCP 서버와 즉시 호환되며 동일한 환경이 시뮬레이션(훈련/평가)과 생산 모드에서 일관되게 동작합니다.",
+        "hash": "b62b0d6449cbf2486dc9ba4b7527fa8d46683ca9902a41aaf58df9d3fe19630d",
+        "path": "paragraph:43"
+      },
+      {
+        "id": "p_020",
+        "kind": "paragraph",
+        "text": "환경 라이브러리 간의 상호 운용성. 서로 다른 생태계(verifiers, Harbor, 및 기타)에서 환경을 정의하고 소비할 수 있으며, 선택한 인프라와 허브에서 실행할 수 있습니다. OpenEnv는 그것들 아래의 배포 및 인터페이스 계층이며, 그들과 경쟁하는 것이 아닙니다.",
+        "hash": "f34a1a2ca554288552e1ccfea5409f414f503cb6027cae8dfc77be41a0c07b3c",
+        "path": "paragraph:45"
+      },
+      {
+        "id": "h_021",
+        "kind": "heading",
+        "text": "다음 단계",
+        "hash": "7ff6390c3baa42126f0e4cfefd0c270806407c290cc453c70c5466d8f9b43be4",
+        "path": "heading:47"
+      },
+      {
+        "id": "p_022",
+        "kind": "paragraph",
+        "text": "향후 몇 달 동안 OpenEnv를 빠르게 성장하는 프로젝트에서 신뢰할 수 있는 표준으로 바꾸는 데 집중할 것입니다:",
+        "hash": "1a93b00423c8589c22bb0e961dff0f9b4e1f4b908f863178cb89615e422c1095",
+        "path": "paragraph:49"
+      },
+      {
+        "id": "l_023",
+        "kind": "list_item",
+        "text": "데이터셋을 통한 태스크셋: 환경 태스크를 허깅페이스 데이터셋과 연결해 환경과 벤치마크가 깔끔하게 구성되도록 합니다 (RFC 006).",
+        "hash": "2d2b93f8817b7ee380dc912db1464fc301c6697838a2a86ffb7e85af0f5e4561",
+        "path": "list_item:51"
+      },
+      {
+        "id": "l_024",
+        "kind": "list_item",
+        "text": "외부 보상: 이미 사용 중인 라이브러리에서 보상을 정의하도록 허용하고, OpenEnv가 배포 계층 역할을 합니다 (RFC 007).",
+        "hash": "d7a4fa50c8e5955b52eb16b21c83a62f5332c9bab9a4c81a6602ac8faa9660c9",
+        "path": "list_item:52"
+      },
+      {
+        "id": "l_025",
+        "kind": "list_item",
+        "text": "지속적인 하네스 통합: 에이전트형 하네스에 대한 일류 지원.",
+        "hash": "b3431ee362d0b8484d58f45fed5ca62fbbba3b5ba17ca64ce5113556826f80a7",
+        "path": "list_item:53"
+      },
+      {
+        "id": "l_026",
+        "kind": "list_item",
+        "text": "엔드투엔드 예제: TRL, Unsloth 및 그 이상에서의 전체 학습 및 평가 워크스루.",
+        "hash": "e973452a317ef4a3481903ec5385778b56c104c7fe3eb27f55bd7252578148d7",
+        "path": "list_item:54"
+      },
+      {
+        "id": "l_027",
+        "kind": "list_item",
+        "text": "자동 검증: 환경 품질과 모델 학습에 대한 기여를 측정합니다. 이것은 커뮤니티가 자신들의 환경을 평가하고 품질을 높이는 확장 가능한 방법을 제공할 것입니다(해커톤을 생각해 보세요!). RFC 008.",
+        "hash": "d043c5e862e9bccbc56858c30e0ed82f10a9f693f7b71494c2d06abd904bef0f",
+        "path": "list_item:55"
+      },
+      {
+        "id": "h_028",
+        "kind": "heading",
+        "text": "참여하기",
+        "hash": "54eb84014799e7b4580490106bf1eb24aed144e8460ec048f33af727c0215faf",
+        "path": "heading:57"
+      },
+      {
+        "id": "p_029",
+        "kind": "paragraph",
+        "text": "OpenEnv는 설계상 커뮤니티 중심이며 아직 초기 단계입니다 — 거칠은 부분이 있을 수 있으니 저희가 다듬을 수 있도록 도와주세요. 코드와 RFC를 확인해 보세요: github.com/huggingface/OpenEnv",
+        "hash": "036c80c27833dc9f046e99bd1633fc43f28b2371fb79eeafcefd3d7e9ac4d144",
+        "path": "paragraph:59"
+      },
+      {
+        "id": "p_030",
+        "kind": "paragraph",
+        "text": "다시 한 번 이번 전환이 가능하게 도와주신 모든 분들께 감사합니다. 함께 오픈 소스 에이전트형 RL을 위한 공통 토대를 만들어 갑시다.",
+        "hash": "9d8e555eabf626e863bfca2eb35908c8f11f95580558f19529fbcdfae5d8f075",
+        "path": "paragraph:61"
+      }
+    ]
+  },
+  "segment_alignment": [
+    {
+      "alignment_id": "a_001",
+      "source_id": "h_001",
+      "target_id": "h_001",
+      "source_hash": "ecf57f431d70e9eedc9bf5ca957bf1137ba8d87a91ef61e86b6ac4cd1610bc83",
+      "target_hash": "55d7815a123cac72db47be433ed8e9d29ac00666fbf14ec7a117fbfe041c7e29",
+      "source_kind": "heading",
+      "target_kind": "heading",
+      "source_text": "The Open Source Community is backing OpenEnv for Agentic RL",
+      "target_text": "오픈 소스 커뮤니티는 Agentic RL을 위한 OpenEnv를 뒷받침하고 있습니다"
+    },
+    {
+      "alignment_id": "a_002",
+      "source_id": "p_002",
+      "target_id": "p_002",
+      "source_hash": "7aa4b2f3a80f228e400ccae4d70818c8530a83f26aa4ea458d21f8342dd53d3a",
+      "target_hash": "7aa4b2f3a80f228e400ccae4d70818c8530a83f26aa4ea458d21f8342dd53d3a",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "Thumbnail for the blog post",
+      "target_text": "Thumbnail for the blog post"
+    },
+    {
+      "alignment_id": "a_003",
+      "source_id": "p_003",
+      "target_id": "p_003",
+      "source_hash": "19e5b25979d7294b05552f96f34ea4106a1b3a552d726bd4fa2f0de4f83d9a7d",
+      "target_hash": "3174fe4e7c0c375e07eb049afffc4e7e884d1a9b55b1821b385c6b3d69d63876",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "OpenEnv is a tool for creating an agentic execution environment like terminals, browsers, or anything an agent can interact with. And today, we’re excited to announce that OpenEnv is becoming even more open, to make the future of training agents open source.",
+      "target_text": "OpenEnv는 터미널, 브라우저 또는 에이전트가 상호작용할 수 있는 그 밖의 실행 환경처럼 에이전트형 실행 환경을 만드는 도구입니다. 그리고 오늘, OpenEnv가 더 개방적으로 바뀌어 에이전트를 학습하는 미래를 오픈 소스로 만들게 되었음을 발표하게 되어 기쁩니다."
+    },
+    {
+      "alignment_id": "a_004",
+      "source_id": "p_004",
+      "target_id": "p_004",
+      "source_hash": "34e69d6ac213a1369734f683be2994611752272186243ca6a0351d57775dadfe",
+      "target_hash": "dd5ba83afd3b0a487d98357c16132b3979a70c39e6bd5c65f37f122d368646e0",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "Starting today, OpenEnv will be coordinated by a committee that so far includes Meta-PyTorch, Reflection, Unsloth, Modal, Prime Intellect, Nvidia, Mercor, Fleet AI, Microsoft, Hugging Face, and RadixArk. OpenEnv now lives at huggingface/OpenEnv",
+      "target_text": "Starting today, OpenEnv will be coordinated by a committee that so far includes Meta-PyTorch, Reflection, Unsloth, Modal, Prime Intellect, Nvidia, Mercor, Fleet AI, and Hugging Face. OpenEnv now lives at huggingface/OpenEnv"
+    },
+    {
+      "alignment_id": "a_005",
+      "source_id": "p_005",
+      "target_id": "p_005",
+      "source_hash": "58faf29c0b0be122d1182875dd43eb4bbfce016ab70f1223d3a4c5ba5fe8816c",
+      "target_hash": "f9a9f7af14d6c2c56cf3a2394991ae65212b642791cb816612d6a6b096d396d2",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "OpenEnv project is supported and adopted by some of the leading organizations in the AI ecosystem, including PyTorch Foundation, vLLM, SkyRL (UCB), Lightning AI, Axolotl AI, Stanford Scaling Intelligence Lab, Mithril, OpenMined, Scaler AI Labs, Scale AI, Patronus AI, Surge AI, Halluminate, Turing, Scorecard, Snorkel AI, SGLang, and Miles.",
+      "target_text": "OpenEnv 프로젝트는 AI 생태계의 선두 기관들에 의해 지원되고 채택되고 있습니다. 포함하여 PyTorch Foundation, vLLM, SkyRL (UCB), Lightning AI, Axolotl AI, Stanford Scaling Intelligence Lab, Mithril, OpenMined, Scaler AI Labs, Scale AI, Patronus AI, Surge AI, Halluminate, Turing, Scorecard, 그리고 Snorkel AI."
+    },
+    {
+      "alignment_id": "a_006",
+      "source_id": "h_006",
+      "target_id": "h_006",
+      "source_hash": "2ac74169a9eb07f81e47810afe1f5c29e4bc17f64b59886b0b303c7c08a08f8b",
+      "target_hash": "4189867c6c262ee0b2bfa902d77a8a15af54ae5777eded3066686188907fc224",
+      "source_kind": "heading",
+      "target_kind": "heading",
+      "source_text": "Why we need OpenEnv to train open source agents",
+      "target_text": "왜 OpenEnv가 오픈 소스 에이전트를 학습시키는 데 필요한가"
+    },
+    {
+      "alignment_id": "a_007",
+      "source_id": "p_007",
+      "target_id": "p_007",
+      "source_hash": "736395276fbd298453a4d6af9e7d8b80c63ed781c05bc7e2844cbce93b566f94",
+      "target_hash": "e14e1e4907bb652460b69356249d5f013cd7fdbb15d1ae33a501e469e85bf096",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "Agent harnesses like Claude Code, Codex, OpenClaw, and Hermes just keep improving. One reason for their improvement is that models like GPT-5.5 and Opus 4.8 are trained to use their respective harnesses.",
+      "target_text": "Claude Code, Codex, OpenClaw, Hermes와 같은 에이전트 하네스는 계속 개선되고 있습니다. 그들의 향상의 한 가지 이유는 GPT-5.5와 Opus 4.8 같은 모델이 각자의 하네스를 사용하도록 학습되었기 때문입니다."
+    },
+    {
+      "alignment_id": "a_008",
+      "source_id": "p_008",
+      "target_id": "p_008",
+      "source_hash": "af84a1fc9304065f3fd0993f24a613bb9cc262f2dd7a621654e7cbc908fa0685",
+      "target_hash": "ea5f6d4298ad7e233fedbe7665f17667cfd8b9eb45cfbdd1f9ca980eda875b18",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "We want those gains with open source models too: training local models that use harnesses effectively, and saving compute by specializing models for specific tasks.",
+      "target_text": "우리는 이러한 이득을 오픈 소스 모델에서도 얻고자 합니다: 하네스를 효과적으로 사용하는 로컬 모델을 학습하고, 특정 작업에 맞게 모델을 특화시켜 계산 자원을 절약하는 것."
+    },
+    {
+      "alignment_id": "a_009",
+      "source_id": "h_009",
+      "target_id": "h_009",
+      "source_hash": "9a3d9877e1b17c20e75dc506db2161386c011e474fa889910b65b54feac02adb",
+      "target_hash": "1a21265b4b2d6862fcc8e3275c7a77812ee761a6cab46a086c09c90a6fbc5072",
+      "source_kind": "heading",
+      "target_kind": "heading",
+      "source_text": "Why we need to be (even) more open",
+      "target_text": "왜 우리가 (더) 더 개방적이어야 하는가"
+    },
+    {
+      "alignment_id": "a_010",
+      "source_id": "p_010",
+      "target_id": "p_010",
+      "source_hash": "7df06a4901db9bca00f161b1b90fe4f05cb93c6098bc6d2333dac418fb287bd8",
+      "target_hash": "220992697dc8e8accbc9c2b426732b2884abd2c485f9b0fc4b7b673a2f967123",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "Frontier labs train models and harnesses that, for the most part, work like hand in glove. The model is trained to use the harness and optimised for its characteristics. Models can generalise beyond these harnesses, to some extent, but nothing beats the efficiency of training.",
+      "target_text": "프런티어 연구소들은 모델과 하네스가 대체로 손발이 맞게 함께 작동하도록 학습합니다. 모델은 하네스를 사용하도록 학습되며 그 특성에 맞게 최적화됩니다. 모델은 이 하네스들 너머로 다소 일반화될 수 있지만, 학습의 효율성을 능가하는 것은 아무것도 없습니다."
+    },
+    {
+      "alignment_id": "a_011",
+      "source_id": "p_011",
+      "target_id": "p_011",
+      "source_hash": "231d29b32abdc1ec087d8db53593f98c9237d8c8c40e97d7559408bf3ad08eae",
+      "target_hash": "231d29b32abdc1ec087d8db53593f98c9237d8c8c40e97d7559408bf3ad08eae",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "the open source reinforcement learning ecosystem",
+      "target_text": "the open source reinforcement learning ecosystem"
+    },
+    {
+      "alignment_id": "a_012",
+      "source_id": "p_012",
+      "target_id": "p_012",
+      "source_hash": "e29d3868dbccd4956abd0c1cce01316b6c8a396a1aa99465a1b244945b4c5f2f",
+      "target_hash": "9eb6320f121456f9dcd0490d84fe4afe0a7331fa3ff33ace0f56b6229bf0a7e6",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "In the open, this isn’t the case. Developers use any harness, any model, any inference engine, on whatever use case they value. This is fundamental to the community, but it’s also a challenge that requires infrastructure and tooling to tackle.",
+      "target_text": "개방된 환경에서는 그렇지 않습니다. 개발자들은 어떤 하네스든, 어떤 모델이든, 어떤 추론 엔진이든, 그들이 가치 있게 여기는 어떤 사용 사례에도 맞춰 사용합니다. 이것은 커뮤니티의 기본 원칙이지만, 이를 해결하려면 인프라와 도구가 필요한 도전 과제이기도 합니다."
+    },
+    {
+      "alignment_id": "a_013",
+      "source_id": "p_013",
+      "target_id": "p_013",
+      "source_hash": "a0a2056837ed49a214ea066fa642e7c390b1bd5b688aa7719bed29dc61ce84ee",
+      "target_hash": "68ba2a5ae98224049d8ab877a6cb9c721190a1200141d90c828201f83c61f6f8",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "That’s where OpenEnv comes in. It’s a library to interface between harness, environment, and trainer, which works on any model. For this to stick, it will need to be owned by all the major stakeholders.",
+      "target_text": "그렇다면 OpenEnv가 등장합니다. 이는 하네스, 환경, 트레이너 간의 인터페이스 역할을 하는 라이브러리로, 어떤 모델에서도 작동합니다. 이것이 자리 잡으려면 주요 이해관계자 모두의 소유가 필요합니다."
+    },
+    {
+      "alignment_id": "a_014",
+      "source_id": "h_014",
+      "target_id": "h_014",
+      "source_hash": "d6cc4d7091a3dedc0d781710e1edbda4a5531db39797cbf943b8c6582f1a7e67",
+      "target_hash": "0eb2ba78488fe56623d6b05371a7d1d1f0f80232d1b3fe9b5e4bb7a865faed97",
+      "source_kind": "heading",
+      "target_kind": "heading",
+      "source_text": "A protocol layer, not a reward framework",
+      "target_text": "보상 프레임워크가 아닌 프로토콜 계층"
+    },
+    {
+      "alignment_id": "a_015",
+      "source_id": "p_015",
+      "target_id": "p_015",
+      "source_hash": "ddc2190fd6dc3d3771af13eeade78ba75cf0b2ef1a989bb60fb4f7e077d477dd",
+      "target_hash": "e59e8f94d018dc0286b8a90ef03c103c7934fcb104f08d757c6c39d875ca8a9e",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "Alongside the governance change, we're tightening what OpenEnv *is*.",
+      "target_text": "거버넌스 변화와 함께 OpenEnv가 무엇인지 더 명확하게 정의하고 있습니다."
+    },
+    {
+      "alignment_id": "a_016",
+      "source_id": "p_016",
+      "target_id": "p_016",
+      "source_hash": "dc15a1b5c1099a0653ee39512e1932cce41fcf87cadde8ef05f5d48ccca7f1e7",
+      "target_hash": "e578b21e1ab173a1c7081439c60c7bb6c0abd50e97cf7cfaa25687ca30a5e0db",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "In recent releases, OpenEnv has become an **interoperability layer for RL environments**. Its job is to standardize how environments are published, deployed, and consumed by agents. It will not dictate how rewards are defined or how training loops work. Reward definition, scoring rubrics, and trainer-specific logic belong in the libraries that specialize in them. OpenEnv is the common socket they can all plug into.",
+      "target_text": "최근 릴리스에서 OpenEnv는 **RL 환경 간 상호 운용성 계층**이 되었습니다. 그것의 역할은 환경이 게시되고 배포되며 에이전트에 의해 소비되는 방식을 표준화하는 것입니다. 보상 정의나 학습 루프가 어떻게 작동하는지를 지시하지는 않습니다. 보상 정의, 채점 기준, 트레이너별 로직은 이에 특화된 라이브러리에 속합니다. OpenEnv는 모두가 연결할 수 있는 공통 소켓입니다."
+    },
+    {
+      "alignment_id": "a_017",
+      "source_id": "p_017",
+      "target_id": "p_017",
+      "source_hash": "9d58eb3bcf5b012d080099831a4118a52be5a6e9c357eceac18ed2d861fa2c8d",
+      "target_hash": "b87905a303fc90b54494db7be36aa3dc5c940523740e7f8e20dbd472cc855f34",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "In practice this means:",
+      "target_text": "실제로 이것은 다음을 의미합니다:"
+    },
+    {
+      "alignment_id": "a_018",
+      "source_id": "p_018",
+      "target_id": "p_018",
+      "source_hash": "2fb0bc3eba94dc57f4c01dd7ed44af965c3d697e6451d7c69c49f974946d9eb4",
+      "target_hash": "e00fc994ddb21906f2ea0e93c7a300c86ad9df30b04fa952a4b2cc359d6c6474",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "One interface, many environments which all expose the familiar Gymnasium-style API (reset(), step(), state()) running on a client/server architecture. A trainer that speaks OpenEnv can drive any compliant environment without bespoke code.",
+      "target_text": "하나의 인터페이스로, 모두가 익숙한 Gymnasium 스타일의 API(reset(), step(), state())를 노출하는 여러 환경들이 클라이언트-서버 아키텍처에서 실행됩니다. OpenEnv를 사용하는 트레이너는 맞춤형 코드 없이도 어떤 호환되는 환경이든 구동할 수 있습니다."
+    },
+    {
+      "alignment_id": "a_019",
+      "source_id": "p_019",
+      "target_id": "p_019",
+      "source_hash": "c74ff3e23a074a09ecb9f91f161b65882283cdb30557bc51fdcec28bbb69a677",
+      "target_hash": "b62b0d6449cbf2486dc9ba4b7527fa8d46683ca9902a41aaf58df9d3fe19630d",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "Familiar protocols and canonical packaging. Environments are served over standard protocols like HTTP and WebSocket and packaged with Docker. MCP is a first-class citizen, so OpenEnv environments are instantly compatible with MCP servers and the same environment behaves consistently in both simulation (train/eval) and production modes.",
+      "target_text": "익숙한 프로토콜과 표준 패키징. 환경은 HTTP와 WebSocket 같은 표준 프로토콜로 서비스되며 Docker로 패키징됩니다. MCP는 1급 시민으로서, OpenEnv 환경은 MCP 서버와 즉시 호환되며 동일한 환경이 시뮬레이션(훈련/평가)과 생산 모드에서 일관되게 동작합니다."
+    },
+    {
+      "alignment_id": "a_020",
+      "source_id": "p_020",
+      "target_id": "p_020",
+      "source_hash": "d2e1ffa02daf7ca6a132825eb22b04549b2d6ac71aa6a5079735f31cc2e87173",
+      "target_hash": "f34a1a2ca554288552e1ccfea5409f414f503cb6027cae8dfc77be41a0c07b3c",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "Interop across env libraries. You can define and consume environments across different ecosystems (verifiers, harbor, and others) and on the infrastructure and hub of your choice. OpenEnv is the deployment and interface layer underneath them, rather than a competitor to them.",
+      "target_text": "환경 라이브러리 간의 상호 운용성. 서로 다른 생태계(verifiers, Harbor, 및 기타)에서 환경을 정의하고 소비할 수 있으며, 선택한 인프라와 허브에서 실행할 수 있습니다. OpenEnv는 그것들 아래의 배포 및 인터페이스 계층이며, 그들과 경쟁하는 것이 아닙니다."
+    },
+    {
+      "alignment_id": "a_021",
+      "source_id": "h_021",
+      "target_id": "h_021",
+      "source_hash": "eaf380e7f60489b7d687971d73fa8687ed68ef0aa7cc9a38310c146b06538067",
+      "target_hash": "7ff6390c3baa42126f0e4cfefd0c270806407c290cc453c70c5466d8f9b43be4",
+      "source_kind": "heading",
+      "target_kind": "heading",
+      "source_text": "What's next",
+      "target_text": "다음 단계"
+    },
+    {
+      "alignment_id": "a_022",
+      "source_id": "p_022",
+      "target_id": "p_022",
+      "source_hash": "7c04d235e8252e0f0097af33f6eafe6036550d924c6da99f16191b7407285a6a",
+      "target_hash": "1a93b00423c8589c22bb0e961dff0f9b4e1f4b908f863178cb89615e422c1095",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "Over the coming months we will focus on the things that turn OpenEnv from a fast-growing project into a dependable standard:",
+      "target_text": "향후 몇 달 동안 OpenEnv를 빠르게 성장하는 프로젝트에서 신뢰할 수 있는 표준으로 바꾸는 데 집중할 것입니다:"
+    },
+    {
+      "alignment_id": "a_023",
+      "source_id": "l_023",
+      "target_id": "l_023",
+      "source_hash": "5c4b7a8df145bdda27d387e794836cf103e0970e3579df29d0dbbdbeb4b36bb9",
+      "target_hash": "2d2b93f8817b7ee380dc912db1464fc301c6697838a2a86ffb7e85af0f5e4561",
+      "source_kind": "list_item",
+      "target_kind": "list_item",
+      "source_text": "External rewards: letting rewards be defined in whichever library you already use, with OpenEnv as the deployment layer (RFC 006).",
+      "target_text": "데이터셋을 통한 태스크셋: 환경 태스크를 허깅페이스 데이터셋과 연결해 환경과 벤치마크가 깔끔하게 구성되도록 합니다 (RFC 006)."
+    },
+    {
+      "alignment_id": "a_024",
+      "source_id": "l_024",
+      "target_id": "l_024",
+      "source_hash": "71e10356c34aeffdb06e0b9754ab4cfa27de2c19e5d9dc03180cb9b3ee539ed9",
+      "target_hash": "d7a4fa50c8e5955b52eb16b21c83a62f5332c9bab9a4c81a6602ac8faa9660c9",
+      "source_kind": "list_item",
+      "target_kind": "list_item",
+      "source_text": "Tasksets via datasets: wiring environment tasks to Hugging Face datasets so environments and benchmarks compose cleanly (RFC 007).",
+      "target_text": "외부 보상: 이미 사용 중인 라이브러리에서 보상을 정의하도록 허용하고, OpenEnv가 배포 계층 역할을 합니다 (RFC 007)."
+    },
+    {
+      "alignment_id": "a_025",
+      "source_id": "l_025",
+      "target_id": "l_025",
+      "source_hash": "0dfe71872f3b3e1327234174f535918848796d2c818f4bfcdb81aa2e211ef4cd",
+      "target_hash": "b3431ee362d0b8484d58f45fed5ca62fbbba3b5ba17ca64ce5113556826f80a7",
+      "source_kind": "list_item",
+      "target_kind": "list_item",
+      "source_text": "Continued Harness integration: first-class support for agentic harnesses.",
+      "target_text": "지속적인 하네스 통합: 에이전트형 하네스에 대한 일류 지원."
+    },
+    {
+      "alignment_id": "a_026",
+      "source_id": "l_026",
+      "target_id": "l_026",
+      "source_hash": "6e65e129802f745ce95a80e549e730f24e12d82c4fba83435a68cbcabccb7eb6",
+      "target_hash": "e973452a317ef4a3481903ec5385778b56c104c7fe3eb27f55bd7252578148d7",
+      "source_kind": "list_item",
+      "target_kind": "list_item",
+      "source_text": "End-to-end examples: full training and evaluation walkthroughs in TRL, Unsloth, Miles, and beyond.",
+      "target_text": "엔드투엔드 예제: TRL, Unsloth 및 그 이상에서의 전체 학습 및 평가 워크스루."
+    },
+    {
+      "alignment_id": "a_027",
+      "source_id": "l_027",
+      "target_id": "l_027",
+      "source_hash": "9bd88087603a68995d9582920d63183c055685f541975f70fe42903c161c380a",
+      "target_hash": "d043c5e862e9bccbc56858c30e0ed82f10a9f693f7b71494c2d06abd904bef0f",
+      "source_kind": "list_item",
+      "target_kind": "list_item",
+      "source_text": "Auto-validation: measure environment quality and contribution to model learning. This will give the community a scalable way to evaluate their environments and drive up quality (think hackathons!). RFC 008.",
+      "target_text": "자동 검증: 환경 품질과 모델 학습에 대한 기여를 측정합니다. 이것은 커뮤니티가 자신들의 환경을 평가하고 품질을 높이는 확장 가능한 방법을 제공할 것입니다(해커톤을 생각해 보세요!). RFC 008."
+    },
+    {
+      "alignment_id": "a_028",
+      "source_id": "h_028",
+      "target_id": "h_028",
+      "source_hash": "2cba40c2541b3e2a0499139957f8bdb81085ec14c6f85ea8d35b509b1cc61c6d",
+      "target_hash": "54eb84014799e7b4580490106bf1eb24aed144e8460ec048f33af727c0215faf",
+      "source_kind": "heading",
+      "target_kind": "heading",
+      "source_text": "Get involved",
+      "target_text": "참여하기"
+    },
+    {
+      "alignment_id": "a_029",
+      "source_id": "p_029",
+      "target_id": "p_029",
+      "source_hash": "9a4c625194cda0b82bc855a76798f22601aeaccd65d82aeb4a77a36fe56ccdbf",
+      "target_hash": "036c80c27833dc9f046e99bd1633fc43f28b2371fb79eeafcefd3d7e9ac4d144",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "OpenEnv is community-centric by design, and it's still early — expect rough edges, and help us smooth them. Check out the code and RFCs: github.com/huggingface/OpenEnv",
+      "target_text": "OpenEnv는 설계상 커뮤니티 중심이며 아직 초기 단계입니다 — 거칠은 부분이 있을 수 있으니 저희가 다듬을 수 있도록 도와주세요. 코드와 RFC를 확인해 보세요: github.com/huggingface/OpenEnv"
+    },
+    {
+      "alignment_id": "a_030",
+      "source_id": "p_030",
+      "target_id": "p_030",
+      "source_hash": "a55e7771eb75963e9e796233cdfe19889db1bbe4af4d1e27f280486933d0145a",
+      "target_hash": "9d8e555eabf626e863bfca2eb35908c8f11f95580558f19529fbcdfae5d8f075",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "Thanks to everyone who helped make this transition happen. Let's build the common substrate for open-source agentic RL together.",
+      "target_text": "다시 한 번 이번 전환이 가능하게 도와주신 모든 분들께 감사합니다. 함께 오픈 소스 에이전트형 RL을 위한 공통 토대를 만들어 갑시다."
+    }
+  ],
+  "metrics": {
+    "summary": {
+      "qe_metric": "heuristic",
+      "qe_enabled": true,
+      "embedding_similarity_enabled": true,
+      "chrf_enabled": false,
+      "segment_count": 30,
+      "cache_hits": 0,
+      "cache_misses": 60,
+      "warnings": [],
+      "qe_average": 0.9427,
+      "qe_min": 0.5859,
+      "embedding_similarity_average": 0.8025,
+      "embedding_similarity_min": 0.2747
+    },
+    "segments": [
+      {
+        "alignment_id": "a_001",
+        "source_id": "h_001",
+        "target_id": "h_001",
+        "qe_score": 0.9611,
+        "embedding_similarity": 0.8684
+      },
+      {
+        "alignment_id": "a_002",
+        "source_id": "p_002",
+        "target_id": "p_002",
+        "qe_score": 1.0,
+        "embedding_similarity": 1.0
+      },
+      {
+        "alignment_id": "a_003",
+        "source_id": "p_003",
+        "target_id": "p_003",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.8237
+      },
+      {
+        "alignment_id": "a_004",
+        "source_id": "p_004",
+        "target_id": "p_004",
+        "qe_score": 0.5859,
+        "embedding_similarity": 0.9916
+      },
+      {
+        "alignment_id": "a_005",
+        "source_id": "p_005",
+        "target_id": "p_005",
+        "qe_score": 0.6926,
+        "embedding_similarity": 0.9654
+      },
+      {
+        "alignment_id": "a_006",
+        "source_id": "h_006",
+        "target_id": "h_006",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.8439
+      },
+      {
+        "alignment_id": "a_007",
+        "source_id": "p_007",
+        "target_id": "p_007",
+        "qe_score": 0.9192,
+        "embedding_similarity": 0.8579
+      },
+      {
+        "alignment_id": "a_008",
+        "source_id": "p_008",
+        "target_id": "p_008",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.8
+      },
+      {
+        "alignment_id": "a_009",
+        "source_id": "h_009",
+        "target_id": "h_009",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.8
+      },
+      {
+        "alignment_id": "a_010",
+        "source_id": "p_010",
+        "target_id": "p_010",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.8
+      },
+      {
+        "alignment_id": "a_011",
+        "source_id": "p_011",
+        "target_id": "p_011",
+        "qe_score": 1.0,
+        "embedding_similarity": 1.0
+      },
+      {
+        "alignment_id": "a_012",
+        "source_id": "p_012",
+        "target_id": "p_012",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.8
+      },
+      {
+        "alignment_id": "a_013",
+        "source_id": "p_013",
+        "target_id": "p_013",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.808
+      },
+      {
+        "alignment_id": "a_014",
+        "source_id": "h_014",
+        "target_id": "h_014",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.8
+      },
+      {
+        "alignment_id": "a_015",
+        "source_id": "p_015",
+        "target_id": "p_015",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.8227
+      },
+      {
+        "alignment_id": "a_016",
+        "source_id": "p_016",
+        "target_id": "p_016",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.8153
+      },
+      {
+        "alignment_id": "a_017",
+        "source_id": "p_017",
+        "target_id": "p_017",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.8
+      },
+      {
+        "alignment_id": "a_018",
+        "source_id": "p_018",
+        "target_id": "p_018",
+        "qe_score": 0.6517,
+        "embedding_similarity": 0.2952
+      },
+      {
+        "alignment_id": "a_019",
+        "source_id": "p_019",
+        "target_id": "p_019",
+        "qe_score": 0.6781,
+        "embedding_similarity": 0.2747
+      },
+      {
+        "alignment_id": "a_020",
+        "source_id": "p_020",
+        "target_id": "p_020",
+        "qe_score": 0.98,
+        "embedding_similarity": 0.8204
+      },
+      {
+        "alignment_id": "a_021",
+        "source_id": "h_021",
+        "target_id": "h_021",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.8
+      },
+      {
+        "alignment_id": "a_022",
+        "source_id": "p_022",
+        "target_id": "p_022",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.8144
+      },
+      {
+        "alignment_id": "a_023",
+        "source_id": "l_023",
+        "target_id": "l_023",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.8165
+      },
+      {
+        "alignment_id": "a_024",
+        "source_id": "l_024",
+        "target_id": "l_024",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.8184
+      },
+      {
+        "alignment_id": "a_025",
+        "source_id": "l_025",
+        "target_id": "l_025",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.8
+      },
+      {
+        "alignment_id": "a_026",
+        "source_id": "l_026",
+        "target_id": "l_026",
+        "qe_score": 0.9708,
+        "embedding_similarity": 0.8321
+      },
+      {
+        "alignment_id": "a_027",
+        "source_id": "l_027",
+        "target_id": "l_027",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.8111
+      },
+      {
+        "alignment_id": "a_028",
+        "source_id": "h_028",
+        "target_id": "h_028",
+        "qe_score": 0.8833,
+        "embedding_similarity": 0.7352
+      },
+      {
+        "alignment_id": "a_029",
+        "source_id": "p_029",
+        "target_id": "p_029",
+        "qe_score": 0.958,
+        "embedding_similarity": 0.8585
+      },
+      {
+        "alignment_id": "a_030",
+        "source_id": "p_030",
+        "target_id": "p_030",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.802
+      }
+    ]
+  },
+  "style_guide": {
+    "enabled": true,
+    "style_score": 60.0,
+    "issue_count": 11,
+    "rules": {
+      "alt_text_caption": 2,
+      "link_text_translation": 4,
+      "modal_strength": 4,
+      "translationese": 1
+    }
+  },
+  "metadata": {
+    "target_path": "/private/tmp/hf-harness-eval/target-files/pr-142/_posts/2026-06-08-openenv-agentic-rl.md",
+    "source_path": "https://raw.githubusercontent.com/huggingface/blog/main/openenv-agentic-rl.md",
+    "source_format": "url_markdown",
+    "source_hash": "9edb9d85b578d800af03b4633310ad8158aacbb9ac5f0744b7a21e20c7984650",
+    "expected_source_hash": "",
+    "target_hash": "936fedc6f7d6ce337a67103a34c9b55dce7fa97e164f71d8331ae08882d223c9",
+    "source_available": true,
+    "source_changed": false,
+    "source_segment_count": 30,
+    "target_segment_count": 30,
+    "aligned_segment_count": 30,
+    "target_source_length_ratio": 0.6097297297297297,
+    "glossary_entry_count": 38,
+    "translation_memory_entry_count": 0,
+    "translation_memory_match_count": 0,
+    "qe_metric": "heuristic",
+    "metric_cache_path": "/Users/harheem/hf-workflow/skills/quality/reports/workflow-harness-sample-results-2026-07-06/pr-142/metric-cache.json",
+    "reference_path": "",
+    "style_guide_path": "/Users/harheem/hf-workflow/skills/quality/style/hf-blog-ko-translation-guide.md",
+    "style_policy_path": "/Users/harheem/hf-workflow/skills/quality/configs/style_policy.yml",
+    "style_policy_version": 1,
+    "tool": "translation_quality_harness",
+    "tool_version": "0.5.0"
+  }
+}

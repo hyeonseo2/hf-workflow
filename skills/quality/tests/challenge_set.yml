@@ -44,3 +44,23 @@ fixtures:
     expected_status: review_required
     expected_categories:
       - accuracy
+  - id: bad_style_guide
+    source: fixtures/translation_quality_harness/style_source.md
+    target: fixtures/translation_quality_harness/style_target_bad.md
+    expected_status: review_required
+    expected_categories:
+      - accuracy
+      - style_locale
+      - fluency
+      - terminology
+    expected_guide_rules:
+      - modal_strength
+      - overstatement
+      - translationese
+      - emoji_delta
+      - list_consistency
+      - title_quality
+      - alt_text_caption
+      - link_text_translation
+      - first_mention_bilingual
+      - information_addition

@@ -4,7 +4,7 @@ import json
 import hashlib
 from pathlib import Path
 
-from tools.translation_quality_harness import MetricConfig, build_report, main
+from tools.translation_quality_harness import MetricConfig, build_report, main, markdown_doc, normalized_numbers
 
 
 FIXTURES = Path(__file__).parent / "fixtures" / "translation_quality_harness"
@@ -79,13 +79,82 @@ def test_harness_rejects_code_mutation(tmp_path: Path) -> None:
     assert "technical" in categories
 
 
-def test_harness_rejects_number_mutation(tmp_path: Path) -> None:
-    manifest = manifest_for(tmp_path, "target_bad_number.md")
+def test_harness_routes_number_mutation_to_review(tmp_path: Path) -> None:
+    source = tmp_path / "source.md"
+    target = tmp_path / "target.md"
+    manifest = tmp_path / "manifest.yaml"
+    source.write_text(
+        """---
+title: "Number Review"
+---
 
-    report = build_report(manifest, FIXTURES, source_path=FIXTURES / "source.md")
+# Number Review
 
-    assert report["status"] == "reject"
-    assert any("number/unit token" in issue["message"] for issue in report["hard_failures"])
+The model has 3 layers and 20 checkpoints.
+""",
+        encoding="utf-8",
+    )
+    target.write_text(
+        """---
+title: "숫자 리뷰"
+---
+
+# 숫자 리뷰
+
+이 모델에는 4개의 레이어와 20개의 체크포인트가 있습니다.
+""",
+        encoding="utf-8",
+    )
+    manifest.write_text(
+        """version: 1
+source:
+  url: https://huggingface.co/blog/number-review
+  title: Number Review
+translation:
+  file_path: target.md
+""",
+        encoding="utf-8",
+    )
+
+    report = build_report(manifest, tmp_path, source_path=source)
+
+    assert report["status"] == "review_required"
+    assert any("number/unit token" in issue["message"] for issue in report["issues"])
+    assert not any("number/unit token" in issue["message"] for issue in report["hard_failures"])
+
+
+def test_number_extraction_does_not_fold_next_word_into_unit() -> None:
+    text = "56 Skill runs, 14 simulated rooms, 200 benchmarks, Step 2 should pass, 45s, 65B, 30%"
+
+    assert normalized_numbers(text) == ["56", "14", "200", "2", "45s", "65B", "30%"]
+
+
+def test_markdown_doc_numbers_ignore_links_code_and_html_attributes() -> None:
+    doc = markdown_doc(
+        """
+[paper](https://arxiv.org/abs/2602.04998)
+<div style="font-size: 1.1rem; padding: 1.5rem">Shown 30%</div>
+`dev0`
+"""
+    )
+
+    assert doc.link_targets == ["https://arxiv.org/abs/2602.04998"]
+    assert doc.urls == []
+    assert doc.numbers == ["30%"]
+
+
+def test_markdown_doc_ignores_placeholder_markers_inside_code_blocks() -> None:
+    doc = markdown_doc(
+        """
+```python
+payload = {"extra_body": {"enable_thinking": False}}
+```
+
+This prose still has {{ unresolved marker.
+"""
+    )
+
+    assert doc.todo_markers == ["{{"]
 
 
 def test_harness_rejects_link_and_image_mutation(tmp_path: Path) -> None:
@@ -105,7 +174,9 @@ def test_harness_rejects_frontmatter_mutation(tmp_path: Path) -> None:
     report = build_report(manifest, FIXTURES, source_path=FIXTURES / "source.md")
 
     assert report["status"] == "reject"
-    assert any("Front matter key `authors`" in issue["message"] for issue in report["hard_failures"])
+    assert any("Front matter key `authors`" in issue["message"] for issue in report["issues"])
+    assert not any("Front matter key `authors`" in issue["message"] for issue in report["hard_failures"])
+    assert any("Front matter key `thumbnail`" in issue["message"] for issue in report["hard_failures"])
 
 
 def test_harness_rejects_table_and_latex_mutation(tmp_path: Path) -> None:
@@ -147,7 +218,7 @@ def test_cli_writes_markdown_and_json_reports(tmp_path: Path) -> None:
 
 
 def test_cli_fail_on_reject_returns_nonzero(tmp_path: Path) -> None:
-    manifest = manifest_for(tmp_path, "target_bad_number.md")
+    manifest = manifest_for(tmp_path, "target_bad_code.md")
 
     exit_code = main(
         [
@@ -218,6 +289,29 @@ def test_harness_accepts_matching_manifest_source_hash(tmp_path: Path) -> None:
 
     assert report["status"] == "auto_pass"
     assert report["metadata"]["source_changed"] is False
+
+
+def test_harness_fetches_source_url_when_source_file_is_absent(tmp_path: Path) -> None:
+    source_url = (FIXTURES / "source.md").resolve().as_uri()
+    manifest = tmp_path / "manifest.yaml"
+    manifest.write_text(
+        f"""version: 1
+source:
+  url: {source_url}
+  title: Testing Hugging Face Spaces
+translation:
+  file_path: target_good.md
+""",
+        encoding="utf-8",
+    )
+
+    report = build_report(manifest, FIXTURES)
+
+    assert report["status"] == "auto_pass"
+    assert report["metadata"]["source_available"] is True
+    assert report["metadata"]["source_format"] == "url_markdown"
+    assert report["metadata"]["source_path"] == source_url
+    assert report["segment_alignment"]
 
 
 def test_cli_writes_segment_jsonl_and_reads_translation_memory(tmp_path: Path) -> None:
@@ -362,3 +456,110 @@ def test_cometkiwi_wrapper_falls_back_without_breaking_deterministic_gates(tmp_p
     assert report["metrics"]["summary"]["qe_metric"] == "cometkiwi"
     assert "qe_average" in report["metrics"]["summary"]
     assert report["metrics"]["summary"]["warnings"]
+
+
+def style_manifest_for(tmp_path: Path, target_name: str) -> Path:
+    manifest = tmp_path / "manifest.yaml"
+    manifest.write_text(
+        f"""version: 1
+source:
+  url: https://huggingface.co/blog/style-guide
+  title: A simple guide to fine-tuning
+translation:
+  file_path: {target_name}
+handoff:
+  quality:
+    enabled: true
+    checks:
+      - style_guide
+""",
+        encoding="utf-8",
+    )
+    return manifest
+
+
+def test_style_guide_good_translation_auto_passes(tmp_path: Path) -> None:
+    manifest = style_manifest_for(tmp_path, "style_target_good.md")
+
+    report = build_report(manifest, FIXTURES, source_path=FIXTURES / "style_source.md")
+
+    assert report["status"] == "auto_pass"
+    assert report["style_guide"]["enabled"] is True
+    assert report["style_guide"]["issue_count"] == 0
+    assert report["dimension_scores"]["style_locale"] == 100.0
+    assert report["metadata"]["style_guide_path"].endswith("hf-blog-ko-translation-guide.md")
+    assert report["metadata"]["style_policy_version"] == 1
+
+
+def test_style_guide_bad_translation_reports_guide_rules(tmp_path: Path) -> None:
+    manifest = style_manifest_for(tmp_path, "style_target_bad.md")
+
+    report = build_report(manifest, FIXTURES, source_path=FIXTURES / "style_source.md")
+
+    assert report["status"] == "review_required"
+    assert report["style_guide"]["issue_count"] >= 8
+    assert report["dimension_scores"]["style_locale"] < 100.0
+    rules = {issue["guide_rule"] for issue in report["issues"] if issue["guide_rule"]}
+    assert {
+        "modal_strength",
+        "overstatement",
+        "translationese",
+        "emoji_delta",
+        "list_consistency",
+        "title_quality",
+        "alt_text_caption",
+        "link_text_translation",
+        "first_mention_bilingual",
+        "information_addition",
+    }.issubset(rules)
+    for issue in report["issues"]:
+        if issue["guide_rule"]:
+            assert issue["guide_section"]
+
+
+def test_style_guide_can_be_disabled(tmp_path: Path) -> None:
+    manifest = style_manifest_for(tmp_path, "style_target_bad.md")
+
+    report = build_report(
+        manifest,
+        FIXTURES,
+        source_path=FIXTURES / "style_source.md",
+        metric_config=MetricConfig(enable_style_guide=False),
+    )
+
+    assert report["style_guide"]["enabled"] is False
+    assert all(not issue["guide_rule"] for issue in report["issues"])
+
+
+def test_cli_writes_style_guide_section(tmp_path: Path) -> None:
+    manifest = style_manifest_for(tmp_path, "style_target_bad.md")
+    output_md = tmp_path / "quality-report.md"
+    output_json = tmp_path / "quality-report.json"
+    output_pr_comment = tmp_path / "pr-comment.md"
+
+    exit_code = main(
+        [
+            "--manifest",
+            str(manifest),
+            "--target-root",
+            str(FIXTURES),
+            "--source",
+            str(FIXTURES / "style_source.md"),
+            "--output-md",
+            str(output_md),
+            "--output-json",
+            str(output_json),
+            "--output-pr-comment",
+            str(output_pr_comment),
+        ]
+    )
+
+    assert exit_code == 0
+    markdown = output_md.read_text(encoding="utf-8")
+    assert "## Style Guide" in markdown
+    assert "## Style Guide Findings" in markdown
+    loaded = json.loads(output_json.read_text(encoding="utf-8"))
+    assert loaded["style_guide"]["issue_count"] >= 8
+    pr_comment = output_pr_comment.read_text(encoding="utf-8")
+    assert "Top Style Guide Findings" in pr_comment
+    assert "modal_strength" in pr_comment

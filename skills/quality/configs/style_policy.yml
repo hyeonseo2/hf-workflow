@@ -1,0 +1,105 @@
+version: 1
+
+style_guide:
+  guide_path: skills/quality/style/hf-blog-ko-translation-guide.md
+
+hard_gate_rules:
+  preserve_inline_code: true
+  preserve_link_targets: true
+  preserve_image_paths: true
+  preserve_numbers: true
+  preserve_model_ids: true
+  preserve_table_shape: true
+
+review_rules:
+  modal_strength:
+    source_terms:
+      may:
+        - "수 있습니다"
+        - "일 수 있습니다"
+      can:
+        - "수 있습니다"
+      should:
+        - "좋습니다"
+        - "해야 합니다"
+      must:
+        - "반드시"
+        - "해야 합니다"
+      up to:
+        - "최대"
+      in some cases:
+        - "일부 경우"
+      not always:
+        - "항상"
+        - "것은 아닙니다"
+  overstatement:
+    risky_pairs:
+      can improve:
+        - "개선합니다"
+      may improve:
+        - "개선합니다"
+      promising:
+        - "놀라운"
+        - "압도적인"
+      significant:
+        - "압도적인"
+      production-ready:
+        - "즉시 상용화"
+      up to:
+        - "까지"
+  translationese:
+    discouraged:
+      - "에 의해"
+      - "하는 것에 있어"
+      - "를 가지"
+      - "을 가지"
+      - "사용되어질"
+      - "로 하여금"
+      - "후드 아래"
+      - "박스 밖"
+      - "뛰어들어"
+  title_quality:
+    discouraged:
+      - "완전 정복"
+      - "혁신"
+      - "역대 최고"
+      - "예술의 경지"
+  emoji:
+    forbid_added_emoji: true
+  list_consistency:
+    enabled: true
+  alt_text:
+    require_korean_when_source_english: true
+
+first_mention_terms:
+  fine-tuning:
+    ko: "미세 조정"
+    required_first: "미세 조정(fine-tuning)"
+  checkpoint:
+    ko: "체크포인트"
+    required_first: "체크포인트(checkpoint)"
+  quantization:
+    ko: "양자화"
+    required_first: "양자화(quantization)"
+  alignment:
+    ko: "정렬"
+    required_first: "정렬(alignment)"
+  serving:
+    ko: "서빙"
+    required_first: "서빙(serving)"
+  latency:
+    ko: "지연 시간"
+    required_first: "지연 시간(latency)"
+  throughput:
+    ko: "처리량"
+    required_first: "처리량(throughput)"
+
+style_score:
+  max_penalty:
+    modal_strength: 20
+    overstatement: 20
+    translationese: 10
+    title_quality: 10
+    list_consistency: 5
+    emoji: 5
+    alt_text: 5

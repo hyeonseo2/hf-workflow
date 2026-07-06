@@ -43,3 +43,8 @@ metrics:
   enable_embedding_similarity: true
   enable_chrf: false
   cache_enabled: true
+
+style:
+  enabled: true
+  guide_path: skills/quality/style/hf-blog-ko-translation-guide.md
+  policy_path: skills/quality/configs/style_policy.yml

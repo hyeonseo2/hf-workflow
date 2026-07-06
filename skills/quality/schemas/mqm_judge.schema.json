@@ -12,8 +12,10 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["category", "severity", "source_span", "target_span", "explanation", "suggested_fix"],
+        "required": ["guide_rule", "guide_section", "category", "severity", "source_span", "target_span", "explanation", "suggested_fix"],
         "properties": {
+          "guide_rule": { "type": "string" },
+          "guide_section": { "type": "string" },
           "category": {
             "type": "string",
             "enum": ["accuracy", "terminology", "technical", "fluency", "style_locale", "formatting"]

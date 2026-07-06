@@ -1,0 +1,815 @@
+{
+  "status": "review_required",
+  "quality_score": 94.0,
+  "hard_failures": [],
+  "dimension_scores": {
+    "adequacy": 88.57,
+    "technical_accuracy": 100.0,
+    "completeness": 100.0,
+    "terminology": 80.0,
+    "fluency": 55.0,
+    "publishing_integrity": 100.0,
+    "style_locale": 83.0
+  },
+  "issues": [
+    {
+      "id": "QL-001",
+      "category": "fluency",
+      "severity": "minor",
+      "message": "Translationese expression found.",
+      "segment_id": "",
+      "source_span": "",
+      "target_span": "에 의해",
+      "suggested_fix": "Rewrite the sentence in natural Korean.",
+      "reason": "The style guide lists this expression as translationese to avoid.",
+      "guide_rule": "translationese",
+      "guide_section": "17. 번역투를 줄입니다"
+    },
+    {
+      "id": "QL-002",
+      "category": "accuracy",
+      "severity": "major",
+      "message": "Modal or certainty strength may have changed.",
+      "segment_id": "p_014",
+      "source_span": "can",
+      "target_span": "그 안정성은 특히 롱테일에서 중요합니다. 많은 시스템이 합리적인 중앙값 응답 시간을 제공할 수 있지만, 간헐적으로 발생하는 느린 응답은 대화를 여전히 불안정하게 만듭니다.",
+      "suggested_fix": "Preserve the strength of `can` using: 수 있습니다.",
+      "reason": "The style guide requires preserving may/can/should/must/up to/in some cases/not always strength.",
+      "guide_rule": "modal_strength",
+      "guide_section": "4. 의미·조건·확신의 강도는 절대 바꾸지 않습니다"
+    },
+    {
+      "id": "QL-003",
+      "category": "fluency",
+      "severity": "minor",
+      "message": "Link text appears untranslated.",
+      "segment_id": "",
+      "source_span": "Hugging Face Space",
+      "target_span": "Hugging Face Space",
+      "suggested_fix": "Translate link text while preserving the URL target.",
+      "reason": "The style guide requires translating link text while preserving the link target.",
+      "guide_rule": "link_text_translation",
+      "guide_section": "14. 링크: 텍스트는 번역하고 target은 유지합니다"
+    },
+    {
+      "id": "QL-004",
+      "category": "fluency",
+      "severity": "minor",
+      "message": "Link text appears untranslated.",
+      "segment_id": "",
+      "source_span": "huggingface/speech-to-speech",
+      "target_span": "huggingface/speech-to-speech",
+      "suggested_fix": "Translate link text while preserving the URL target.",
+      "reason": "The style guide requires translating link text while preserving the link target.",
+      "guide_rule": "link_text_translation",
+      "guide_section": "14. 링크: 텍스트는 번역하고 target은 유지합니다"
+    },
+    {
+      "id": "QL-005",
+      "category": "terminology",
+      "severity": "minor",
+      "message": "First mention is missing the recommended bilingual term.",
+      "segment_id": "",
+      "source_span": "latency",
+      "target_span": "지연 시간",
+      "suggested_fix": "Use `지연 시간(latency)` on first mention, then `지연 시간` afterward.",
+      "reason": "The style guide recommends preserving searchability by adding English in parentheses on first mention.",
+      "guide_rule": "first_mention_bilingual",
+      "guide_section": "6. 용어: Glossary, 기존 번역례, 검색성을 함께 봅니다"
+    }
+  ],
+  "segments": {
+    "source": [
+      {
+        "id": "h_001",
+        "kind": "heading",
+        "text": "Hugging Face and Cerebras bring Gemma 4 to real-time voice AI",
+        "hash": "99f6efd89d9f57451d6aaf7c092a8d791f5bd1d90a05073f59280e61ae9682c3",
+        "path": "heading:3"
+      },
+      {
+        "id": "p_002",
+        "kind": "paragraph",
+        "text": "<video controls width=\"100%\"> <source src=\"https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/cerebras-gemma4-voice-ai/s2s-space-demo.mp4\" type=\"video/mp4\"> </video>",
+        "hash": "b245c9eb95d47ed0234d5374172fb38401450d53d7b785ee7533d96e07bfa49b",
+        "path": "paragraph:5"
+      },
+      {
+        "id": "p_003",
+        "kind": "paragraph",
+        "text": "For voice AI, latency is a critical parameter. Developers have made tremendous progress in model quality, but the user experience is still often limited by response times. Hugging Face and Cerebras are changing that experience. Today, we demonstrate what becomes possible when an open, modular voice AI architecture is paired with industry-leading inference speed.",
+        "hash": "f620116a29d6eb7bb926151b7aacb5990a41c4c79e09cea33f11346f501e3426",
+        "path": "paragraph:9"
+      },
+      {
+        "id": "p_004",
+        "kind": "paragraph",
+        "text": "The result is a speech-to-speech experience that feels dramatically more natural. Instead of waiting for an AI to respond, conversations flow with the responsiveness users expect from human interaction.",
+        "hash": "0d3aa1fa956197e95a6f1257b4f6800c28e34d4b76f3b6361d07e47f5926f506",
+        "path": "paragraph:11"
+      },
+      {
+        "id": "p_005",
+        "kind": "paragraph",
+        "text": "<script type=\"module\" src=\"https://gradio.s3-us-west-2.amazonaws.com/5.38.0/gradio.js\"></script>",
+        "hash": "35b0e1c899d21fcc947d97fe3f3048e0e9ec1f171df2f81c7b9999666ea51805",
+        "path": "paragraph:13"
+      },
+      {
+        "id": "p_006",
+        "kind": "paragraph",
+        "text": "<gradio-app theme_mode=\"light\" space=\"smolagents/hf-realtime-voice\"></gradio-app>",
+        "hash": "db3ef2c7e23b58e560b72375d3c2483438a84fc7479613e4e9ac909eac6a1483",
+        "path": "paragraph:15"
+      },
+      {
+        "id": "h_007",
+        "kind": "heading",
+        "text": "Architecture: an Open, Cascaded Speech-to-Speech stack",
+        "hash": "00370f04f2c07d1e89962b8b1b5f361ff23f76d1dbe654b9afcac345b9ad6a6f",
+        "path": "heading:17"
+      },
+      {
+        "id": "p_008",
+        "kind": "paragraph",
+        "text": "The demo is built as a real-time speech-to-speech pipeline. Each part of the system is modular, open, and replaceable, making it easy for developers to adapt the stack for different assistants, robots, products, or research projects.",
+        "hash": "dc24149770d30181b709e8a254711b0037992e12060e781ae9d01a47a5921343",
+        "path": "paragraph:19"
+      },
+      {
+        "id": "p_009",
+        "kind": "paragraph",
+        "text": "This creates a fully open speech-to-speech loop:",
+        "hash": "c32f2cb6c537ce2ce477bbf37956fd04328d4974d63b7ba7c24c9eeea1f8140f",
+        "path": "paragraph:21"
+      },
+      {
+        "id": "p_010",
+        "kind": "paragraph",
+        "text": "The architecture brings together the strength of the open-source AI ecosystem: Cerebras for fast inference, Google DeepMind’s Gemma 4 31B for the language model, and Qwen for text-to-speech. Every layer can be inspected, modified, and extended by the developers",
+        "hash": "39eedbfff2dff45aa64942be2251d3ef806b441f4a9889d679a809a23f0bdcd9",
+        "path": "paragraph:31"
+      },
+      {
+        "id": "h_011",
+        "kind": "heading",
+        "text": "Cerebras and Hugging Face Partnership",
+        "hash": "3005e4c5acf1d54a1e7ddf221237ca12d1d906b4f296dbcee8f6479113801929",
+        "path": "heading:33"
+      },
+      {
+        "id": "p_012",
+        "kind": "paragraph",
+        "text": "Today, some production systems see a reasonable median latency while still experiencing frustrating multi-second delays at the P95. Those delays become even more noticeable when tool calls or multimodal steps require multiple turns.",
+        "hash": "4acc87aacfaf40b195524848b691f5ce5f8578a8a17da422b6f4e37633c908ed",
+        "path": "paragraph:35"
+      },
+      {
+        "id": "p_013",
+        "kind": "paragraph",
+        "text": "Cerebras helps solve one of the most important bottlenecks in the stack: the language-model response time. By making inference dramatically faster and more stable, Cerebras allows the rest of the Hugging Face pipeline to shine.",
+        "hash": "30ccaae922193312ca52410991018e606360a5daa08ca393885f34c268518ef6",
+        "path": "paragraph:37"
+      },
+      {
+        "id": "p_014",
+        "kind": "paragraph",
+        "text": "That stability is especially important at the long tail. Many systems can deliver acceptable median response times, but occasional slow responses still make conversations feel unreliable.",
+        "hash": "b49207ae280130b7f85f90e12be5ce96b6a72be492a08119dfe18f22010e7886",
+        "path": "paragraph:39"
+      },
+      {
+        "id": "h_015",
+        "kind": "heading",
+        "text": "Built for real-world interaction",
+        "hash": "90433a9b4d3447eaf7c38171f05639d89c667263576acd9d5798e5cc5ffacf67",
+        "path": "heading:41"
+      },
+      {
+        "id": "p_016",
+        "kind": "paragraph",
+        "text": "This same Hugging Face speech-to-speech pipeline already powers Reachy Mini robots, with more than 9,000 robots in the wild. For robots, voice assistants, and embodied AI, responsiveness is not a cosmetic improvement. It is what makes the interaction feel alive.",
+        "hash": "8c549f042605c4b14a3e4f5aeb3d861ab67143754e44470d1dc1157723e4277d",
+        "path": "paragraph:43"
+      },
+      {
+        "id": "p_017",
+        "kind": "paragraph",
+        "text": "The motivation to use Cerebras is therefore not simply cost reduction. It is low latency, predictable performance, and the ability to create real-time experiences that feel natural at scale.",
+        "hash": "166cf2412cdcb9d598dec75384c4571dacbf4a7fa16d7198e394a30906dbadb8",
+        "path": "paragraph:45"
+      },
+      {
+        "id": "p_018",
+        "kind": "paragraph",
+        "text": "This collaboration reflects a shared belief that the future of AI will be both open and performant. Open-source models, open infrastructure, and breakthrough inference speed together create a foundation for the next generation of conversational AI.",
+        "hash": "688a2f3f8e41f495eafbbe637ee7c32183ad5951b0bf1a9529d71dcc1178cca7",
+        "path": "paragraph:47"
+      },
+      {
+        "id": "p_019",
+        "kind": "paragraph",
+        "text": "We invite developers to explore the demo, experiment with the code, and help shape what comes next for real-time voice AI.",
+        "hash": "7c70ab2a7d4a4c785e182beed29101a7ba913185cff137037d5444752f9144de",
+        "path": "paragraph:49"
+      },
+      {
+        "id": "p_020",
+        "kind": "paragraph",
+        "text": "Demo: Hugging Face Space",
+        "hash": "104042ce4b9e1c5ad7b3b3d4c6802714d4f8be5eb3c78dd6a1133167ffd426bd",
+        "path": "paragraph:51"
+      },
+      {
+        "id": "p_021",
+        "kind": "paragraph",
+        "text": "Repository: huggingface/speech-to-speech",
+        "hash": "798d6b412ded54cc838b7f501d4ceeac9abcf693a58e33d7a5918ab971eebc19",
+        "path": "paragraph:53"
+      }
+    ],
+    "target": [
+      {
+        "id": "h_001",
+        "kind": "heading",
+        "text": "Hugging Face와 Cerebras가 Gemma 4를 실시간 음성 AI로 선보입니다",
+        "hash": "17872785912601bc36c9f9679ea76a46f2258659b842ede9c36729e81b4fdd7b",
+        "path": "heading:7"
+      },
+      {
+        "id": "p_002",
+        "kind": "paragraph",
+        "text": "<video controls width=\"100%\"> <source src=\"https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/cerebras-gemma4-voice-ai/s2s-space-demo.mp4\" type=\"video/mp4\"> </video>",
+        "hash": "b245c9eb95d47ed0234d5374172fb38401450d53d7b785ee7533d96e07bfa49b",
+        "path": "paragraph:9"
+      },
+      {
+        "id": "p_003",
+        "kind": "paragraph",
+        "text": "음성 AI의 경우 지연은 중요한 매개변수입니다. 개발자들은 모델 품질에서 상당한 진전을 이뤘지만, 사용자 경험은 여전히 응답 시간에 의해 좌우되는 경우가 많습니다. Hugging Face와 Cerebras가 그 경험을 바꾸고 있습니다. 오늘은 개방적이고 모듈형인 음성 AI 아키텍처와 업계 최고 수준의 추론 속도가 결합될 때 가능해지는 것을 시연합니다.",
+        "hash": "b591d914a71762118f1d8def59ecf5504929af34e228520cd594802c75301f5c",
+        "path": "paragraph:13"
+      },
+      {
+        "id": "p_004",
+        "kind": "paragraph",
+        "text": "그 결과는 훨씬 더 자연스럽게 느껴지는 음성-음성 대화 경험입니다. AI의 응답을 기다리는 대신, 대화는 인간 간의 상호작용에서 사용자가 기대하는 반응 속도로 흐릅니다.",
+        "hash": "ed62ff361216f59401a1882a5fd3b957ef00bc4e4fbe3f243e430db04d5ea1a3",
+        "path": "paragraph:15"
+      },
+      {
+        "id": "p_005",
+        "kind": "paragraph",
+        "text": "<script type=\"module\" src=\"https://gradio.s3-us-west-2.amazonaws.com/5.38.0/gradio.js\"></script>",
+        "hash": "35b0e1c899d21fcc947d97fe3f3048e0e9ec1f171df2f81c7b9999666ea51805",
+        "path": "paragraph:17"
+      },
+      {
+        "id": "p_006",
+        "kind": "paragraph",
+        "text": "<gradio-app theme_mode=\"light\" space=\"smolagents/hf-realtime-voice\"></gradio-app>",
+        "hash": "db3ef2c7e23b58e560b72375d3c2483438a84fc7479613e4e9ac909eac6a1483",
+        "path": "paragraph:19"
+      },
+      {
+        "id": "h_007",
+        "kind": "heading",
+        "text": "아키텍처: 개방형 계층형 음성-음성 스택",
+        "hash": "5159b6fe3d9b8293f7947320b8988910525f52995f37e21bd9e20c98e2def452",
+        "path": "heading:21"
+      },
+      {
+        "id": "p_008",
+        "kind": "paragraph",
+        "text": "데모는 실시간 음성-음성 파이프라인으로 구축되었습니다. 시스템의 각 부분은 모듈식이며 개방적이고 대체 가능하여, 개발자가 다양한 어시스턴트, 로봇, 제품 또는 연구 프로젝트에 맞게 스택을 쉽게 조정할 수 있습니다.",
+        "hash": "beffbba4c7afd462f8f9cae59ff27d2c85665df4e516ae9d19082b4e62d2f3c0",
+        "path": "paragraph:23"
+      },
+      {
+        "id": "p_009",
+        "kind": "paragraph",
+        "text": "이는 완전히 개방된 음성-음성 루프를 만듭니다:",
+        "hash": "ed201978e826df44217910e1f336243d191245e7ca50b57816db153d7ed29069",
+        "path": "paragraph:25"
+      },
+      {
+        "id": "p_010",
+        "kind": "paragraph",
+        "text": "이 아키텍처는 오픈 소스 AI 생태계의 강점을 한데 모읍니다: 빠른 추론을 위한 Cerebras, 언어 모델을 위한 Google DeepMind의 Gemma 4 31B, 텍스트 음성 변환을 위한 Qwen. 개발자들은 모든 층을 검사, 수정, 확장할 수 있습니다",
+        "hash": "85e7f730aa23d4e779d0b785dc3321957ce7c4e46371760b1a86ffb2c18c35ec",
+        "path": "paragraph:36"
+      },
+      {
+        "id": "h_011",
+        "kind": "heading",
+        "text": "Cerebras와 Hugging Face 파트너십",
+        "hash": "9cfc8a8216bd50ab4aa459a71f31b0c38ba1f47c68ea31fc30070212e650bc1b",
+        "path": "heading:38"
+      },
+      {
+        "id": "p_012",
+        "kind": "paragraph",
+        "text": "오늘날 일부 프로덕션 시스템은 합리적인 중앙값 지연을 보이지만, P95에서 여전히 다수의 초에 걸친 지연을 경험합니다. 도구 호출이나 다중 모달 단계가 여러 차례의 턴을 필요로 할 때 이러한 지연은 더욱 두드러집니다.",
+        "hash": "bdbed0316d3c82001342d7e98572875645832c55ffd745d0e03aff9f1e8f4d21",
+        "path": "paragraph:40"
+      },
+      {
+        "id": "p_013",
+        "kind": "paragraph",
+        "text": "Cerebras는 스택에서 가장 중요한 병목 중 하나인 언어 모델의 응답 시간을 해결하는 데 도움을 줍니다. 추론을 현저히 더 빠르고 안정적으로 만들어, 나머지 Hugging Face 파이프라인이 빛나도록 합니다.",
+        "hash": "4a6107338c7e7ca5c1a616a2882c24c96aa7e1f08927f84588906e8486e2410f",
+        "path": "paragraph:42"
+      },
+      {
+        "id": "p_014",
+        "kind": "paragraph",
+        "text": "그 안정성은 특히 롱테일에서 중요합니다. 많은 시스템이 합리적인 중앙값 응답 시간을 제공할 수 있지만, 간헐적으로 발생하는 느린 응답은 대화를 여전히 불안정하게 만듭니다.",
+        "hash": "b630389403ba0fbc3b75f0767e44d897dba84687b1a2892464cd3f2581b35585",
+        "path": "paragraph:44"
+      },
+      {
+        "id": "h_015",
+        "kind": "heading",
+        "text": "실제 세계의 상호작용을 위한 설계",
+        "hash": "a19aa3050cb3595cdc40b8cf1b791d194084700e091b06db13f4e1c6b043a492",
+        "path": "heading:46"
+      },
+      {
+        "id": "p_016",
+        "kind": "paragraph",
+        "text": "이 동일한 Hugging Face의 음성-음성 파이프라인은 이미 Reachy Mini 로봇에 동력을 제공하고 있으며, 야생에서 9,000대가 넘는 로봇이 작동 중입니다. 로봇, 음성 비서, 구현된 AI의 경우 반응성은 미적 개선이 아닙니다. 그것이 상호작용을 살아있게 만드는 핵심 요소입니다.",
+        "hash": "b0d91b6d82093fe8f339ab9216562bb660a336fce2663f39947a63b2b60376cf",
+        "path": "paragraph:48"
+      },
+      {
+        "id": "p_017",
+        "kind": "paragraph",
+        "text": "따라서 Cerebras를 사용하는 동기는 단순한 비용 절감이 아닙니다. 낮은 지연 시간, 예측 가능한 성능, 그리고 대규모에서도 자연스럽게 느껴지는 실시간 경험을 만들어낼 수 있는 능력입니다.",
+        "hash": "3f5d9d53e73d69929b0239b709127d1a5a17eeaa7ab4c7fc928f97ffb6a09ab3",
+        "path": "paragraph:50"
+      },
+      {
+        "id": "p_018",
+        "kind": "paragraph",
+        "text": "이 협력은 AI의 미래가 개방적이면서도 성능이 뛰어날 것이라는 공동의 믿음을 반영합니다. 오픈 소스 모델, 개방형 인프라, 그리고 획기적인 추론 속도가 함께 차세대 대화형 AI의 토대를 형성합니다.",
+        "hash": "116039880a9469a7c22b61a66fa53efc52233a60820691a4ab1d0c9f8f0b26da",
+        "path": "paragraph:52"
+      },
+      {
+        "id": "p_019",
+        "kind": "paragraph",
+        "text": "개발자들이 데모를 탐색하고, 코드를 실험하며, 실시간 음성 AI의 차후 발전 방향을 함께 만들어 가도록 초대합니다.",
+        "hash": "d8b6e9fb8b3a91c006cf443761419f1086654efdeb238c212e2b63dd7f8d5a01",
+        "path": "paragraph:54"
+      },
+      {
+        "id": "p_020",
+        "kind": "paragraph",
+        "text": "데모: Hugging Face Space",
+        "hash": "fc2f85fe4ab3a68748ce64e5cebb4b04e13c701ddc13282c46798076e9d13f98",
+        "path": "paragraph:56"
+      },
+      {
+        "id": "p_021",
+        "kind": "paragraph",
+        "text": "저장소: huggingface/speech-to-speech",
+        "hash": "a50f892e8e5f4cb1a9a911452357cfd4405a8584605643cef5ddf53752687f08",
+        "path": "paragraph:58"
+      }
+    ]
+  },
+  "segment_alignment": [
+    {
+      "alignment_id": "a_001",
+      "source_id": "h_001",
+      "target_id": "h_001",
+      "source_hash": "99f6efd89d9f57451d6aaf7c092a8d791f5bd1d90a05073f59280e61ae9682c3",
+      "target_hash": "17872785912601bc36c9f9679ea76a46f2258659b842ede9c36729e81b4fdd7b",
+      "source_kind": "heading",
+      "target_kind": "heading",
+      "source_text": "Hugging Face and Cerebras bring Gemma 4 to real-time voice AI",
+      "target_text": "Hugging Face와 Cerebras가 Gemma 4를 실시간 음성 AI로 선보입니다"
+    },
+    {
+      "alignment_id": "a_002",
+      "source_id": "p_002",
+      "target_id": "p_002",
+      "source_hash": "b245c9eb95d47ed0234d5374172fb38401450d53d7b785ee7533d96e07bfa49b",
+      "target_hash": "b245c9eb95d47ed0234d5374172fb38401450d53d7b785ee7533d96e07bfa49b",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "<video controls width=\"100%\"> <source src=\"https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/cerebras-gemma4-voice-ai/s2s-space-demo.mp4\" type=\"video/mp4\"> </video>",
+      "target_text": "<video controls width=\"100%\"> <source src=\"https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/cerebras-gemma4-voice-ai/s2s-space-demo.mp4\" type=\"video/mp4\"> </video>"
+    },
+    {
+      "alignment_id": "a_003",
+      "source_id": "p_003",
+      "target_id": "p_003",
+      "source_hash": "f620116a29d6eb7bb926151b7aacb5990a41c4c79e09cea33f11346f501e3426",
+      "target_hash": "b591d914a71762118f1d8def59ecf5504929af34e228520cd594802c75301f5c",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "For voice AI, latency is a critical parameter. Developers have made tremendous progress in model quality, but the user experience is still often limited by response times. Hugging Face and Cerebras are changing that experience. Today, we demonstrate what becomes possible when an open, modular voice AI architecture is paired with industry-leading inference speed.",
+      "target_text": "음성 AI의 경우 지연은 중요한 매개변수입니다. 개발자들은 모델 품질에서 상당한 진전을 이뤘지만, 사용자 경험은 여전히 응답 시간에 의해 좌우되는 경우가 많습니다. Hugging Face와 Cerebras가 그 경험을 바꾸고 있습니다. 오늘은 개방적이고 모듈형인 음성 AI 아키텍처와 업계 최고 수준의 추론 속도가 결합될 때 가능해지는 것을 시연합니다."
+    },
+    {
+      "alignment_id": "a_004",
+      "source_id": "p_004",
+      "target_id": "p_004",
+      "source_hash": "0d3aa1fa956197e95a6f1257b4f6800c28e34d4b76f3b6361d07e47f5926f506",
+      "target_hash": "ed62ff361216f59401a1882a5fd3b957ef00bc4e4fbe3f243e430db04d5ea1a3",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "The result is a speech-to-speech experience that feels dramatically more natural. Instead of waiting for an AI to respond, conversations flow with the responsiveness users expect from human interaction.",
+      "target_text": "그 결과는 훨씬 더 자연스럽게 느껴지는 음성-음성 대화 경험입니다. AI의 응답을 기다리는 대신, 대화는 인간 간의 상호작용에서 사용자가 기대하는 반응 속도로 흐릅니다."
+    },
+    {
+      "alignment_id": "a_005",
+      "source_id": "p_005",
+      "target_id": "p_005",
+      "source_hash": "35b0e1c899d21fcc947d97fe3f3048e0e9ec1f171df2f81c7b9999666ea51805",
+      "target_hash": "35b0e1c899d21fcc947d97fe3f3048e0e9ec1f171df2f81c7b9999666ea51805",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "<script type=\"module\" src=\"https://gradio.s3-us-west-2.amazonaws.com/5.38.0/gradio.js\"></script>",
+      "target_text": "<script type=\"module\" src=\"https://gradio.s3-us-west-2.amazonaws.com/5.38.0/gradio.js\"></script>"
+    },
+    {
+      "alignment_id": "a_006",
+      "source_id": "p_006",
+      "target_id": "p_006",
+      "source_hash": "db3ef2c7e23b58e560b72375d3c2483438a84fc7479613e4e9ac909eac6a1483",
+      "target_hash": "db3ef2c7e23b58e560b72375d3c2483438a84fc7479613e4e9ac909eac6a1483",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "<gradio-app theme_mode=\"light\" space=\"smolagents/hf-realtime-voice\"></gradio-app>",
+      "target_text": "<gradio-app theme_mode=\"light\" space=\"smolagents/hf-realtime-voice\"></gradio-app>"
+    },
+    {
+      "alignment_id": "a_007",
+      "source_id": "h_007",
+      "target_id": "h_007",
+      "source_hash": "00370f04f2c07d1e89962b8b1b5f361ff23f76d1dbe654b9afcac345b9ad6a6f",
+      "target_hash": "5159b6fe3d9b8293f7947320b8988910525f52995f37e21bd9e20c98e2def452",
+      "source_kind": "heading",
+      "target_kind": "heading",
+      "source_text": "Architecture: an Open, Cascaded Speech-to-Speech stack",
+      "target_text": "아키텍처: 개방형 계층형 음성-음성 스택"
+    },
+    {
+      "alignment_id": "a_008",
+      "source_id": "p_008",
+      "target_id": "p_008",
+      "source_hash": "dc24149770d30181b709e8a254711b0037992e12060e781ae9d01a47a5921343",
+      "target_hash": "beffbba4c7afd462f8f9cae59ff27d2c85665df4e516ae9d19082b4e62d2f3c0",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "The demo is built as a real-time speech-to-speech pipeline. Each part of the system is modular, open, and replaceable, making it easy for developers to adapt the stack for different assistants, robots, products, or research projects.",
+      "target_text": "데모는 실시간 음성-음성 파이프라인으로 구축되었습니다. 시스템의 각 부분은 모듈식이며 개방적이고 대체 가능하여, 개발자가 다양한 어시스턴트, 로봇, 제품 또는 연구 프로젝트에 맞게 스택을 쉽게 조정할 수 있습니다."
+    },
+    {
+      "alignment_id": "a_009",
+      "source_id": "p_009",
+      "target_id": "p_009",
+      "source_hash": "c32f2cb6c537ce2ce477bbf37956fd04328d4974d63b7ba7c24c9eeea1f8140f",
+      "target_hash": "ed201978e826df44217910e1f336243d191245e7ca50b57816db153d7ed29069",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "This creates a fully open speech-to-speech loop:",
+      "target_text": "이는 완전히 개방된 음성-음성 루프를 만듭니다:"
+    },
+    {
+      "alignment_id": "a_010",
+      "source_id": "p_010",
+      "target_id": "p_010",
+      "source_hash": "39eedbfff2dff45aa64942be2251d3ef806b441f4a9889d679a809a23f0bdcd9",
+      "target_hash": "85e7f730aa23d4e779d0b785dc3321957ce7c4e46371760b1a86ffb2c18c35ec",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "The architecture brings together the strength of the open-source AI ecosystem: Cerebras for fast inference, Google DeepMind’s Gemma 4 31B for the language model, and Qwen for text-to-speech. Every layer can be inspected, modified, and extended by the developers",
+      "target_text": "이 아키텍처는 오픈 소스 AI 생태계의 강점을 한데 모읍니다: 빠른 추론을 위한 Cerebras, 언어 모델을 위한 Google DeepMind의 Gemma 4 31B, 텍스트 음성 변환을 위한 Qwen. 개발자들은 모든 층을 검사, 수정, 확장할 수 있습니다"
+    },
+    {
+      "alignment_id": "a_011",
+      "source_id": "h_011",
+      "target_id": "h_011",
+      "source_hash": "3005e4c5acf1d54a1e7ddf221237ca12d1d906b4f296dbcee8f6479113801929",
+      "target_hash": "9cfc8a8216bd50ab4aa459a71f31b0c38ba1f47c68ea31fc30070212e650bc1b",
+      "source_kind": "heading",
+      "target_kind": "heading",
+      "source_text": "Cerebras and Hugging Face Partnership",
+      "target_text": "Cerebras와 Hugging Face 파트너십"
+    },
+    {
+      "alignment_id": "a_012",
+      "source_id": "p_012",
+      "target_id": "p_012",
+      "source_hash": "4acc87aacfaf40b195524848b691f5ce5f8578a8a17da422b6f4e37633c908ed",
+      "target_hash": "bdbed0316d3c82001342d7e98572875645832c55ffd745d0e03aff9f1e8f4d21",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "Today, some production systems see a reasonable median latency while still experiencing frustrating multi-second delays at the P95. Those delays become even more noticeable when tool calls or multimodal steps require multiple turns.",
+      "target_text": "오늘날 일부 프로덕션 시스템은 합리적인 중앙값 지연을 보이지만, P95에서 여전히 다수의 초에 걸친 지연을 경험합니다. 도구 호출이나 다중 모달 단계가 여러 차례의 턴을 필요로 할 때 이러한 지연은 더욱 두드러집니다."
+    },
+    {
+      "alignment_id": "a_013",
+      "source_id": "p_013",
+      "target_id": "p_013",
+      "source_hash": "30ccaae922193312ca52410991018e606360a5daa08ca393885f34c268518ef6",
+      "target_hash": "4a6107338c7e7ca5c1a616a2882c24c96aa7e1f08927f84588906e8486e2410f",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "Cerebras helps solve one of the most important bottlenecks in the stack: the language-model response time. By making inference dramatically faster and more stable, Cerebras allows the rest of the Hugging Face pipeline to shine.",
+      "target_text": "Cerebras는 스택에서 가장 중요한 병목 중 하나인 언어 모델의 응답 시간을 해결하는 데 도움을 줍니다. 추론을 현저히 더 빠르고 안정적으로 만들어, 나머지 Hugging Face 파이프라인이 빛나도록 합니다."
+    },
+    {
+      "alignment_id": "a_014",
+      "source_id": "p_014",
+      "target_id": "p_014",
+      "source_hash": "b49207ae280130b7f85f90e12be5ce96b6a72be492a08119dfe18f22010e7886",
+      "target_hash": "b630389403ba0fbc3b75f0767e44d897dba84687b1a2892464cd3f2581b35585",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "That stability is especially important at the long tail. Many systems can deliver acceptable median response times, but occasional slow responses still make conversations feel unreliable.",
+      "target_text": "그 안정성은 특히 롱테일에서 중요합니다. 많은 시스템이 합리적인 중앙값 응답 시간을 제공할 수 있지만, 간헐적으로 발생하는 느린 응답은 대화를 여전히 불안정하게 만듭니다."
+    },
+    {
+      "alignment_id": "a_015",
+      "source_id": "h_015",
+      "target_id": "h_015",
+      "source_hash": "90433a9b4d3447eaf7c38171f05639d89c667263576acd9d5798e5cc5ffacf67",
+      "target_hash": "a19aa3050cb3595cdc40b8cf1b791d194084700e091b06db13f4e1c6b043a492",
+      "source_kind": "heading",
+      "target_kind": "heading",
+      "source_text": "Built for real-world interaction",
+      "target_text": "실제 세계의 상호작용을 위한 설계"
+    },
+    {
+      "alignment_id": "a_016",
+      "source_id": "p_016",
+      "target_id": "p_016",
+      "source_hash": "8c549f042605c4b14a3e4f5aeb3d861ab67143754e44470d1dc1157723e4277d",
+      "target_hash": "b0d91b6d82093fe8f339ab9216562bb660a336fce2663f39947a63b2b60376cf",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "This same Hugging Face speech-to-speech pipeline already powers Reachy Mini robots, with more than 9,000 robots in the wild. For robots, voice assistants, and embodied AI, responsiveness is not a cosmetic improvement. It is what makes the interaction feel alive.",
+      "target_text": "이 동일한 Hugging Face의 음성-음성 파이프라인은 이미 Reachy Mini 로봇에 동력을 제공하고 있으며, 야생에서 9,000대가 넘는 로봇이 작동 중입니다. 로봇, 음성 비서, 구현된 AI의 경우 반응성은 미적 개선이 아닙니다. 그것이 상호작용을 살아있게 만드는 핵심 요소입니다."
+    },
+    {
+      "alignment_id": "a_017",
+      "source_id": "p_017",
+      "target_id": "p_017",
+      "source_hash": "166cf2412cdcb9d598dec75384c4571dacbf4a7fa16d7198e394a30906dbadb8",
+      "target_hash": "3f5d9d53e73d69929b0239b709127d1a5a17eeaa7ab4c7fc928f97ffb6a09ab3",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "The motivation to use Cerebras is therefore not simply cost reduction. It is low latency, predictable performance, and the ability to create real-time experiences that feel natural at scale.",
+      "target_text": "따라서 Cerebras를 사용하는 동기는 단순한 비용 절감이 아닙니다. 낮은 지연 시간, 예측 가능한 성능, 그리고 대규모에서도 자연스럽게 느껴지는 실시간 경험을 만들어낼 수 있는 능력입니다."
+    },
+    {
+      "alignment_id": "a_018",
+      "source_id": "p_018",
+      "target_id": "p_018",
+      "source_hash": "688a2f3f8e41f495eafbbe637ee7c32183ad5951b0bf1a9529d71dcc1178cca7",
+      "target_hash": "116039880a9469a7c22b61a66fa53efc52233a60820691a4ab1d0c9f8f0b26da",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "This collaboration reflects a shared belief that the future of AI will be both open and performant. Open-source models, open infrastructure, and breakthrough inference speed together create a foundation for the next generation of conversational AI.",
+      "target_text": "이 협력은 AI의 미래가 개방적이면서도 성능이 뛰어날 것이라는 공동의 믿음을 반영합니다. 오픈 소스 모델, 개방형 인프라, 그리고 획기적인 추론 속도가 함께 차세대 대화형 AI의 토대를 형성합니다."
+    },
+    {
+      "alignment_id": "a_019",
+      "source_id": "p_019",
+      "target_id": "p_019",
+      "source_hash": "7c70ab2a7d4a4c785e182beed29101a7ba913185cff137037d5444752f9144de",
+      "target_hash": "d8b6e9fb8b3a91c006cf443761419f1086654efdeb238c212e2b63dd7f8d5a01",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "We invite developers to explore the demo, experiment with the code, and help shape what comes next for real-time voice AI.",
+      "target_text": "개발자들이 데모를 탐색하고, 코드를 실험하며, 실시간 음성 AI의 차후 발전 방향을 함께 만들어 가도록 초대합니다."
+    },
+    {
+      "alignment_id": "a_020",
+      "source_id": "p_020",
+      "target_id": "p_020",
+      "source_hash": "104042ce4b9e1c5ad7b3b3d4c6802714d4f8be5eb3c78dd6a1133167ffd426bd",
+      "target_hash": "fc2f85fe4ab3a68748ce64e5cebb4b04e13c701ddc13282c46798076e9d13f98",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "Demo: Hugging Face Space",
+      "target_text": "데모: Hugging Face Space"
+    },
+    {
+      "alignment_id": "a_021",
+      "source_id": "p_021",
+      "target_id": "p_021",
+      "source_hash": "798d6b412ded54cc838b7f501d4ceeac9abcf693a58e33d7a5918ab971eebc19",
+      "target_hash": "a50f892e8e5f4cb1a9a911452357cfd4405a8584605643cef5ddf53752687f08",
+      "source_kind": "paragraph",
+      "target_kind": "paragraph",
+      "source_text": "Repository: huggingface/speech-to-speech",
+      "target_text": "저장소: huggingface/speech-to-speech"
+    }
+  ],
+  "metrics": {
+    "summary": {
+      "qe_metric": "heuristic",
+      "qe_enabled": true,
+      "embedding_similarity_enabled": true,
+      "chrf_enabled": false,
+      "segment_count": 21,
+      "cache_hits": 0,
+      "cache_misses": 42,
+      "warnings": [],
+      "qe_average": 0.9357,
+      "qe_min": 0.5669,
+      "embedding_similarity_average": 0.8596,
+      "embedding_similarity_min": 0.7763
+    },
+    "segments": [
+      {
+        "alignment_id": "a_001",
+        "source_id": "h_001",
+        "target_id": "h_001",
+        "qe_score": 0.9222,
+        "embedding_similarity": 0.8927
+      },
+      {
+        "alignment_id": "a_002",
+        "source_id": "p_002",
+        "target_id": "p_002",
+        "qe_score": 1.0,
+        "embedding_similarity": 1.0
+      },
+      {
+        "alignment_id": "a_003",
+        "source_id": "p_003",
+        "target_id": "p_003",
+        "qe_score": 0.992,
+        "embedding_similarity": 0.8174
+      },
+      {
+        "alignment_id": "a_004",
+        "source_id": "p_004",
+        "target_id": "p_004",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.8013
+      },
+      {
+        "alignment_id": "a_005",
+        "source_id": "p_005",
+        "target_id": "p_005",
+        "qe_score": 1.0,
+        "embedding_similarity": 1.0
+      },
+      {
+        "alignment_id": "a_006",
+        "source_id": "p_006",
+        "target_id": "p_006",
+        "qe_score": 1.0,
+        "embedding_similarity": 1.0
+      },
+      {
+        "alignment_id": "a_007",
+        "source_id": "h_007",
+        "target_id": "h_007",
+        "qe_score": 0.9574,
+        "embedding_similarity": 0.7763
+      },
+      {
+        "alignment_id": "a_008",
+        "source_id": "p_008",
+        "target_id": "p_008",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.8
+      },
+      {
+        "alignment_id": "a_009",
+        "source_id": "p_009",
+        "target_id": "p_009",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.8
+      },
+      {
+        "alignment_id": "a_010",
+        "source_id": "p_010",
+        "target_id": "p_010",
+        "qe_score": 0.9576,
+        "embedding_similarity": 0.8312
+      },
+      {
+        "alignment_id": "a_011",
+        "source_id": "h_011",
+        "target_id": "h_011",
+        "qe_score": 0.7238,
+        "embedding_similarity": 0.9217
+      },
+      {
+        "alignment_id": "a_012",
+        "source_id": "p_012",
+        "target_id": "p_012",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.802
+      },
+      {
+        "alignment_id": "a_013",
+        "source_id": "p_013",
+        "target_id": "p_013",
+        "qe_score": 0.9741,
+        "embedding_similarity": 0.8287
+      },
+      {
+        "alignment_id": "a_014",
+        "source_id": "p_014",
+        "target_id": "p_014",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.8
+      },
+      {
+        "alignment_id": "a_015",
+        "source_id": "h_015",
+        "target_id": "h_015",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.8
+      },
+      {
+        "alignment_id": "a_016",
+        "source_id": "p_016",
+        "target_id": "p_016",
+        "qe_score": 0.97,
+        "embedding_similarity": 0.8232
+      },
+      {
+        "alignment_id": "a_017",
+        "source_id": "p_017",
+        "target_id": "p_017",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.81
+      },
+      {
+        "alignment_id": "a_018",
+        "source_id": "p_018",
+        "target_id": "p_018",
+        "qe_score": 0.9935,
+        "embedding_similarity": 0.8003
+      },
+      {
+        "alignment_id": "a_019",
+        "source_id": "p_019",
+        "target_id": "p_019",
+        "qe_score": 1.0,
+        "embedding_similarity": 0.8021
+      },
+      {
+        "alignment_id": "a_020",
+        "source_id": "p_020",
+        "target_id": "p_020",
+        "qe_score": 0.5669,
+        "embedding_similarity": 0.9741
+      },
+      {
+        "alignment_id": "a_021",
+        "source_id": "p_021",
+        "target_id": "p_021",
+        "qe_score": 0.5932,
+        "embedding_similarity": 0.97
+      }
+    ]
+  },
+  "style_guide": {
+    "enabled": true,
+    "style_score": 83.0,
+    "issue_count": 5,
+    "rules": {
+      "first_mention_bilingual": 1,
+      "link_text_translation": 2,
+      "modal_strength": 1,
+      "translationese": 1
+    }
+  },
+  "metadata": {
+    "target_path": "/private/tmp/hf-harness-eval/target-files/pr-163/_posts/2026-07-01-cerebras-gemma4-voice-ai.md",
+    "source_path": "https://raw.githubusercontent.com/huggingface/blog/main/cerebras-gemma4-voice-ai.md",
+    "source_format": "url_markdown",
+    "source_hash": "2bfc37fa02eabdc26ca1aea389479959372c1b19bee4ebd3731d3c9139741174",
+    "expected_source_hash": "",
+    "target_hash": "ec65fe3fe6d814a7d77f7add6e3ecd0d6a3de4379ab32fc06ba9f0dd2e27efdf",
+    "source_available": true,
+    "source_changed": false,
+    "source_segment_count": 21,
+    "target_segment_count": 21,
+    "aligned_segment_count": 21,
+    "target_source_length_ratio": 0.5956848030018762,
+    "glossary_entry_count": 38,
+    "translation_memory_entry_count": 0,
+    "translation_memory_match_count": 0,
+    "qe_metric": "heuristic",
+    "metric_cache_path": "/Users/harheem/hf-workflow/skills/quality/reports/workflow-harness-sample-results-2026-07-06/pr-163/metric-cache.json",
+    "reference_path": "",
+    "style_guide_path": "/Users/harheem/hf-workflow/skills/quality/style/hf-blog-ko-translation-guide.md",
+    "style_policy_path": "/Users/harheem/hf-workflow/skills/quality/configs/style_policy.yml",
+    "style_policy_version": 1,
+    "tool": "translation_quality_harness",
+    "tool_version": "0.5.0"
+  }
+}

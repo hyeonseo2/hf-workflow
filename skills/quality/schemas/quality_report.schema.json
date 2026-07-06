@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "HF Blog Korean Translation Quality Report",
   "type": "object",
-  "required": ["status", "quality_score", "hard_failures", "dimension_scores", "issues", "segments", "segment_alignment", "metrics", "metadata"],
+  "required": ["status", "quality_score", "hard_failures", "dimension_scores", "issues", "segments", "segment_alignment", "metrics", "style_guide", "metadata"],
   "properties": {
     "status": {
       "type": "string",
@@ -19,14 +19,15 @@
     },
     "dimension_scores": {
       "type": "object",
-      "required": ["adequacy", "technical_accuracy", "completeness", "terminology", "fluency", "publishing_integrity"],
+      "required": ["adequacy", "technical_accuracy", "completeness", "terminology", "fluency", "publishing_integrity", "style_locale"],
       "properties": {
         "adequacy": { "type": "number" },
         "technical_accuracy": { "type": "number" },
         "completeness": { "type": "number" },
         "terminology": { "type": "number" },
         "fluency": { "type": "number" },
-        "publishing_integrity": { "type": "number" }
+        "publishing_integrity": { "type": "number" },
+        "style_locale": { "type": "number" }
       }
     },
     "issues": {
@@ -68,6 +69,16 @@
         }
       }
     },
+    "style_guide": {
+      "type": "object",
+      "required": ["enabled", "style_score", "issue_count", "rules"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "style_score": { "type": "number" },
+        "issue_count": { "type": "integer" },
+        "rules": { "type": "object" }
+      }
+    },
     "metadata": {
       "type": "object"
     }
@@ -85,7 +96,9 @@
         "target_span": { "type": "string" },
         "message": { "type": "string" },
         "suggested_fix": { "type": "string" },
-        "reason": { "type": "string" }
+        "reason": { "type": "string" },
+        "guide_rule": { "type": "string" },
+        "guide_section": { "type": "string" }
       }
     },
     "segment": {
