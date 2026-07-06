@@ -1,0 +1,3 @@
+{"id": "h_001", "kind": "heading", "text": "Profiling inference with Hugging Face", "hash": "10b31e226728cb360d2ffd5e85b4f03a4ef0776c30869410e0ce61e1d15c76d0", "path": "heading:3"}
+{"id": "p_002", "kind": "paragraph", "text": "This approach may improve throughput by up to 30% in our experiments. You must set the HF_TOKEN environment variable before running the script.", "hash": "d1057d077d8029aa9150d0d2f5627886b84b34dd1346402bb911d0faadb3d3f1", "path": "paragraph:5"}
+{"id": "p_003", "kind": "paragraph", "text": "Install the Transformers library and run python profile.py --model-id google/gemma-2-2b.", "hash": "581d8a300092fb5bcc4295ff0ad7f7442253facb05dc674ae7bac5790954ed75", "path": "paragraph:7"}

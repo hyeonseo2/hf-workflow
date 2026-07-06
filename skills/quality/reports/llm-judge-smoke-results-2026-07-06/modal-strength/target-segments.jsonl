@@ -1,0 +1,3 @@
+{"id": "h_001", "kind": "heading", "text": "Hugging Face 추론 프로파일링", "hash": "214178e23827c786c6375f919e67fdbb391071f65820d2fdc0dd0c94b2720b80", "path": "heading:3"}
+{"id": "p_002", "kind": "paragraph", "text": "이 접근법은 처리량을 30% 개선합니다. 스크립트를 실행하기 전에 HF_TOKEN 환경 변수를 설정하는 것이 좋습니다.", "hash": "63906bc909685b4228abcde4196dde2e14f13f9990b243da1279b02ac165f73c", "path": "paragraph:5"}
+{"id": "p_003", "kind": "paragraph", "text": "Transformers 라이브러리를 설치하고 python profile.py --model-id google/gemma-2-2b를 실행합니다.", "hash": "f69475a290cb22f9355648f1aea6933df952ee5db761fa159fe3c8337d13c553", "path": "paragraph:7"}

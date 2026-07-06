@@ -15,7 +15,10 @@
 | `pr-comment.md` | GitHub PR 댓글로 붙일 수 있는 짧은 요약. |
 | `source-segments.jsonl` | 원문 세그먼트 분해 결과. |
 | `target-segments.jsonl` | 번역문 세그먼트 분해 결과. |
+| `mqm-judge.jsonl` | LLM/fixture MQM judge를 켰을 때 생성되는 세그먼트별 판정 결과. |
 | `metric-cache.json` | 반복 실행용 metric 캐시. |
+
+이 폴더의 14개 PR 샘플은 비용과 재현성을 위해 LLM judge를 끈 상태(`provider=off`)로 생성됐다. 실제 OpenAI MQM judge가 켜진 산출물 예시는 `skills/quality/reports/llm-judge-smoke-results-2026-07-06/`에 따로 추가했다.
 
 `pr-137`, `pr-138`은 원문을 raw Markdown으로 찾지 못해 HTML 텍스트 fallback으로 실행됐다. 이 경우 structural segment metric을 건너뛰기 때문에 `metric-cache.json`이 생성되지 않았다.
 
