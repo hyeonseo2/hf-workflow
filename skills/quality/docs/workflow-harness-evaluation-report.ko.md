@@ -8,12 +8,13 @@
 
 | 산출물 | 내용 | 주 사용 대상 |
 | --- | --- | --- |
-| `quality-report.md` | 사람이 읽는 상세 검토 리포트. 판정 상태, 총점, 영역별 점수, metric 요약, 스타일 가이드 점검 결과, 전체 이슈가 들어간다. | 번역자, 리뷰어, PR 검토자 |
-| `quality-report.json` | `schemas/quality_report.schema.json`에 맞춘 구조화 리포트. | CI gate, 대시보드, 후속 자동화 |
-| `pr-comment.md` | PR 댓글로 붙일 짧은 요약. 상태, 품질 점수, 스타일 점수, hard failure 수, 주요 스타일 이슈를 담는다. | GitHub PR 댓글 봇 |
+| `quality-report.md` | 사람이 읽는 상세 검토 리포트. 판정 상태, 총점, 영역별 점수, metric 요약, MQM judge 요약, 스타일 가이드 점검 결과, 전체 이슈가 들어간다. | 번역자, 리뷰어, PR 검토자 |
+| `quality-report.json` | `schemas/quality_report.schema.json`에 맞춘 구조화 리포트. `metrics`, `mqm_judge`, `style_guide`, `issues`를 분리해 담는다. | CI gate, 대시보드, 후속 자동화 |
+| `pr-comment.md` | PR 댓글로 붙일 짧은 요약. 상태, 품질 점수, 스타일 점수, MQM judge 요약, hard failure 수, 주요 스타일 이슈를 담는다. | GitHub PR 댓글 봇 |
 | `source-segments.jsonl` | 원문을 세그먼트 단위로 나눈 결과. id, hash, 종류, 위치 정보가 포함된다. | 디버깅, 감사, 회귀 추적 |
 | `target-segments.jsonl` | 번역문을 세그먼트 단위로 나눈 결과. | 디버깅, 감사, 회귀 추적 |
-| `metric-cache.json` | 세그먼트 hash 기준 metric 캐시. | 반복 실행, CI 비용 절감 |
+| `mqm-judge.jsonl` | 선택 산출물. LLM/fixture MQM judge가 평가한 세그먼트별 점수와 오류 목록이다. | LLM 판정 감사, 디버깅 |
+| `metric-cache.json` | 세그먼트 hash 기준 metric/MQM judge 캐시. | 반복 실행, CI 비용 절감 |
 
 최종 판정은 네 가지 중 하나다.
 
@@ -39,12 +40,12 @@
 
 ```text
 PYTHONPATH=skills/quality python3 -m pytest -q skills/quality/tests
-27 passed
+32 passed
 ```
 
 ## 실제 샘플 실행 결과
 
-현재 번역 PR 산출물 14개에 하네스를 실행했다. 6개는 `reports/pr-*`에 있던 실제 workflow manifest를 사용했고, 나머지 8개는 target front matter에서 임시 manifest를 만들어 같은 경로로 돌렸다.
+현재 번역 PR 산출물 14개에 하네스를 실행했다. 6개는 `reports/pr-*`에 있던 실제 workflow manifest를 사용했고, 나머지 8개는 target front matter에서 임시 manifest를 만들어 같은 경로로 돌렸다. 이 샘플은 비용과 재현성을 위해 LLM MQM judge provider를 기본값인 `off`로 두고 실행했다.
 
 | PR | Manifest | Slug | Status | Score | Hard | Issues | Style | Source |
 | --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- |
@@ -107,5 +108,6 @@ PYTHONPATH=skills/quality python3 -m pytest -q skills/quality/tests
 - PR별로 전체 하네스 산출물을 artifact로 올린다. 대상은 Markdown 리포트, JSON 리포트, PR 댓글 요약, segment JSONL, metric cache다.
 - translation-flow manifest에 `source.hash`와 원문 snapshot 저장을 추가한다.
 - `reject`가 나오면 workflow 자체를 실패시킬지, 아니면 PR 자동 병합만 막을지 결정한다.
+- OpenAI MQM judge를 실제 운영에서 기본으로 켤지, 고위험 PR/세그먼트에만 제한적으로 켤지 결정하고 threshold를 보정한다.
 - 리뷰어 피드백을 보고 스타일 threshold를 조정한다. 특히 `modal_strength`와 `link_text_translation`은 의도적으로 넓게 잡은 review gate라 보정 여지가 있다.
 - `pr-comment.md`를 실제 PR 댓글로 게시하는 단계를 추가한다.

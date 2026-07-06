@@ -28,6 +28,16 @@
 - cache_misses: 0
 - warning: Source was fetched as HTML text; structural hard gates, segment coverage, and segment metrics were skipped.
 
+## MQM Judge
+
+- Enabled: False
+- Provider: `off`
+- Requested segments: 0
+- Evaluated segments: 0
+- MQM errors: 0
+- Cache hits: 0
+- Cache misses: 0
+
 ## Style Guide
 
 - Enabled: True

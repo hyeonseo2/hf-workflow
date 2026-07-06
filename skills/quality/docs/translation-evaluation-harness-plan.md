@@ -377,7 +377,7 @@ Strict JSON only.
 - `source_span`, `target_span`, `explanation`, `suggested_fix`가 없으면 오류로 채택하지 않는다.
 - 고위험 segment는 second judge를 적용한다.
 - judge prompt는 "좋다/나쁘다"가 아니라 "게시 리스크가 있는 오류인가"를 판단하게 한다.
-- LLM judge 결과는 cache key로 `source_hash`, `target_hash`, `prompt_version`, `model`을 사용한다.
+- LLM judge 결과는 cache key로 `source_hash`, `target_hash`, prompt content hash, `model`을 사용한다.
 
 ## 자동 평가 지표
 
@@ -726,14 +726,16 @@ jobs:
 
 작업:
 
-- `judges/mqm_prompt.md` 작성
-- `schemas/mqm_judge.schema.json` 작성
-- segment judge 구현
-- document judge 구현
-- JSON schema validation과 retry 정책 구현
-- judge cache 구현
-- high-risk segment second judge 옵션 구현
-- PR comment용 suggested fix 추출
+- 완료: `judges/mqm_prompt.md` 작성
+- 완료: `schemas/mqm_judge.schema.json` 작성
+- 완료: segment judge 구현
+- 완료: `openai` provider와 `fixture` provider 구현
+- 완료: MQM 결과를 `issues`, dimension score, Markdown report, JSON report, PR comment에 병합
+- 완료: judge cache 구현. cache key는 source hash, target hash, prompt content hash, model을 사용한다.
+- 부분 완료: JSON object normalization은 적용했지만, API 실패 retry 정책은 아직 없다.
+- 남음: document judge 구현
+- 남음: high-risk segment second judge 옵션 구현
+- 남음: 실제 모델/threshold calibration
 
 완료 기준:
 
@@ -808,7 +810,7 @@ jobs:
 
 ### 4. LLM judge 도입 시점
 
-추천안: 구현 로드맵에는 Phase 4로 두되, PRD MVP 기준에 맞춰 Beta 이전에는 반드시 붙인다.
+추천안: segment-level LLM MQM judge는 구현해 두되 기본값은 `off`로 둔다. 운영에서는 초기에는 고위험 PR이나 low-QE segment에 제한 적용하고, 리뷰어 피드백으로 threshold를 보정한 뒤 기본 실행 여부를 결정한다.
 
 규칙 기반 gate만으로는 의미 강도 변화, 제한사항 누락, benchmark 방향성 반전을 충분히 잡기 어렵다. 단, API dependency 때문에 deterministic gate와 분리해 선택 실행 가능하게 만든다.
 
@@ -856,7 +858,7 @@ QA 도구가 원문 의미를 임의로 바꾸면 책임 경계가 흐려진다.
 4. JSON report schema와 Markdown report renderer를 붙인다.
 5. challenge set으로 hard gate 회귀 테스트를 만든다.
 6. segment extraction, glossary validator, coverage validator를 추가한다.
-7. COMETKiwi와 LLM MQM judge는 deterministic gate가 안정화된 뒤 pluggable dependency로 연결한다.
+7. OpenAI MQM judge를 실제 번역 PR 일부에 제한 실행해 threshold와 prompt를 보정한다.
 8. `scripts/run_local_review.py`와 GitHub Actions에 `reject` gate만 먼저 연결한다.
 
 ## PRD 대비 반영 사항

@@ -2692,8 +2692,8 @@
       "embedding_similarity_enabled": true,
       "chrf_enabled": false,
       "segment_count": 93,
-      "cache_hits": 0,
-      "cache_misses": 186,
+      "cache_hits": 186,
+      "cache_misses": 0,
       "warnings": [],
       "qe_average": 0.9544,
       "qe_min": 0.6462,
@@ -3353,6 +3353,22 @@
         "embedding_similarity": 0.8177
       }
     ]
+  },
+  "mqm_judge": {
+    "enabled": false,
+    "provider": "off",
+    "model": "",
+    "prompt_path": "",
+    "fixture_path": "",
+    "requested_segment_count": 0,
+    "segment_count": 0,
+    "skipped_segment_count": 0,
+    "error_count": 0,
+    "severity_counts": {},
+    "cache_hits": 0,
+    "cache_misses": 0,
+    "warnings": [],
+    "segments": []
   },
   "style_guide": {
     "enabled": true,

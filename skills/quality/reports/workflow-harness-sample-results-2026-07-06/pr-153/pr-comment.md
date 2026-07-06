@@ -3,6 +3,7 @@
 - Status: reject
 - Quality Score: 36.0
 - Style Score: 60.0
+- MQM Judge: off / 0 segments / 0 errors
 - Hard failures: 1
 - Style guide findings: 18
 

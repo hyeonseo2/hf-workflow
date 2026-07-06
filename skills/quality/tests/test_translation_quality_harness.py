@@ -4,7 +4,17 @@ import json
 import hashlib
 from pathlib import Path
 
-from tools.translation_quality_harness import MetricConfig, build_report, main, markdown_doc, normalized_numbers
+from tools.translation_quality_harness import (
+    DEFAULT_MQM_PROMPT_PATH,
+    MetricConfig,
+    align_segments,
+    build_report,
+    load_mqm_prompt,
+    main,
+    markdown_doc,
+    metric_cache_key,
+    normalized_numbers,
+)
 
 
 FIXTURES = Path(__file__).parent / "fixtures" / "translation_quality_harness"
@@ -456,6 +466,164 @@ def test_cometkiwi_wrapper_falls_back_without_breaking_deterministic_gates(tmp_p
     assert report["metrics"]["summary"]["qe_metric"] == "cometkiwi"
     assert "qe_average" in report["metrics"]["summary"]
     assert report["metrics"]["summary"]["warnings"]
+
+
+def write_mqm_fixture(tmp_path: Path) -> Path:
+    fixture = tmp_path / "mqm-fixture.jsonl"
+    fixture.write_text(
+        json.dumps(
+            {
+                "segment_id": "p_002",
+                "adequacy_score": 0.41,
+                "fluency_score": 0.90,
+                "technical_score": 0.80,
+                "errors": [
+                    {
+                        "guide_rule": "modal_strength",
+                        "guide_section": "4. 의미·조건·확신의 강도는 절대 바꾸지 않습니다",
+                        "category": "accuracy",
+                        "severity": "major",
+                        "source_span": "can be used",
+                        "target_span": "사용됩니다",
+                        "explanation": "가능성을 단정으로 바꾸었습니다.",
+                        "suggested_fix": "사용할 수 있습니다",
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return fixture
+
+
+def test_fixture_mqm_judge_routes_feedback_into_report(tmp_path: Path) -> None:
+    manifest = manifest_for(tmp_path, "target_good.md")
+    fixture = write_mqm_fixture(tmp_path)
+    config = MetricConfig(
+        qe_metric="off",
+        enable_embedding_similarity=False,
+        llm_judge_provider="fixture",
+        llm_judge_fixture_path=fixture,
+        llm_judge_max_segments=3,
+    )
+
+    report = build_report(manifest, FIXTURES, source_path=FIXTURES / "source.md", metric_config=config)
+
+    assert report["status"] == "review_required"
+    assert report["mqm_judge"]["enabled"] is True
+    assert report["mqm_judge"]["provider"] == "fixture"
+    assert report["mqm_judge"]["requested_segment_count"] == 3
+    assert report["mqm_judge"]["segment_count"] == 1
+    assert report["mqm_judge"]["error_count"] == 1
+    assert report["dimension_scores"]["adequacy"] == 41.0
+    assert report["style_guide"]["issue_count"] == 0
+    assert any(issue["message"] == "MQM judge reported accuracy issue." for issue in report["issues"])
+
+
+def test_openai_mqm_judge_skips_without_api_key(tmp_path: Path) -> None:
+    manifest = manifest_for(tmp_path, "target_good.md")
+    config = MetricConfig(
+        qe_metric="off",
+        enable_embedding_similarity=False,
+        llm_judge_provider="openai",
+        llm_judge_api_key_env="HF_WORKFLOW_TEST_MISSING_OPENAI_KEY",
+        llm_judge_max_segments=1,
+    )
+
+    report = build_report(manifest, FIXTURES, source_path=FIXTURES / "source.md", metric_config=config)
+
+    assert report["status"] == "auto_pass"
+    assert report["mqm_judge"]["enabled"] is True
+    assert report["mqm_judge"]["provider"] == "openai"
+    assert report["mqm_judge"]["segment_count"] == 0
+    assert any("HF_WORKFLOW_TEST_MISSING_OPENAI_KEY" in warning for warning in report["mqm_judge"]["warnings"])
+
+
+def test_openai_mqm_judge_reuses_cached_segments_without_api_key(tmp_path: Path) -> None:
+    manifest = manifest_for(tmp_path, "target_good.md")
+    cache_path = tmp_path / "metric-cache.json"
+    source = markdown_doc((FIXTURES / "source.md").read_text(encoding="utf-8"))
+    target = markdown_doc((FIXTURES / "target_good.md").read_text(encoding="utf-8"))
+    first_alignment = align_segments(source, target)[0]
+    prompt_hash = hashlib.sha256(load_mqm_prompt(DEFAULT_MQM_PROMPT_PATH).encode("utf-8")).hexdigest()
+    cache_key = metric_cache_key(
+        f"mqm:gpt-5-nano:{prompt_hash}",
+        str(first_alignment["source_hash"]),
+        str(first_alignment["target_hash"]),
+    )
+    cache_path.write_text(
+        json.dumps(
+            {
+                cache_key: {
+                    "segment_id": first_alignment["target_id"],
+                    "adequacy_score": 1.0,
+                    "fluency_score": 1.0,
+                    "technical_score": 1.0,
+                    "errors": [],
+                }
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    config = MetricConfig(
+        qe_metric="off",
+        enable_embedding_similarity=False,
+        metric_cache_path=cache_path,
+        llm_judge_provider="openai",
+        llm_judge_api_key_env="HF_WORKFLOW_TEST_MISSING_OPENAI_KEY",
+        llm_judge_max_segments=1,
+    )
+
+    report = build_report(manifest, FIXTURES, source_path=FIXTURES / "source.md", metric_config=config)
+
+    assert report["status"] == "auto_pass"
+    assert report["mqm_judge"]["segment_count"] == 1
+    assert report["mqm_judge"]["cache_hits"] == 1
+    assert report["mqm_judge"]["cache_misses"] == 0
+    assert not report["mqm_judge"]["warnings"]
+
+
+def test_cli_writes_mqm_judge_outputs(tmp_path: Path) -> None:
+    manifest = manifest_for(tmp_path, "target_good.md")
+    fixture = write_mqm_fixture(tmp_path)
+    output_json = tmp_path / "quality-report.json"
+    output_md = tmp_path / "quality-report.md"
+    output_mqm = tmp_path / "mqm-judge.jsonl"
+
+    exit_code = main(
+        [
+            "--manifest",
+            str(manifest),
+            "--target-root",
+            str(FIXTURES),
+            "--source",
+            str(FIXTURES / "source.md"),
+            "--output-md",
+            str(output_md),
+            "--output-json",
+            str(output_json),
+            "--output-mqm-judge-jsonl",
+            str(output_mqm),
+            "--qe-metric",
+            "off",
+            "--disable-embedding-similarity",
+            "--llm-judge-provider",
+            "fixture",
+            "--llm-judge-fixture",
+            str(fixture),
+            "--llm-judge-max-segments",
+            "3",
+        ]
+    )
+
+    assert exit_code == 0
+    assert "## MQM Judge" in output_md.read_text(encoding="utf-8")
+    assert output_mqm.read_text(encoding="utf-8").strip()
+    loaded = json.loads(output_json.read_text(encoding="utf-8"))
+    assert loaded["mqm_judge"]["segment_count"] == 1
 
 
 def style_manifest_for(tmp_path: Path, target_name: str) -> Path:

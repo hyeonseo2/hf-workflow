@@ -2,7 +2,7 @@
 
 ## 목적
 
-`style/hf-blog-ko-translation-guide.md`를 번역 품질 하네스의 평가 기준으로 연결한다. 현재 하네스는 Phase 0-3 기준으로 Markdown 구조, 보호 토큰, glossary, segment coverage, heuristic QE metric을 평가한다. 이 계획은 새 가이드의 규칙을 hard gate, review gate, style score, LLM judge rubric으로 나누어 구현하는 방법을 정의한다.
+`style/hf-blog-ko-translation-guide.md`를 번역 품질 하네스의 평가 기준으로 연결한다. 현재 하네스는 Markdown 구조, 보호 토큰, glossary, segment coverage, heuristic QE metric, deterministic style validator, optional LLM MQM segment judge를 평가한다. 이 계획은 가이드의 규칙을 hard gate, review gate, style score, LLM judge rubric으로 나누어 구현하고 운영하는 방법을 정의한다.
 
 목표는 "가이드를 사람이 읽는 문서"로만 두지 않고, PR 리포트와 JSON 리포트에서 다음을 자동으로 드러내는 것이다.
 
@@ -126,7 +126,7 @@ style_score:
 완료 기준:
 
 - style guide 경로가 리포트에 남는다.
-- policy 파일이 없어도 기존 Phase 0-3 검사는 계속 동작한다.
+- policy 파일이 없어도 기존 deterministic 검사는 계속 동작한다.
 
 ### Step 2: Deterministic Style Validators
 
@@ -204,6 +204,15 @@ style_penalty =
 
 목표: deterministic rule로 잡기 어려운 가이드 규칙을 LLM judge rubric으로 평가한다.
 
+현재 구현 상태:
+
+- `judges/mqm_prompt.md`를 기본 prompt로 사용한다.
+- `--llm-judge-provider openai`로 OpenAI Responses API를 호출한다.
+- `--llm-judge-provider fixture`로 CI/테스트용 고정 판정을 주입할 수 있다.
+- MQM 결과는 `quality-report.json`의 `mqm_judge`에 저장되고, `issues`로 병합된다.
+- `--metric-cache`가 있으면 source hash, target hash, prompt content hash, model 기준으로 LLM judge 결과를 재사용한다.
+- 아직 문서 단위 judge와 second judge 옵션은 운영 확장 항목으로 남겨둔다.
+
 `judges/mqm_prompt.md`에 포함할 rubric:
 
 - 원문 voice와 글의 온도가 유지되었는가
@@ -219,13 +228,21 @@ LLM judge 출력:
 ```json
 {
   "segment_id": "p_014",
-  "guide_rule": "modal_strength",
-  "category": "accuracy",
-  "severity": "major",
-  "source_span": "may improve",
-  "target_span": "개선합니다",
-  "explanation": "가능성을 단정으로 바꾸어 의미 강도가 강해졌습니다.",
-  "suggested_fix": "개선할 수 있습니다"
+  "adequacy_score": 0.72,
+  "fluency_score": 0.88,
+  "technical_score": 1.0,
+  "errors": [
+    {
+      "guide_rule": "modal_strength",
+      "guide_section": "4. 의미·조건·확신의 강도는 절대 바꾸지 않습니다",
+      "category": "accuracy",
+      "severity": "major",
+      "source_span": "may improve",
+      "target_span": "개선합니다",
+      "explanation": "가능성을 단정으로 바꾸어 의미 강도가 강해졌습니다.",
+      "suggested_fix": "개선할 수 있습니다"
+    }
+  ]
 }
 ```
 
@@ -287,31 +304,35 @@ JSON issue에 추가할 필드:
 
 ## 현재 하네스와의 통합 지점
 
-현재 구현된 `translation_quality_harness.py` 기준으로 다음 함수/영역을 확장한다.
+현재 구현된 `translation_quality_harness.py` 기준으로 다음 지점에 통합됐다.
 
 - `MetricConfig`: style policy path 추가
+- `MetricConfig`: optional LLM MQM judge provider/model/prompt/cache 설정 추가
 - `Issue`: `guide_rule`, `guide_section` 필드 추가
 - `validate_documents`: style validator 호출 추가
+- `validate_documents`: MQM judge 결과를 issue와 dimension score에 병합
 - `markdown_report`: style guide summary 추가
+- `markdown_report`: MQM judge summary 추가
 - `quality_report.schema.json`: style fields 추가
+- `quality_report.schema.json`: `mqm_judge` section 추가
 - `tests/fixtures/translation_quality_harness`: guide-based negative fixture 추가
-- `tests/challenge_set.yml`: style guide challenge case 추가
+- `tests/test_translation_quality_harness.py`: fixture/openai-skip/cache 기반 MQM judge 회귀 테스트 추가
 
 ## 우선순위
 
-1. `style_policy.yml`과 guide loader 추가
-2. deterministic validator 중 modal strength, overstatement, emoji delta부터 구현
-3. glossary first-mention rule 추가
-4. style score와 report/schema 확장
-5. LLM MQM judge에 guide rubric 주입
-6. PR comment와 calibration으로 운영 연결
+1. 완료: `style_policy.yml`과 guide loader 추가
+2. 완료: deterministic validator 중 modal strength, overstatement, emoji delta부터 구현
+3. 완료: glossary first-mention rule 추가
+4. 완료: style score와 report/schema 확장
+5. 완료: LLM MQM segment judge에 guide rubric 주입
+6. 남음: document judge, second judge, PR comment 게시, 운영 threshold calibration
 
 가장 먼저 구현할 가치는 `modal_strength`와 `overstatement`다. 이 둘은 문체 문제가 아니라 의미와 신뢰도 문제이며, Hugging Face 기술 블로그에서 성능/제한사항을 잘못 전달할 가능성이 크다.
 
 ## 남은 의사결정
 
-- `style_locale`을 별도 dimension score로 추가할지, 기존 `fluency`에 포함할지
+- `style_locale` 감점 threshold를 현재 값으로 유지할지, 리뷰어 피드백 후 완화할지
 - 첫 등장 영문 병기 누락을 `minor`로 둘지, 핵심 용어는 `major`로 올릴지
 - 코드 주석 번역을 허용할지, 현재 Phase 1처럼 code block exact-match를 유지할지
-- LLM judge가 style issue suggested fix를 자동 생성하게 할지, 제안만 하고 수정은 사람이 하게 할지
-- 원문 voice 평가를 전수로 할지, low-QE/high-risk segment에만 할지
+- OpenAI MQM judge를 모든 PR에 켤지, low-QE/high-risk segment에만 제한할지
+- 문서 단위 judge와 second judge를 운영 필수로 둘지, 보정 이후 확장으로 둘지

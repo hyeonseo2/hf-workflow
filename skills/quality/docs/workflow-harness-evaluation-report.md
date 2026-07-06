@@ -8,12 +8,13 @@ Running `translation_quality_harness.py` for a translated post produces these fi
 
 | Output | Purpose | Intended Consumer |
 | --- | --- | --- |
-| `quality-report.md` | Human-readable review report with status, scorecard, metric summary, style guide summary, and issue details. | Translator, reviewer, PR reviewer |
-| `quality-report.json` | Machine-readable report matching `schemas/quality_report.schema.json`. | CI gate, dashboard, later automation |
-| `pr-comment.md` | Short PR comment summary with status, quality score, style score, hard failure count, and top style findings. | GitHub PR comment bot |
+| `quality-report.md` | Human-readable review report with status, scorecard, metric summary, MQM judge summary, style guide summary, and issue details. | Translator, reviewer, PR reviewer |
+| `quality-report.json` | Machine-readable report matching `schemas/quality_report.schema.json`, with separate `metrics`, `mqm_judge`, `style_guide`, and `issues` sections. | CI gate, dashboard, later automation |
+| `pr-comment.md` | Short PR comment summary with status, quality score, style score, MQM judge summary, hard failure count, and top style findings. | GitHub PR comment bot |
 | `source-segments.jsonl` | Source text segments with ids, hashes, kinds, and paths. | Debugging, audit, regression tracking |
 | `target-segments.jsonl` | Target text segments with ids, hashes, kinds, and paths. | Debugging, audit, regression tracking |
-| `metric-cache.json` | Cached metric results keyed by segment hashes. | Repeat runs and CI cost control |
+| `mqm-judge.jsonl` | Optional output containing normalized per-segment MQM judge scores and errors from the LLM or fixture provider. | LLM audit and debugging |
+| `metric-cache.json` | Cached metric and MQM judge results keyed by segment hashes. | Repeat runs and CI cost control |
 
 The top-level status is one of:
 
@@ -39,12 +40,12 @@ Unit verification after these changes:
 
 ```text
 PYTHONPATH=skills/quality python3 -m pytest -q skills/quality/tests
-27 passed
+32 passed
 ```
 
 ## Sample Run
 
-The harness was run against 14 current translation PR outputs. Six runs used real workflow manifests from `reports/pr-*`; eight additional open PR files used temporary manifests synthesized from target front matter so the same harness path could be exercised.
+The harness was run against 14 current translation PR outputs. Six runs used real workflow manifests from `reports/pr-*`; eight additional open PR files used temporary manifests synthesized from target front matter so the same harness path could be exercised. This sample run kept the LLM MQM judge provider at its default `off` setting for cost and reproducibility.
 
 | PR | Manifest | Slug | Status | Score | Hard | Issues | Style | Source |
 | --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- |
@@ -107,5 +108,6 @@ There is also a workflow-level gap: existing manifests do not pin `source.hash` 
 - Upload the full harness artifacts per PR: Markdown report, JSON report, PR comment, segment JSONL files, and metric cache.
 - Add `source.hash` and source snapshot storage to translation-flow manifests.
 - Decide whether `reject` should fail the workflow immediately or only block PR auto-merge.
+- Decide whether the OpenAI MQM judge should run by default in production or only for high-risk PRs/segments, then calibrate its thresholds.
 - Calibrate style thresholds after reviewer feedback, especially `modal_strength` and `link_text_translation`, which are intentionally broad review gates.
 - Add a PR comment posting step that uses `pr-comment.md`.

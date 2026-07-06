@@ -574,74 +574,7 @@
       }
     ]
   },
-  "segment_alignment": [
-    {
-      "alignment_id": "a_001",
-      "source_id": "p_001",
-      "target_id": "h_001",
-      "source_hash": "97f182616767a6e55703f196f216c2c6df3b85e0142716171d20a5a062f7f6b2",
-      "target_hash": "680d8b0e5be7f55be764d5472aad59c0fb8e92cf178031d2ca202816600a6754",
-      "source_kind": "paragraph",
-      "target_kind": "heading",
-      "source_text": "PaddleOCR 3.5: Running OCR and Document Parsing Tasks with a Transformers Backend Hugging Face Models Datasets Spaces Buckets new Docs Enterprise Pricing Website Tasks HuggingChat Collections Languages Organizations Community Blog Posts Daily Papers Learn Discord Forum GitHub Solutions Team & Enterprise Hugging Face PRO Enterprise Support Inference Providers Inference Endpoints Storage Buckets Log In Sign Up Back to Articles a]:hidden\"> PaddleOCR 3.5: Running OCR and Document Parsing Tasks with a Transformers Backend Team Article Published May 18, 2026 Upvote 38 +32 AlexZhang AlexTransformer Follow PaddlePaddle cuicheng ChengCui Follow PaddlePaddle Jun Zhang jzhang533 Follow PaddlePaddle Manhui Lin gggdddfff Follow PaddlePaddle Yue Zhang xiaohei66 Follow PaddlePaddle What changed? Why this matters Quick start When should you use the Transformers backend? Try it now Resources Acknowledgements PaddleOCR 3.5 brings OCR and document parsing tasks closer to the Hugging Face ecosystem. With this release, supported PaddleOCR models can run with Hugging Face Transformers as an inference backend by setting:",
-      "target_text": "PaddleOCR 3.5: Transformers 백엔드를 활용한 OCR 및 문서 파싱 작업 실행"
-    },
-    {
-      "alignment_id": "a_002",
-      "source_id": "p_002",
-      "target_id": "p_002",
-      "source_hash": "b48af7fdaf886daed9335e82aecc77af73a09fb35d4972e51fd0021eebbc65e2",
-      "target_hash": "65055d2ee12334bd455c5da433dc11165116aa840b5bbcd2071c381641d275cb",
-      "source_kind": "paragraph",
-      "target_kind": "paragraph",
-      "source_text": "PaddleOCR continues to provide OCR model series such as PP-OCRv5 and document parsing model series such as PaddleOCR-VL 1.5 , while Transformers becomes one of the supported backends for running them. Try the live demo on Hugging Face Spaces: https://huggingface.co/spaces/PaddlePaddle/paddleocr-3.5-transformers-demo What changed? PaddleOCR 3.5 introduces a more flexible inference-engine interface. Developers can select the backend through the engine parameter and pass backend-specific options through engine_config . In practice, this means: The pipelines behind these tasks are managed by PaddleOCR, so developers do not need to manually call each internal component. Transformers becomes one of the supported inference backends for running supported PaddleOCR models. Developers can configure backend-related options such as dtype , device placement, and attention implementation through engine_config . A simple way to understand the stack: Layer What it means Examples Application layer Applications that use OCR and document parsing outputs RAG, agents, Document AI... Model layer OCR and document parsing capabilities PP-OCRv5, PaddleOCR-VL 1.5... Inference backend layer Runtime used to run supported models Paddle static graph, Paddle dynamic graph, Transformers This release is mainly about the inference backend layer: PaddleOCR continues to provide OCR and document parsing capabilities, while Transformers gives supported PaddleOCR models another backend option that fits naturally into Hugging Face-centered environments. The larger Document AI workflow remains in the hands of developers and application builders. Why this matters For RAG, Document AI, and document agent applications, the hard part often starts before the LLM. Developers first need to turn PDFs, scanned documents, screenshots, tables, charts, formulas, and complex page layouts into reliable structured data. If this ingestion step is weak, the downstream LLM workflow may miss key information, retrieve the wrong context, or produce unreliable answers. PaddleOCR helps address this document ingestion challenge by providing OCR series models such as PP-OCRv5 and document parsing series models such as PaddleOCR-VL-1.5. With PaddleOCR 3.5, these capabilities are now easier to connect with Transformers-centered stacks. Supported PaddleOCR models can run with a Transformers backend, while PaddleOCR continues to manage the OCR or document parsing pipeline behind the scenes. For developers, this means less integration friction and a more natural path from documents to downstream RAG, agent, search, analytics, or automation workflows. Quick start Install PaddleOCR 3.5, PaddleX, Transformers, and a compatible PyTorch build for your hardware. For example, on a CUDA 12.6 environment:",
-      "target_text": "PaddleOCR 3.5은 OCR 및 문서 파싱 작업을 Hugging Face 생태계에 더 가깝게 가져옵니다. 이 릴리스로, 지원되는 PaddleOCR 모델은 다음과 같이 추론 백엔드로 Hugging Face Transformers를 설정해 실행할 수 있습니다:"
-    },
-    {
-      "alignment_id": "a_003",
-      "source_id": "p_003",
-      "target_id": "p_003",
-      "source_hash": "94f5847a5464e7e1c98bcb9cacde9ac1bcf8d8ea64103c107cf0cb197cb1c3e4",
-      "target_hash": "cdfa560ce8d07f2b296adbf3d7e7da95741ee729291c4d2d821c1bd063785701",
-      "source_kind": "paragraph",
-      "target_kind": "paragraph",
-      "source_text": "For CPU, ROCm, or other environments, install the PyTorch build that matches your target hardware. Run from the command line:",
-      "target_text": "PaddleOCR은 PP-OCRv5와 같은 OCR 모델 시리즈와 PaddleOCR-VL 1.5와 같은 문서 파싱 모델 시리즈를 계속 제공하는 한편, Transformers는 이들을 실행하기 위한 지원 백엔드 중 하나가 됩니다."
-    },
-    {
-      "alignment_id": "a_004",
-      "source_id": "p_004",
-      "target_id": "p_004",
-      "source_hash": "4257f597169568ced87b56ddbbd41046e83b53c174309a6ac61a3c0aa573de34",
-      "target_hash": "d18d047cf8f0b6c73b7d8b63b7f3c5b5f320a35dac98a85fa981b8234d29e146",
-      "source_kind": "paragraph",
-      "target_kind": "paragraph",
-      "source_text": "Or use the Python API:",
-      "target_text": "Hugging Face Spaces에서 라이브 데모를 시도해 보세요: https://huggingface.co/spaces/PaddlePaddle/paddleocr-3.5-transformers-demo"
-    },
-    {
-      "alignment_id": "a_005",
-      "source_id": "p_005",
-      "target_id": "h_005",
-      "source_hash": "88cf0d8c619a45595ad5ba404784a2caf8f048535e843d0ff82ccf124a713b21",
-      "target_hash": "07f74744c686c1fa3f561fa10d20bc092db80786aea2b8a924cd1223abc450d9",
-      "source_kind": "paragraph",
-      "target_kind": "heading",
-      "source_text": "The Hugging Face Space uses float32 for broad compatibility. For your own hardware, you can tune backend-specific options through engine_config :",
-      "target_text": "What changed?"
-    },
-    {
-      "alignment_id": "a_006",
-      "source_id": "p_006",
-      "target_id": "p_006",
-      "source_hash": "92c4d71cfaa56013c05f17884034c8b412b9055adafb4ae0e417dfe28d88fd82",
-      "target_hash": "68825147afda4c9eff724671cfad82a3879fce89d4316a054dceb283b1e89d44",
-      "source_kind": "paragraph",
-      "target_kind": "paragraph",
-      "source_text": "The best configuration depends on your model, hardware, and deployment environment. When should you use the Transformers backend? Use the Transformers backend when you want PaddleOCR’s OCR and document parsing capabilities to fit more naturally into a Hugging Face-centered stack. This is especially useful if you are building RAG, Document AI, search, analytics, or agent applications and already rely on PyTorch / Transformers infrastructure for model loading, experimentation, deployment, or model artifact management. The Transformers backend is a good fit when you want: a more familiar development experience for teams already using Transformers, Hub-compatible model discovery and distribution for supported PaddleOCR models, easier integration with existing PyTorch / Transformers services. When maximizing OCR or document parsing throughput is the priority, PaddleOCR’s default paddle_static backend is usually the recommended choice. This release is not about replacing one backend with another. It is about giving developers more flexibility: use PaddleOCR for OCR and document parsing capabilities, and choose the inference backend that best fits your stack. Try it now Try the PaddleOCR 3.5 Transformers demo on Hugging Face Spaces: https://huggingface.co/spaces/PaddlePaddle/paddleocr-3.5-transformers-demo Explore PaddleOCR models on the Hub: https://huggingface.co/PaddlePaddle/models PaddleOCR 3.5 brings OCR and document parsing capabilities closer to Transformers-centered workflows, while giving developers the freedom to build the larger Document AI applications around them. Resources PaddleOCR documentation: https://www.paddleocr.ai/ PaddleOCR on GitHub: https://github.com/PaddlePaddle/PaddleOCR PaddlePaddle organization on Hugging Face: https://huggingface.co/PaddlePaddle PaddleOCR 3.5 Transformers demo on Spaces: https://huggingface.co/spaces/PaddlePaddle/paddleocr-3.5-transformers-demo Acknowledgements We sincerely thank the Hugging Face engineers who supported the PaddleOCR 3.5 Transformers integration. Special thanks to Anton Vlasjuk for his end-to-end involvement, including reviewing and merging all related pull requests. We also appreciate Raushan Turganbay and Yoni Gozlan for their valuable PR reviews and feedback. Their guidance helped improve the integration quality, documentation, and developer experience for the Hugging Face community. Spaces mentioned in this article 1 Running on Zero Agents 9 Paddleocr 3.5 Transformers Demo 👁 9 Run OCR & Doc-Parsing with PaddleOCR 3.5 and Transforformers More from this author PP-OCRv6 on Hugging Face: 50-Language OCR from 1.5M to 34.5M Parameters 26 June 22, 2026 Community This is HUGE!</p>\\n<p>Love the article and the support.</p>\\n\",\"updatedAt\":\"2026-05-19T11:12:46.839Z\",\"author\":{\"_id\":\"608aabf24955d2bfc3cd99c6\",\"avatarUrl\":\"https://cdn-avatars.huggingface.co/v1/production/uploads/608aabf24955d2bfc3cd99c6/-YxmtpzEmf3NKOTktODRP.jpeg\",\"fullname\":\"Aritra Roy Gosthipaty\",\"name\":\"ariG23498\",\"type\":\"user\",\"isPro\":true,\"isHf\":true,\"isHfAdmin\":false,\"isMod\":false,\"followerCount\":730,\"isUserFollowing\":false,\"primaryOrg\":{\"avatarUrl\":\"https://cdn-avatars.huggingface.co/v1/production/uploads/1583856921041-5dd96eb166059660ed1ee413.png\",\"fullname\":\"Hugging Face\",\"name\":\"huggingface\",\"type\":\"org\",\"isHf\":true,\"details\":\"The AI community building the future.\",\"plan\":\"team\"}}},\"numEdits\":0,\"identifiedLanguage\":{\"language\":\"en\",\"probability\":0.9366487860679626},\"editors\":[\"ariG23498\"],\"editorAvatarUrls\":[\"https://cdn-avatars.huggingface.co/v1/production/uploads/608aabf24955d2bfc3cd99c6/-YxmtpzEmf3NKOTktODRP.jpeg\"],\"reactions\":[{\"reaction\":\"🤗\",\"users\":[\"ChengCui\"],\"count\":1},{\"reaction\":\"🚀\",\"users\":[\"ChengCui\"],\"count\":1}],\"isReport\":false}}],\"status\":\"open\",\"isReport\":false,\"pinned\":false,\"locked\":false,\"collection\":\"community_blogs\"},\"contextAuthors\":[\"AlexTransformer\",\"ChengCui\",\"jzhang533\",\"gggdddfff\",\"xiaohei66\"],\"primaryEmailConfirmed\":false,\"discussionRole\":0,\"acceptLanguages\":[\"*\"],\"withThread\":true,\"cardDisplay\":false,\"repoDiscussionsLocked\":false,\"hideComments\":true}\"> ariG23498 May 19 This is HUGE! Love the article and the support. See translation 🤗 1 1 🚀 1 1 + Reply Edit Preview Upload images, audio, and videos by dragging in the text input, pasting, or clicking here . Tap or paste here to upload images Comment · Sign up or log in to comment Upvote 38 +26 Spaces mentioned in this article 1 Running on Zero Agents 9 Paddleocr 3.5 Transformers Demo 👁 9 Run OCR & Doc-Parsing with PaddleOCR 3.5 and Transforformers System theme Company TOS Privacy About Careers Website Models Datasets Spaces Pricing Docs",
-      "target_text": "PaddleOCR 3.5는 더 유연한 추론 엔진 인터페이스를 도입합니다. 개발자는 engine 파라미터를 통해 백엔드를 선택하고, engine_config를 통해 백엔드별 옵션을 전달할 수 있습니다."
-    }
-  ],
+  "segment_alignment": [],
   "metrics": {
     "summary": {
       "qe_metric": "heuristic",
@@ -655,6 +588,22 @@
         "Source was fetched as HTML text; structural hard gates, segment coverage, and segment metrics were skipped."
       ]
     },
+    "segments": []
+  },
+  "mqm_judge": {
+    "enabled": false,
+    "provider": "off",
+    "model": "",
+    "prompt_path": "",
+    "fixture_path": "",
+    "requested_segment_count": 0,
+    "segment_count": 0,
+    "skipped_segment_count": 0,
+    "error_count": 0,
+    "severity_counts": {},
+    "cache_hits": 0,
+    "cache_misses": 0,
+    "warnings": [],
     "segments": []
   },
   "style_guide": {

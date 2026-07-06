@@ -28,8 +28,18 @@
 - qe_min: 0.1846
 - embedding_similarity_average: 0.6155
 - embedding_similarity_min: 0.0098
-- cache_hits: 0
-- cache_misses: 218
+- cache_hits: 218
+- cache_misses: 0
+
+## MQM Judge
+
+- Enabled: False
+- Provider: `off`
+- Requested segments: 0
+- Evaluated segments: 0
+- MQM errors: 0
+- Cache hits: 0
+- Cache misses: 0
 
 ## Style Guide
 

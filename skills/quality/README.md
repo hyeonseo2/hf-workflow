@@ -35,7 +35,7 @@ python skills/quality/tools/simple_quality_report.py \
   --output reports/pr-130/quality-report.md
 ```
 
-The Phase 1 deterministic hard-gate harness is:
+The main quality harness is:
 
 ```bash
 python skills/quality/tools/translation_quality_harness.py \
@@ -47,6 +47,7 @@ python skills/quality/tools/translation_quality_harness.py \
   --output-pr-comment reports/pr-130/pr-comment.md \
   --output-source-segments reports/pr-130/source-segments.jsonl \
   --output-target-segments reports/pr-130/target-segments.jsonl \
+  --output-mqm-judge-jsonl reports/pr-130/mqm-judge.jsonl \
   --qe-metric heuristic \
   --metric-cache reports/pr-130/metric-cache.json \
   --style-guide skills/quality/style/hf-blog-ko-translation-guide.md \
@@ -99,6 +100,37 @@ Style-guide evaluation is enabled by default:
 
 Style-guide findings are reported with `guide_rule` and `guide_section` fields
 in JSON and a "Style Guide Findings" table in Markdown.
+
+LLM MQM judge evaluation is optional and disabled by default:
+
+- `--llm-judge-provider off|openai|fixture`: keeps the default deterministic
+  mode, calls OpenAI Responses API, or reads a local fixture for reproducible
+  tests.
+- `--llm-judge-model gpt-5-nano`: selects the OpenAI model when the provider is
+  `openai`.
+- `--llm-judge-prompt path.md`: uses `judges/mqm_prompt.md` by default.
+- `--llm-judge-max-segments N`: limits evaluated segments for cost control; `0`
+  means all aligned segments.
+- `--llm-judge-review-threshold 0.75`: routes low MQM adequacy, fluency, or
+  technical scores into review issues.
+- `--llm-judge-api-key-env OPENAI_API_KEY`: chooses the environment variable
+  used for OpenAI authentication.
+- `--llm-judge-base-url URL`: optionally points the OpenAI client at a compatible
+  endpoint.
+- `--output-mqm-judge-jsonl path.jsonl`: writes raw normalized MQM segment
+  results for audit/debugging.
+
+OpenAI MQM results are merged into `issues`, included in the Markdown and PR
+comment summaries, and written under `mqm_judge` in `quality-report.json`. When
+`--metric-cache` is provided, MQM judge responses are cached by source segment
+hash, target segment hash, prompt content hash, and model. This keeps repeated
+runs stable and avoids paying for unchanged segment reviews.
+
+Install the optional OpenAI dependency only when real LLM judging is needed:
+
+```bash
+python -m pip install -e 'skills/quality[llm]'
+```
 
 ## Style Guide
 

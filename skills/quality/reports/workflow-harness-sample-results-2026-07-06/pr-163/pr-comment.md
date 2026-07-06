@@ -3,6 +3,7 @@
 - Status: review_required
 - Quality Score: 94.0
 - Style Score: 83.0
+- MQM Judge: off / 0 segments / 0 errors
 - Hard failures: 0
 - Style guide findings: 5
 

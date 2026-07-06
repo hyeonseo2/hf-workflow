@@ -6,6 +6,7 @@ import hashlib
 import html
 import json
 import math
+import os
 import re
 import ssl
 import urllib.error
@@ -14,7 +15,7 @@ import urllib.request
 from collections import Counter
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Iterable
+from typing import Any, Iterable
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -47,6 +48,9 @@ EMOJI_RE = re.compile(
 
 DEFAULT_STYLE_GUIDE_PATH = QUALITY_ROOT / "style" / "hf-blog-ko-translation-guide.md"
 DEFAULT_STYLE_POLICY_PATH = QUALITY_ROOT / "configs" / "style_policy.yml"
+DEFAULT_MQM_PROMPT_PATH = QUALITY_ROOT / "judges" / "mqm_prompt.md"
+MQM_CATEGORIES = {"accuracy", "terminology", "technical", "fluency", "style_locale", "formatting"}
+SEVERITIES = {"neutral", "minor", "major", "critical"}
 
 
 @dataclass
@@ -92,6 +96,16 @@ class MetricConfig:
     enable_style_guide: bool = True
     style_guide_path: Path | None = DEFAULT_STYLE_GUIDE_PATH
     style_policy_path: Path | None = DEFAULT_STYLE_POLICY_PATH
+    llm_judge_provider: str = "off"
+    llm_judge_model: str = "gpt-5-nano"
+    llm_judge_prompt_path: Path | None = DEFAULT_MQM_PROMPT_PATH
+    llm_judge_fixture_path: Path | None = None
+    llm_judge_max_segments: int = 0
+    llm_judge_review_threshold: float = 0.75
+    llm_judge_api_key_env: str = "OPENAI_API_KEY"
+    llm_judge_base_url: str = ""
+    llm_judge_timeout_seconds: float = 60.0
+    llm_judge_max_output_tokens: int = 1200
 
 
 @dataclass
@@ -1360,12 +1374,23 @@ def style_penalty(issues: list[Issue]) -> float:
     }
     penalty = 0.0
     for item in issues:
-        if not item.guide_rule:
+        if not is_style_guide_issue(item):
             continue
         penalty += weights.get(item.guide_rule, 2.0)
         if item.severity == "major":
             penalty += 2.0
     return min(40.0, penalty)
+
+
+def is_mqm_judge_issue(item: Issue | dict[str, object]) -> bool:
+    message = item.message if isinstance(item, Issue) else str(item.get("message", ""))
+    guide_rule = item.guide_rule if isinstance(item, Issue) else str(item.get("guide_rule", ""))
+    return message.startswith("MQM judge") or guide_rule in {"mqm_judge", "mqm_score"}
+
+
+def is_style_guide_issue(item: Issue | dict[str, object]) -> bool:
+    guide_rule = item.guide_rule if isinstance(item, Issue) else str(item.get("guide_rule", ""))
+    return bool(guide_rule) and not is_mqm_judge_issue(item)
 
 
 def text_tokens(text: str) -> list[str]:
@@ -1630,6 +1655,376 @@ def validate_metric_thresholds(issues: list[Issue], metrics: dict[str, object], 
             )
 
 
+def clamp_score(value: object, default: float = 1.0) -> float:
+    try:
+        score = float(value)
+    except (TypeError, ValueError):
+        score = default
+    return round(max(0.0, min(1.0, score)), 4)
+
+
+def load_mqm_prompt(path: Path | None) -> str:
+    prompt_path = path or DEFAULT_MQM_PROMPT_PATH
+    if prompt_path.exists():
+        return prompt_path.read_text(encoding="utf-8")
+    return (
+        "You are a Korean localization QA reviewer for Hugging Face technical blog posts. "
+        "Return strict JSON with segment_id, adequacy_score, fluency_score, technical_score, and errors."
+    )
+
+
+def parse_json_object(text: str) -> dict[str, object]:
+    stripped = text.strip()
+    fence = re.match(r"^```(?:json)?\s*(.*?)\s*```$", stripped, re.DOTALL)
+    if fence:
+        stripped = fence.group(1).strip()
+    try:
+        loaded = json.loads(stripped)
+    except json.JSONDecodeError:
+        start = stripped.find("{")
+        end = stripped.rfind("}")
+        if start == -1 or end == -1 or end <= start:
+            raise
+        loaded = json.loads(stripped[start : end + 1])
+    if not isinstance(loaded, dict):
+        raise ValueError("MQM judge response must be a JSON object.")
+    return loaded
+
+
+def normalize_mqm_error(raw: object, warnings: list[str], segment_id: str) -> dict[str, str] | None:
+    if not isinstance(raw, dict):
+        warnings.append(f"Skipped non-object MQM error for segment {segment_id}.")
+        return None
+    category = str(raw.get("category") or "accuracy").strip()
+    if category not in MQM_CATEGORIES:
+        warnings.append(f"MQM error for segment {segment_id} used unknown category `{category}`; normalized to accuracy.")
+        category = "accuracy"
+    severity = str(raw.get("severity") or "major").strip()
+    if severity not in SEVERITIES:
+        warnings.append(f"MQM error for segment {segment_id} used unknown severity `{severity}`; normalized to major.")
+        severity = "major"
+    return {
+        "guide_rule": str(raw.get("guide_rule") or "mqm_judge").strip(),
+        "guide_section": str(raw.get("guide_section") or "MQM judge").strip(),
+        "category": category,
+        "severity": severity,
+        "source_span": str(raw.get("source_span") or "").strip(),
+        "target_span": str(raw.get("target_span") or "").strip(),
+        "explanation": str(raw.get("explanation") or "").strip(),
+        "suggested_fix": str(raw.get("suggested_fix") or "").strip(),
+    }
+
+
+def normalize_mqm_result(raw: object, expected_segment_id: str, warnings: list[str]) -> dict[str, object] | None:
+    if not isinstance(raw, dict):
+        warnings.append(f"Skipped non-object MQM result for segment {expected_segment_id}.")
+        return None
+    segment_id = str(raw.get("segment_id") or expected_segment_id).strip() or expected_segment_id
+    raw_errors = raw.get("errors", [])
+    if raw_errors is None:
+        raw_errors = []
+    if not isinstance(raw_errors, list):
+        warnings.append(f"MQM result for segment {segment_id} has non-list errors; ignored.")
+        raw_errors = []
+    errors = [
+        normalized
+        for item in raw_errors
+        if (normalized := normalize_mqm_error(item, warnings, segment_id)) is not None
+    ]
+    return {
+        "segment_id": segment_id,
+        "adequacy_score": clamp_score(raw.get("adequacy_score"), default=1.0),
+        "fluency_score": clamp_score(raw.get("fluency_score"), default=1.0),
+        "technical_score": clamp_score(raw.get("technical_score"), default=1.0),
+        "errors": errors,
+    }
+
+
+def selected_judge_alignments(alignment: list[dict[str, str]], max_segments: int) -> list[dict[str, str]]:
+    if max_segments <= 0:
+        return alignment
+    return alignment[:max_segments]
+
+
+def load_mqm_fixture(path: Path | None, warnings: list[str]) -> dict[str, object]:
+    if path is None:
+        warnings.append("MQM fixture provider skipped: --llm-judge-fixture was not provided.")
+        return {}
+    if not path.exists():
+        warnings.append(f"MQM fixture provider skipped: fixture not found: {path}")
+        return {}
+    text = path.read_text(encoding="utf-8").strip()
+    if not text:
+        return {}
+    rows: list[object] = []
+    try:
+        loaded = json.loads(text)
+        rows = loaded if isinstance(loaded, list) else [loaded]
+    except json.JSONDecodeError:
+        for line_number, line in enumerate(text.splitlines(), start=1):
+            if not line.strip():
+                continue
+            try:
+                rows.append(json.loads(line))
+            except json.JSONDecodeError:
+                warnings.append(f"Skipped invalid MQM fixture JSON on line {line_number}.")
+    mapping: dict[str, object] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            warnings.append("Skipped non-object MQM fixture row.")
+            continue
+        key = str(row.get("segment_id") or row.get("target_id") or row.get("source_id") or row.get("alignment_id") or "")
+        if key:
+            mapping[key] = row
+    return mapping
+
+
+def run_fixture_mqm_judge(
+    alignment: list[dict[str, str]],
+    config: MetricConfig,
+    warnings: list[str],
+) -> list[dict[str, object]]:
+    fixture = load_mqm_fixture(config.llm_judge_fixture_path, warnings)
+    results: list[dict[str, object]] = []
+    for item in selected_judge_alignments(alignment, config.llm_judge_max_segments):
+        target_id = str(item.get("target_id") or "")
+        candidates = [
+            target_id,
+            str(item.get("source_id") or ""),
+            str(item.get("alignment_id") or ""),
+        ]
+        raw = next((fixture[key] for key in candidates if key in fixture), None)
+        if raw is None:
+            continue
+        normalized = normalize_mqm_result(raw, target_id, warnings)
+        if normalized is not None:
+            results.append(normalized)
+    return results
+
+
+def openai_mqm_task(item: dict[str, str]) -> str:
+    payload = {
+        "segment_id": item.get("target_id") or item.get("source_id") or item.get("alignment_id"),
+        "source_kind": item.get("source_kind"),
+        "target_kind": item.get("target_kind"),
+        "source_text": item.get("source_text"),
+        "target_text": item.get("target_text"),
+        "output_contract": {
+            "segment_id": "same as input segment_id",
+            "adequacy_score": "0.0 to 1.0",
+            "fluency_score": "0.0 to 1.0",
+            "technical_score": "0.0 to 1.0",
+            "errors": "array of MQM errors; empty array if no actionable issue",
+        },
+    }
+    return json.dumps(payload, ensure_ascii=False, indent=2)
+
+
+def run_openai_mqm_judge(
+    alignment: list[dict[str, str]],
+    config: MetricConfig,
+    warnings: list[str],
+) -> tuple[list[dict[str, object]], int, int]:
+    prompt = load_mqm_prompt(config.llm_judge_prompt_path)
+    prompt_hash = hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+    cache = load_metric_cache(config.metric_cache_path)
+    cache_hits = 0
+    cache_misses = 0
+    results: list[dict[str, object]] = []
+    pending: list[tuple[dict[str, str], str, str]] = []
+    for item in selected_judge_alignments(alignment, config.llm_judge_max_segments):
+        target_id = str(item.get("target_id") or item.get("source_id") or item.get("alignment_id") or "")
+        cache_key = metric_cache_key(
+            f"mqm:{config.llm_judge_model}:{prompt_hash}",
+            str(item.get("source_hash") or ""),
+            str(item.get("target_hash") or ""),
+        )
+        cached = cache.get(cache_key)
+        if isinstance(cached, dict):
+            normalized = normalize_mqm_result(cached, target_id, warnings)
+            if normalized is not None:
+                results.append(normalized)
+                cache_hits += 1
+                continue
+            warnings.append(f"OpenAI MQM judge cache entry was invalid for segment {target_id}; refreshed.")
+        cache_misses += 1
+        pending.append((item, target_id, cache_key))
+    if not pending:
+        return results, cache_hits, cache_misses
+
+    api_key = os.environ.get(config.llm_judge_api_key_env, "").strip()
+    if not api_key:
+        warnings.append(f"OpenAI MQM judge skipped: env var {config.llm_judge_api_key_env} is not set.")
+        return results, cache_hits, cache_misses
+    try:
+        from openai import OpenAI
+    except ImportError:
+        warnings.append("OpenAI MQM judge skipped: `openai` package is not installed.")
+        return results, cache_hits, cache_misses
+
+    client_kwargs: dict[str, object] = {"api_key": api_key}
+    if config.llm_judge_base_url:
+        client_kwargs["base_url"] = config.llm_judge_base_url
+    client = OpenAI(**client_kwargs)
+    cache_dirty = False
+    for item, target_id, cache_key in pending:
+        try:
+            response = client.responses.create(
+                model=config.llm_judge_model,
+                instructions=prompt,
+                input=openai_mqm_task(item),
+                max_output_tokens=config.llm_judge_max_output_tokens,
+                text={"format": {"type": "json_object"}},
+                timeout=config.llm_judge_timeout_seconds,
+            )
+            raw = parse_json_object(response.output_text)
+        except Exception as exc:
+            warnings.append(f"OpenAI MQM judge failed for segment {target_id}: {exc}")
+            continue
+        normalized = normalize_mqm_result(raw, target_id, warnings)
+        if normalized is not None:
+            results.append(normalized)
+            cache[cache_key] = normalized
+            cache_dirty = True
+    if cache_dirty:
+        save_metric_cache(config.metric_cache_path, cache)
+    return results, cache_hits, cache_misses
+
+
+def summarize_mqm_judge(
+    *,
+    enabled: bool,
+    provider: str,
+    model: str,
+    prompt_path: Path | None,
+    fixture_path: Path | None,
+    requested_segment_count: int,
+    results: list[dict[str, object]],
+    warnings: list[str],
+    cache_hits: int = 0,
+    cache_misses: int = 0,
+) -> dict[str, object]:
+    severity_counts: Counter[str] = Counter()
+    for result in results:
+        for error in result.get("errors", []):
+            if isinstance(error, dict):
+                severity_counts[str(error.get("severity") or "")] += 1
+    summary: dict[str, object] = {
+        "enabled": enabled,
+        "provider": provider,
+        "model": model if provider == "openai" else "",
+        "prompt_path": str(prompt_path or "") if enabled else "",
+        "fixture_path": str(fixture_path or "") if provider == "fixture" else "",
+        "requested_segment_count": requested_segment_count,
+        "segment_count": len(results),
+        "skipped_segment_count": max(0, requested_segment_count - len(results)),
+        "error_count": sum(severity_counts.values()),
+        "severity_counts": dict(sorted(severity_counts.items())),
+        "cache_hits": cache_hits,
+        "cache_misses": cache_misses,
+        "warnings": warnings,
+        "segments": results,
+    }
+    if results:
+        summary["adequacy_average"] = round(sum(float(item["adequacy_score"]) for item in results) / len(results), 4)
+        summary["fluency_average"] = round(sum(float(item["fluency_score"]) for item in results) / len(results), 4)
+        summary["technical_average"] = round(sum(float(item["technical_score"]) for item in results) / len(results), 4)
+    return summary
+
+
+def evaluate_mqm_judge(alignment: list[dict[str, str]], config: MetricConfig) -> dict[str, object]:
+    provider = config.llm_judge_provider
+    enabled = provider != "off"
+    requested = len(selected_judge_alignments(alignment, config.llm_judge_max_segments)) if enabled else 0
+    warnings: list[str] = []
+    results: list[dict[str, object]] = []
+    cache_hits = 0
+    cache_misses = 0
+    if not enabled:
+        return summarize_mqm_judge(
+            enabled=False,
+            provider="off",
+            model="",
+            prompt_path=None,
+            fixture_path=None,
+            requested_segment_count=0,
+            results=[],
+            warnings=[],
+        )
+    if not alignment:
+        warnings.append("MQM judge skipped: no source/target segment alignment is available.")
+    elif provider == "fixture":
+        results = run_fixture_mqm_judge(alignment, config, warnings)
+    elif provider == "openai":
+        results, cache_hits, cache_misses = run_openai_mqm_judge(alignment, config, warnings)
+    else:
+        warnings.append(f"MQM judge skipped: unknown provider `{provider}`.")
+    return summarize_mqm_judge(
+        enabled=enabled,
+        provider=provider,
+        model=config.llm_judge_model,
+        prompt_path=config.llm_judge_prompt_path,
+        fixture_path=config.llm_judge_fixture_path,
+        requested_segment_count=requested,
+        results=results,
+        warnings=warnings,
+        cache_hits=cache_hits,
+        cache_misses=cache_misses,
+    )
+
+
+def apply_mqm_judge_issues(issues: list[Issue], mqm_judge: dict[str, object], review_threshold: float) -> None:
+    if not mqm_judge.get("enabled"):
+        return
+    for result in mqm_judge.get("segments", []):
+        if not isinstance(result, dict):
+            continue
+        segment_id = str(result.get("segment_id") or "")
+        categories_with_errors: set[str] = set()
+        for error in result.get("errors", []):
+            if not isinstance(error, dict):
+                continue
+            severity = str(error.get("severity") or "major")
+            if severity == "neutral":
+                continue
+            category = str(error.get("category") or "accuracy")
+            categories_with_errors.add(category)
+            explanation = str(error.get("explanation") or "")
+            issue(
+                issues,
+                category,
+                severity,
+                f"MQM judge reported {category} issue.",
+                segment_id=segment_id,
+                source_span=str(error.get("source_span") or ""),
+                target_span=str(error.get("target_span") or ""),
+                suggested_fix=str(error.get("suggested_fix") or ""),
+                reason=explanation,
+                guide_rule=str(error.get("guide_rule") or "mqm_judge"),
+                guide_section=str(error.get("guide_section") or "MQM judge"),
+            )
+        score_checks = [
+            ("adequacy_score", "accuracy", "adequacy"),
+            ("technical_score", "technical", "technical"),
+            ("fluency_score", "fluency", "fluency"),
+        ]
+        for key, category, label in score_checks:
+            score = clamp_score(result.get(key), default=1.0)
+            if score < review_threshold and category not in categories_with_errors:
+                issue(
+                    issues,
+                    category,
+                    "major",
+                    f"MQM judge {label} score is low.",
+                    segment_id=segment_id,
+                    target_span=f"{score:.4f}",
+                    suggested_fix="Review this segment against the MQM judge feedback.",
+                    reason=f"MQM {label} score is below threshold {review_threshold:.2f}.",
+                    guide_rule="mqm_score",
+                    guide_section="MQM judge score threshold",
+                )
+
+
 def korean_ratio(text: str) -> float:
     letters = LETTER_RE.findall(text)
     if not letters:
@@ -1678,6 +2073,8 @@ def validate_documents(
         },
         "segments": [],
     }
+    mqm_judge: dict[str, object] = evaluate_mqm_judge([], metric_settings)
+    segment_alignment: list[dict[str, str]] = []
     source_is_structural = source is not None and source_format in {"", "markdown", "url_markdown"}
 
     for error in target.parse_errors:
@@ -1720,6 +2117,7 @@ def validate_documents(
             issue(issues, "formatting", "critical", error, reason="Source Markdown parse failed.")
 
         if source_is_structural:
+            segment_alignment = align_segments(source, target)
             for key in ["authors", "thumbnail", "tags", "blog"]:
                 source_value = source.frontmatter.get(key)
                 if source_value is None:
@@ -1763,10 +2161,17 @@ def validate_documents(
             validate_segment_coverage(issues, source, target)
             metrics = evaluate_metrics(source, target, metric_settings)
             validate_metric_thresholds(issues, metrics, metric_settings)
+            mqm_judge = evaluate_mqm_judge(segment_alignment, metric_settings)
+            apply_mqm_judge_issues(issues, mqm_judge, metric_settings.llm_judge_review_threshold)
         else:
             metrics["summary"]["warnings"].append(
                 "Source was fetched as HTML text; structural hard gates, segment coverage, and segment metrics were skipped."
             )
+            if metric_settings.llm_judge_provider != "off":
+                mqm_judge = evaluate_mqm_judge([], metric_settings)
+                mqm_judge["warnings"] = list(mqm_judge.get("warnings", [])) + [
+                    "MQM judge skipped: source was fetched as HTML text, not comparable Markdown segments."
+                ]
         validate_glossary(issues, source, target, glossary_entries)
 
     validate_style_guide(issues, source, target, active_style_policy)
@@ -1796,9 +2201,9 @@ def validate_documents(
     critical = [item for item in issues if item.severity == "critical"]
     major = [item for item in issues if item.severity == "major"]
     minor = [item for item in issues if item.severity == "minor"]
-    style_issues = [item for item in issues if item.guide_rule]
-    non_style_major = [item for item in major if not item.guide_rule]
-    style_major = [item for item in major if item.guide_rule]
+    style_issues = [item for item in issues if is_style_guide_issue(item)]
+    non_style_major = [item for item in major if not is_style_guide_issue(item)]
+    style_major = [item for item in major if is_style_guide_issue(item)]
     quality_score = max(
         0.0,
         100.0
@@ -1818,8 +2223,12 @@ def validate_documents(
     else:
         status = "reject"
 
-    non_style_accuracy_issues = [item for item in issues if item.category == "accuracy" and not item.guide_rule]
-    style_accuracy_major = [item for item in issues if item.category == "accuracy" and item.guide_rule and item.severity == "major"]
+    non_style_accuracy_issues = [item for item in issues if item.category == "accuracy" and not is_style_guide_issue(item)]
+    style_accuracy_major = [
+        item
+        for item in issues
+        if item.category == "accuracy" and is_style_guide_issue(item) and item.severity == "major"
+    ]
     dimension_scores = {
         "adequacy": max(
             0.0,
@@ -1837,6 +2246,16 @@ def validate_documents(
         "publishing_integrity": max(0.0, 100.0 - 20.0 * sum(1 for item in issues if item.category == "formatting")),
         "style_locale": max(0.0, 100.0 - style_penalty(issues)),
     }
+    if mqm_judge.get("segment_count"):
+        if "adequacy_average" in mqm_judge:
+            dimension_scores["adequacy"] = min(dimension_scores["adequacy"], float(mqm_judge["adequacy_average"]) * 100.0)
+        if "technical_average" in mqm_judge:
+            dimension_scores["technical_accuracy"] = min(
+                dimension_scores["technical_accuracy"],
+                float(mqm_judge["technical_average"]) * 100.0,
+            )
+        if "fluency_average" in mqm_judge:
+            dimension_scores["fluency"] = min(dimension_scores["fluency"], float(mqm_judge["fluency_average"]) * 100.0)
     style_summary = {
         "enabled": active_style_policy is not None,
         "style_score": dimension_scores["style_locale"],
@@ -1854,8 +2273,9 @@ def validate_documents(
             "source": [segment_to_json(segment) for segment in source.segments] if source else [],
             "target": [segment_to_json(segment) for segment in target.segments],
         },
-        "segment_alignment": align_segments(source, target) if source else [],
+        "segment_alignment": segment_alignment,
         "metrics": metrics,
+        "mqm_judge": mqm_judge,
         "style_guide": style_summary,
         "metadata": {
             "target_path": target_path,
@@ -1896,6 +2316,7 @@ def markdown_report(report: dict[str, object]) -> str:
     dimension_scores = report["dimension_scores"]
     metadata = report["metadata"]
     metric_summary = report.get("metrics", {}).get("summary", {})
+    mqm_summary = report.get("mqm_judge", {})
     style_summary = report.get("style_guide", {})
     lines = [
         "# Quality Report",
@@ -1938,6 +2359,26 @@ def markdown_report(report: dict[str, object]) -> str:
     else:
         lines.append("No metric summary available.")
 
+    lines += ["", "## MQM Judge", ""]
+    lines.append(f"- Enabled: {mqm_summary.get('enabled', False)}")
+    lines.append(f"- Provider: `{mqm_summary.get('provider', 'off')}`")
+    if mqm_summary.get("model"):
+        lines.append(f"- Model: `{mqm_summary.get('model')}`")
+    if mqm_summary.get("prompt_path"):
+        lines.append(f"- Prompt: `{mqm_summary.get('prompt_path')}`")
+    lines.append(f"- Requested segments: {mqm_summary.get('requested_segment_count', 0)}")
+    lines.append(f"- Evaluated segments: {mqm_summary.get('segment_count', 0)}")
+    lines.append(f"- MQM errors: {mqm_summary.get('error_count', 0)}")
+    lines.append(f"- Cache hits: {mqm_summary.get('cache_hits', 0)}")
+    lines.append(f"- Cache misses: {mqm_summary.get('cache_misses', 0)}")
+    if mqm_summary.get("severity_counts"):
+        lines.append(f"- Severity counts: {mqm_summary.get('severity_counts')}")
+    for key in ["adequacy_average", "technical_average", "fluency_average"]:
+        if key in mqm_summary:
+            lines.append(f"- {key}: {mqm_summary[key]}")
+    for warning in mqm_summary.get("warnings", []) or []:
+        lines.append(f"- warning: {warning}")
+
     lines += ["", "## Style Guide", ""]
     lines.append(f"- Enabled: {style_summary.get('enabled', False)}")
     if metadata.get("style_guide_path"):
@@ -1949,7 +2390,7 @@ def markdown_report(report: dict[str, object]) -> str:
     if style_summary.get("rules"):
         lines.append(f"- Rule hits: {style_summary.get('rules')}")
 
-    style_issues = [item for item in issues if item.get("guide_rule")]
+    style_issues = [item for item in issues if is_style_guide_issue(item)]
     lines += ["", "## Style Guide Findings", ""]
     if not style_issues:
         lines.append("No style guide findings.")
@@ -1998,17 +2439,23 @@ def markdown_report(report: dict[str, object]) -> str:
 
 def pr_comment_report(report: dict[str, object], max_style_issues: int = 5) -> str:
     issues = report["issues"]
-    style_issues = [item for item in issues if item.get("guide_rule")]
+    style_issues = [item for item in issues if is_style_guide_issue(item)]
+    mqm_summary = report.get("mqm_judge", {})
     lines = [
         "## Translation Quality Gate",
         "",
         f"- Status: {report['status']}",
         f"- Quality Score: {report['quality_score']:.1f}",
         f"- Style Score: {report.get('style_guide', {}).get('style_score', 0):.1f}",
+        f"- MQM Judge: {mqm_summary.get('provider', 'off')} / {mqm_summary.get('segment_count', 0)} segments / {mqm_summary.get('error_count', 0)} errors",
         f"- Hard failures: {len(report['hard_failures'])}",
         f"- Style guide findings: {len(style_issues)}",
         "",
     ]
+    for warning in (mqm_summary.get("warnings", []) or [])[:3]:
+        lines.append(f"- MQM warning: {warning}")
+    if mqm_summary.get("warnings"):
+        lines.append("")
     if style_issues:
         lines += ["### Top Style Guide Findings", ""]
         for index, item in enumerate(style_issues[:max_style_issues], start=1):
@@ -2021,7 +2468,7 @@ def pr_comment_report(report: dict[str, object], max_style_issues: int = 5) -> s
     return "\n".join(lines).rstrip() + "\n"
 
 
-def write_segments_jsonl(path: Path, segments: list[dict[str, str]]) -> None:
+def write_segments_jsonl(path: Path, segments: list[dict[str, object]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = [json.dumps(segment, ensure_ascii=False) for segment in segments]
     path.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
@@ -2102,6 +2549,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output-pr-comment", help="Optional PR comment Markdown summary output path.")
     parser.add_argument("--output-source-segments", help="Optional source segment JSONL output path.")
     parser.add_argument("--output-target-segments", help="Optional target segment JSONL output path.")
+    parser.add_argument("--output-mqm-judge-jsonl", help="Optional MQM judge segment result JSONL output path.")
     parser.add_argument(
         "--glossary",
         action="append",
@@ -2123,6 +2571,21 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--style-guide", help="Optional Korean localization style guide Markdown path.")
     parser.add_argument("--style-policy", help="Optional style policy YAML path.")
     parser.add_argument("--disable-style-guide", action="store_true", help="Disable style-guide validators.")
+    parser.add_argument(
+        "--llm-judge-provider",
+        choices=["off", "openai", "fixture"],
+        default="off",
+        help="Optional MQM LLM judge provider. `fixture` reads precomputed JSON/JSONL judge results for deterministic tests.",
+    )
+    parser.add_argument("--llm-judge-model", default=os.environ.get("LLM_JUDGE_MODEL") or os.environ.get("OPENAI_MODEL") or "gpt-5-nano")
+    parser.add_argument("--llm-judge-prompt", help="Optional MQM judge prompt path.")
+    parser.add_argument("--llm-judge-fixture", help="Optional JSON/JSONL MQM judge fixture path.")
+    parser.add_argument("--llm-judge-max-segments", type=int, default=0, help="Maximum aligned segments to send to the MQM judge. 0 means all.")
+    parser.add_argument("--llm-judge-review-threshold", type=float, default=0.75, help="Review threshold for low MQM segment scores.")
+    parser.add_argument("--llm-judge-api-key-env", default="OPENAI_API_KEY", help="Environment variable that holds the OpenAI API key.")
+    parser.add_argument("--llm-judge-base-url", default=os.environ.get("OPENAI_BASE_URL", ""), help="Optional OpenAI-compatible base URL.")
+    parser.add_argument("--llm-judge-timeout", type=float, default=60.0, help="Timeout in seconds for each MQM judge API call.")
+    parser.add_argument("--llm-judge-max-output-tokens", type=int, default=1200, help="Maximum output tokens for each MQM judge response.")
     parser.add_argument("--no-fetch-source-url", action="store_true", help="Do not fetch source.url when no source Markdown file is available.")
     parser.add_argument("--fail-on-reject", action="store_true", help="Exit non-zero when status is reject.")
     args = parser.parse_args(argv)
@@ -2143,6 +2606,16 @@ def main(argv: list[str] | None = None) -> int:
         enable_style_guide=not args.disable_style_guide,
         style_guide_path=Path(args.style_guide).resolve() if args.style_guide else DEFAULT_STYLE_GUIDE_PATH,
         style_policy_path=Path(args.style_policy).resolve() if args.style_policy else DEFAULT_STYLE_POLICY_PATH,
+        llm_judge_provider=args.llm_judge_provider,
+        llm_judge_model=args.llm_judge_model,
+        llm_judge_prompt_path=Path(args.llm_judge_prompt).resolve() if args.llm_judge_prompt else DEFAULT_MQM_PROMPT_PATH,
+        llm_judge_fixture_path=Path(args.llm_judge_fixture).resolve() if args.llm_judge_fixture else None,
+        llm_judge_max_segments=args.llm_judge_max_segments,
+        llm_judge_review_threshold=args.llm_judge_review_threshold,
+        llm_judge_api_key_env=args.llm_judge_api_key_env,
+        llm_judge_base_url=args.llm_judge_base_url,
+        llm_judge_timeout_seconds=args.llm_judge_timeout,
+        llm_judge_max_output_tokens=args.llm_judge_max_output_tokens,
     )
     report = build_report(
         manifest_path,
@@ -2175,6 +2648,9 @@ def main(argv: list[str] | None = None) -> int:
         write_segments_jsonl(Path(args.output_source_segments), segments.get("source", []))
     if args.output_target_segments:
         write_segments_jsonl(Path(args.output_target_segments), segments.get("target", []))
+    if args.output_mqm_judge_jsonl:
+        mqm_segments = report.get("mqm_judge", {}).get("segments", [])
+        write_segments_jsonl(Path(args.output_mqm_judge_jsonl), mqm_segments)
 
     print(f"Wrote quality JSON report: {output_json}")
     print(f"Wrote quality Markdown report: {output_md}")
