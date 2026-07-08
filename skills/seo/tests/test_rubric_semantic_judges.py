@@ -37,6 +37,23 @@ def test_semantic_metadata_judge_can_fail_required_gate(fixtures_dir):
     assert result["gate"]["status"] == "NEEDS_CHANGES"
 
 
+def test_openai_required_fails_gate_when_rubric_is_not_available(fixtures_dir):
+    result = evaluate_path(
+        fixtures_dir / "curated" / "realistic-positive-no-image.md",
+        openai_required=True,
+        openai_model="gpt-test",
+    )
+
+    assert result["rubric"]["available"] is False
+    assert result["openai"] == {
+        "required": True,
+        "model": "gpt-test",
+        "rubric_used": False,
+    }
+    assert result["gate"]["passed"] is False
+    assert result["gate"]["reason"] == "OpenAI rubric required but not run"
+
+
 def test_alt_semantics_review_does_not_block_gate(fixtures_dir):
     def judge(name, payload):
         if name == "semantic_metadata":

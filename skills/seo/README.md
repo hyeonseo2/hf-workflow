@@ -48,6 +48,11 @@ The existing HF Agent review bot depends on stable SEO output names:
 For local/daily reports the same split is written under `reports/<report_id>/`
 as `seo-report.md`, `seo-eval.json`, and `metadata-suggestion.json`.
 
+In CI, SEO review is OpenAI-required. Deterministic checks still run first and
+always produce evidence, but OpenAI rubric evaluation and OpenAI metadata
+candidate generation must run for the SEO gate to pass. The deterministic
+metadata generator is only a local/test fallback when explicitly allowed.
+
 ## Quality-status fixtures
 
 The test harness is not meant to make every existing blog post pass. It checks

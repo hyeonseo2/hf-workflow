@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import shutil
 import subprocess
@@ -41,6 +42,15 @@ def run(cmd: list[str], cwd: Path, check: bool = True) -> int:
     return proc.returncode
 
 
+def openai_required_enabled() -> bool:
+    return os.getenv("SEO_OPENAI_REQUIRED", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run local SEO and quality review from a manifest.")
     parser.add_argument("--manifest", required=True, help="Path to translation-flow manifest YAML.")
@@ -77,40 +87,46 @@ def main() -> int:
 
     # The SEO eval gate exits non-zero when the post fails; we still want the
     # report written, so don't raise — surface the gate result instead.
+    seo_command = [
+        "python3",
+        "skills/seo/tools/seo_eval.py",
+        "--manifest",
+        str(manifest_copy),
+        "--target-root",
+        str(target_root),
+        "--output",
+        str(report_dir / "seo-report.md"),
+        "--json",
+        str(report_dir / "seo-eval.json"),
+    ]
+    if openai_required_enabled():
+        seo_command.extend(["--openai-required", "--openai-model", os.getenv("OPENAI_MODEL", "")])
     seo_code = run(
-        [
-            "python3",
-            "skills/seo/tools/seo_eval.py",
-            "--manifest",
-            str(manifest_copy),
-            "--target-root",
-            str(target_root),
-            "--output",
-            str(report_dir / "seo-report.md"),
-            "--json",
-            str(report_dir / "seo-eval.json"),
-        ],
+        seo_command,
         cwd=repo_root,
         check=False,
     )
     print(f"SEO gate: {'PASS' if seo_code == 0 else 'FAIL'} (exit {seo_code})")
+    metadata_command = [
+        "python3",
+        "skills/seo/tools/metadata_suggestion.py",
+        "--file",
+        manifest.get("translation.file_path", ""),
+        "--target-root",
+        str(target_root),
+        "--eval-json",
+        str(report_dir / "seo-eval.json"),
+        "--output",
+        str(report_dir / "metadata-suggestion.json"),
+        "--manifest",
+        str(manifest_copy),
+        "--report-path",
+        str(report_dir / "seo-report.md"),
+    ]
+    if openai_required_enabled():
+        metadata_command.extend(["--openai-required", "--openai-model", os.getenv("OPENAI_MODEL", "")])
     run(
-        [
-            "python3",
-            "skills/seo/tools/metadata_suggestion.py",
-            "--file",
-            manifest.get("translation.file_path", ""),
-            "--target-root",
-            str(target_root),
-            "--eval-json",
-            str(report_dir / "seo-eval.json"),
-            "--output",
-            str(report_dir / "metadata-suggestion.json"),
-            "--manifest",
-            str(manifest_copy),
-            "--report-path",
-            str(report_dir / "seo-report.md"),
-        ],
+        metadata_command,
         cwd=repo_root,
     )
     run(

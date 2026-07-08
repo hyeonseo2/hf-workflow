@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import metadata_suggestion
 from metadata_suggestion import build_suggestion, main
 
 
@@ -71,6 +72,76 @@ def test_metadata_suggestion_generates_candidate_without_writing_post(
     assert "skill" not in suggestion
     assert "conclusion" not in suggestion
     assert post.read_text(encoding="utf-8") == original
+
+
+def test_metadata_suggestion_uses_openai_generator_when_required(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    post = tmp_path / "_posts" / "post.md"
+    post.parent.mkdir()
+    post.write_text(POST, encoding="utf-8")
+    eval_json = tmp_path / "seo-eval.json"
+    eval_json.write_text(json.dumps({
+        "gate": {"passed": True, "status": "PASS"},
+        "input": {
+            "source_url": "https://huggingface.co/blog/rteb",
+            "primary_keyword": "검색 임베딩 벤치마크",
+        },
+    }))
+
+    def fake_generator_factory(**kwargs):
+        def fake_generator(evidence):
+            return {
+                "candidate": {
+                    "title": "OpenAI 생성 제목",
+                    "description": "OpenAI 생성 설명입니다.",
+                    "categories": ["Translation"],
+                    "image": "",
+                },
+                "warnings": [],
+            }
+        return fake_generator
+
+    monkeypatch.setattr(
+        metadata_suggestion,
+        "make_openai_metadata_generator",
+        fake_generator_factory,
+    )
+
+    suggestion = build_suggestion(
+        file_path="_posts/post.md",
+        target_root=tmp_path,
+        eval_json=eval_json,
+        openai_required=True,
+        openai_model="gpt-test",
+    )
+
+    assert suggestion["status"] == "PARTIAL"
+    assert suggestion["candidate"]["title"] == "OpenAI 생성 제목"
+    assert suggestion["candidate"]["description"] == "OpenAI 생성 설명입니다."
+
+
+def test_metadata_suggestion_marks_openai_failure_as_error(tmp_path: Path) -> None:
+    post = tmp_path / "_posts" / "post.md"
+    post.parent.mkdir()
+    post.write_text(POST, encoding="utf-8")
+    eval_json = tmp_path / "seo-eval.json"
+    eval_json.write_text(json.dumps({
+        "gate": {"passed": True, "status": "PASS"},
+        "input": {},
+    }))
+
+    suggestion = build_suggestion(
+        file_path="_posts/post.md",
+        target_root=tmp_path,
+        eval_json=eval_json,
+        openai_required=True,
+        openai_model="gpt-test",
+    )
+
+    assert suggestion["status"] == "ERROR"
+    assert any(w.startswith("openai_unavailable:") for w in suggestion["warnings"])
 
 
 def test_metadata_suggestion_cli_writes_json(tmp_path: Path) -> None:

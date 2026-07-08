@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 from copy import deepcopy
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any, Optional
@@ -39,6 +40,7 @@ from checkers import (  # noqa: E402
 )
 import report as report_mod  # noqa: E402
 import rubric as rubric_mod  # noqa: E402
+from openai_integration import make_openai_judge  # noqa: E402
 from policy import apply_policy, load_policy  # noqa: E402
 from signals import collect_signals  # noqa: E402
 
@@ -136,6 +138,8 @@ def evaluate(
     benchmark_mode: str = "off",
     benchmark_url: Optional[str] = None,
     rubric_judge=None,
+    openai_required: bool = False,
+    openai_model: str = "",
 ) -> dict[str, Any]:
     """Run the body-only deterministic gate + rubric seam. Returns a fully
     deterministic, path-relative result dict (safe to snapshot as golden)."""
@@ -185,9 +189,12 @@ def evaluate(
     rubric_passed = rub.passed  # None when the rubric did not run
 
     if rubric_passed is None:
-        gate_passed = det_passed
-        reason = ("deterministic gate only (rubric judge not configured)"
-                  if det_passed else "deterministic REQUIRED checks failed")
+        gate_passed = det_passed and not openai_required
+        if openai_required:
+            reason = "OpenAI rubric required but not run"
+        else:
+            reason = ("deterministic gate only (rubric judge not configured)"
+                      if det_passed else "deterministic REQUIRED checks failed")
     else:
         gate_passed = det_passed and rubric_passed
         reason = "deterministic AND rubric"
@@ -230,6 +237,13 @@ def evaluate(
         },
     }
 
+    if openai_required or openai_model or rub.available:
+        result["openai"] = {
+            "required": openai_required,
+            "model": openai_model,
+            "rubric_used": rub.available,
+        }
+
     if benchmark_mode != "off":
         result["benchmark"] = _run_benchmark_safe(
             inp, body, frontmatter, benchmark_mode, benchmark_url)
@@ -248,6 +262,8 @@ def evaluate_path(
     benchmark_mode: str = "off",
     benchmark_url: Optional[str] = None,
     rubric_judge=None,
+    openai_required: bool = False,
+    openai_model: str = "",
 ) -> dict[str, Any]:
     """Evaluate a single post file directly (used by the published flow and
     tests). ``file_path`` in the result is repo-relative (or the basename when
@@ -283,6 +299,8 @@ def evaluate_path(
         benchmark_mode=benchmark_mode,
         benchmark_url=benchmark_url,
         rubric_judge=rubric_judge,
+        openai_required=openai_required,
+        openai_model=openai_model,
     )
 
 
@@ -316,14 +334,24 @@ def _build_parser() -> argparse.ArgumentParser:
                    default="off", help="Lighthouse SEO benchmark (informational)")
     p.add_argument("--benchmark-url", default=None,
                    help="audit a published URL directly (post-publish re-check)")
+    p.add_argument("--openai-required", action="store_true",
+                   help="require OpenAI rubric evaluation for a passing SEO gate")
+    p.add_argument("--openai-model", default=os.getenv("OPENAI_MODEL", ""),
+                   help="OpenAI model for rubric evaluation")
     return p
 
 
 def main(argv: Optional[list[str]] = None) -> int:
     args = _build_parser().parse_args(argv)
     inp = resolve_inputs(args)
+    env_required = os.getenv("SEO_OPENAI_REQUIRED", "").strip().lower()
+    openai_required = args.openai_required or env_required in {"1", "true", "yes", "on"}
+    rubric_judge = make_openai_judge(model=args.openai_model) if openai_required else None
     result = evaluate(inp, benchmark_mode=args.benchmark,
-                      benchmark_url=args.benchmark_url)
+                      benchmark_url=args.benchmark_url,
+                      rubric_judge=rubric_judge,
+                      openai_required=openai_required,
+                      openai_model=args.openai_model)
     md = report_mod.render_markdown(result, post_display=str(inp["post_path"]))
 
     if args.output:

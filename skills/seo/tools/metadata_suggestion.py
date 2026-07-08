@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -17,6 +18,10 @@ sys.path.insert(0, str(Path(__file__).parent))
 import yaml  # noqa: E402
 
 from metadata import build_plan  # noqa: E402
+from openai_integration import (  # noqa: E402
+    has_openai_failure,
+    make_openai_metadata_generator,
+)
 from utils import parse_frontmatter  # noqa: E402
 
 
@@ -56,6 +61,9 @@ def build_suggestion(
     eval_json: Path,
     manifest_path: Path | None = None,
     report_path: Path | None = None,
+    openai_required: bool = False,
+    openai_model: str = "",
+    allow_deterministic_fallback: bool = False,
 ) -> dict[str, Any]:
     eval_result = json.loads(eval_json.read_text(encoding="utf-8"))
     source_eval = _source_eval(eval_result, eval_json, report_path)
@@ -89,15 +97,24 @@ def build_suggestion(
         }
 
     inp = eval_result.get("input", {}) or {}
+    generator = make_openai_metadata_generator(
+        model=openai_model,
+        allow_deterministic_fallback=allow_deterministic_fallback,
+    ) if openai_required or os.getenv("OPENAI_API_KEY") else None
     result = build_plan(
         body,
         frontmatter,
         manifest,
         source_url=str(inp.get("source_url") or ""),
         primary_keyword=str(inp.get("primary_keyword") or ""),
+        generator=generator,
     )
     payload = result.to_dict()
     status = str(payload["status"])
+    warnings = payload["warnings"]
+    openai_failed = has_openai_failure(warnings)
+    if openai_required and openai_failed:
+        status = "ERROR"
     return {
         "schema_version": 1,
         "kind": "seo_metadata_suggestion",
@@ -111,7 +128,7 @@ def build_suggestion(
             "requires_human": True,
         },
         "needs_policy_decision": payload["needs_policy_decision"],
-        "warnings": payload["warnings"],
+        "warnings": warnings,
         "reason": payload["reason"],
     }
 
@@ -124,7 +141,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output", type=Path, required=True, help="Suggestion JSON output path.")
     parser.add_argument("--manifest", type=Path, help="Optional translation-flow manifest YAML.")
     parser.add_argument("--report-path", type=Path, help="Optional SEO markdown report path.")
+    parser.add_argument("--openai-required", action="store_true",
+                        help="require OpenAI metadata generation")
+    parser.add_argument("--openai-model", default=os.getenv("OPENAI_MODEL", ""),
+                        help="OpenAI model for metadata generation")
+    parser.add_argument("--allow-deterministic-fallback", action="store_true",
+                        help="allow local deterministic fallback when OpenAI is unavailable")
     args = parser.parse_args(argv)
+    env_required = os.getenv("SEO_OPENAI_REQUIRED", "").strip().lower()
+    openai_required = args.openai_required or env_required in {"1", "true", "yes", "on"}
 
     suggestion = build_suggestion(
         file_path=args.file,
@@ -132,6 +157,9 @@ def main(argv: list[str] | None = None) -> int:
         eval_json=args.eval_json,
         manifest_path=args.manifest,
         report_path=args.report_path,
+        openai_required=openai_required,
+        openai_model=args.openai_model,
+        allow_deterministic_fallback=args.allow_deterministic_fallback,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(

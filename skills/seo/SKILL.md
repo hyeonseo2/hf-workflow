@@ -37,6 +37,9 @@ SEO eval (body only) ──fail──> return feedback (failing REQUIRED checks)
 - In the PR agent, metadata generation is read-only: it writes
   `metadata-suggestion.json` for a later apply/repair step, but does not edit or
   commit the post.
+- In CI, OpenAI is the required production path for semantic rubric evaluation
+  and metadata candidate generation. Deterministic generation remains only an
+  explicit local/test fallback.
 
 ## Inputs
 - PR / pre-publish: `--manifest <translation-flow manifest.yaml>`
@@ -56,6 +59,7 @@ python skills/seo/tools/seo_eval.py --file _posts/2025-12-01-rteb.md \
 
 # Optional informational Lighthouse SEO benchmark (Tier A real / Tier B heuristic)
 python skills/seo/tools/seo_eval.py ... --benchmark heuristic
+SEO_OPENAI_REQUIRED=1 python skills/seo/tools/seo_eval.py ... --openai-required
 ```
 
 ## PR agent output contract

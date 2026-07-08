@@ -132,6 +132,58 @@ def test_seo_runner_records_metadata_generation_error_without_changing_gate(
     assert suggestion["candidate"] == {}
 
 
+def test_seo_runner_requires_metadata_generation_when_openai_required(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("SEO_OPENAI_REQUIRED", "1")
+    monkeypatch.setenv("OPENAI_MODEL", "gpt-test")
+    result_path = tmp_path / "seo.json"
+    report_path = tmp_path / "seo.md"
+    calls = []
+
+    def pass_seo_but_error_metadata(command, cwd, check):
+        calls.append(command)
+        if command[1] == "skills/seo/tools/seo_eval.py":
+            assert "--openai-required" in command
+            assert command[command.index("--openai-model") + 1] == "gpt-test"
+            report_path.write_text("# SEO Eval Report\n\nPass.\n")
+            eval_json = Path(command[command.index("--json") + 1])
+            eval_json.write_text(
+                json.dumps({"gate": {"passed": True, "status": "PASS"}, "input": {}})
+            )
+            return subprocess.CompletedProcess(command, 0)
+        if command[1] == "skills/seo/tools/metadata_suggestion.py":
+            assert "--openai-required" in command
+            output = Path(command[command.index("--output") + 1])
+            output.write_text(
+                json.dumps({
+                    "schema_version": 1,
+                    "kind": "seo_metadata_suggestion",
+                    "status": "ERROR",
+                    "candidate": {},
+                })
+            )
+            return subprocess.CompletedProcess(command, 0)
+        raise AssertionError(f"unexpected command: {command}")
+
+    exit_code = run_skill(
+        skill="seo",
+        file_path="_posts/example.md",
+        target_root=tmp_path / "target",
+        report_path=report_path,
+        result_path=result_path,
+        runner=pass_seo_but_error_metadata,
+    )
+
+    assert exit_code == 1
+    assert json.loads(result_path.read_text())["conclusion"] == "fail"
+    assert [call[1] for call in calls] == [
+        "skills/seo/tools/seo_eval.py",
+        "skills/seo/tools/metadata_suggestion.py",
+    ]
+
+
 def test_quality_runner_treats_report_warnings_as_failure(tmp_path: Path) -> None:
     result_path = tmp_path / "result.json"
     report_path = tmp_path / "quality.md"

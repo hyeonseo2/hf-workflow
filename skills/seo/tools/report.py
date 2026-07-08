@@ -24,6 +24,25 @@ def _rubric_summary(rub: dict[str, Any]) -> str:
             f"(mean {rub.get('mean')}, min {rub.get('min')})")
 
 
+def _rubric_check_line(c: dict[str, Any]) -> str:
+    icon = "✅" if c.get("passed") else ("❌" if c.get("severity") == "required" else "🟠")
+    status = c.get("status", "UNKNOWN")
+    reason = c.get("reason", "")
+    issues = c.get("issues") or []
+    if not isinstance(issues, list):
+        issues = [str(issues)]
+    problem_images = c.get("problem_images") or []
+    details = "; ".join(str(item) for item in issues[:3])
+    if problem_images:
+        details = "; ".join(
+            f"{img.get('src', '')}: {img.get('reason', '')}"
+            for img in problem_images[:3]
+        )
+    if not details:
+        details = reason
+    return f"{icon} {c.get('name')}: `{status}` ({c.get('severity')}) — {details or '—'}"
+
+
 def render_markdown(result: dict[str, Any], *, post_display: str = "") -> str:
     gate = result["gate"]
     det = result["deterministic"]
@@ -68,6 +87,13 @@ def render_markdown(result: dict[str, Any], *, post_display: str = "") -> str:
         "",
     ]
     lines += [_check_line(c) for c in det["required"]["checks"]] or ["_(none)_"]
+
+    rubric_checks = result.get("rubric", {}).get("checks") or []
+    lines += ["", "## OpenAI rubric checks", ""]
+    if rubric_checks:
+        lines += [_rubric_check_line(c) for c in rubric_checks]
+    else:
+        lines += [f"_(not run: {result.get('rubric', {}).get('reason', '')})_"]
 
     lines += ["", "## Advisory checks (not gated)", ""]
     lines += [_check_line(c) for c in det["advisory"]["checks"]] or ["_(none)_"]
