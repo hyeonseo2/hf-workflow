@@ -1,0 +1,11 @@
+{
+  "name": "hf-krew-translation-monitor",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:python": "PYTHONPATH=.. python3 -m unittest discover -s tests -p 'test_*.py'",
+    "test:js": "node --test tests/*.test.js",
+    "test": "npm run test:python && npm run test:js",
+    "dev": "python3 -m http.server 4173 --bind 127.0.0.1"
+  }
+}

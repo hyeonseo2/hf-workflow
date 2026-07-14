@@ -1,0 +1,81 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+
+import { filterReports, joinReports, summarizeReports } from '../js/model.js';
+
+const reportWithoutSeo = {
+  prNumber: 168,
+  source: { slug: 'torch-attention-profile', title: 'Profiling in PyTorch' },
+  quality: { enabled: true, available: true, status: 'pass' },
+  seo: { enabled: true, available: false, status: 'missing' },
+};
+const openPull = { number: 168, state: 'open', title: 'Open translation PR' };
+
+test('gives warnings and failures review attention before missing reports', () => {
+  const items = joinReports([
+    reportWithoutSeo,
+    { ...reportWithoutSeo, prNumber: 169, quality: { enabled: true, available: true, status: 'warning' }, seo: { enabled: true, available: false, status: 'missing' } },
+    { ...reportWithoutSeo, prNumber: 170, quality: { enabled: true, available: true, status: 'fail' }, seo: { enabled: false, available: false, status: 'missing' } },
+    { ...reportWithoutSeo, prNumber: 171, quality: { enabled: true, available: true, status: 'pass' }, seo: { enabled: false, available: false, status: 'missing' } },
+  ], new Map([[168, openPull]]));
+  assert.deepEqual(items.map((item) => item.reviewState), ['pending', 'attention', 'attention', 'complete']);
+});
+
+test('treats incomplete enabled report data as pending before complete', () => {
+  const reports = [
+    { ...reportWithoutSeo, prNumber: 1, quality: { enabled: true }, seo: { enabled: false } },
+    { ...reportWithoutSeo, prNumber: 2, quality: null, seo: { enabled: false } },
+    { ...reportWithoutSeo, prNumber: 3, quality: { enabled: true, available: true }, seo: { enabled: false } },
+    { ...reportWithoutSeo, prNumber: 4, quality: { enabled: true, available: false, status: 'warning' }, seo: { enabled: false } },
+    { ...reportWithoutSeo, prNumber: 5, quality: { enabled: true, available: true, status: 'fail' }, seo: { enabled: false } },
+    { ...reportWithoutSeo, prNumber: 6, quality: { enabled: true, available: true, status: 'pass' }, seo: { enabled: false } },
+  ];
+
+  assert.deepEqual(joinReports(reports).map((item) => item.reviewState), [
+    'pending', 'pending', 'pending', 'attention', 'attention', 'complete',
+  ]);
+});
+
+test('keeps absent GitHub data unknown rather than closed', () => {
+  const [item] = joinReports([reportWithoutSeo], new Map());
+  assert.equal(item.pr.state, 'unknown');
+  assert.equal(item.prNumber, 168);
+});
+
+test('counts missing reports as review attention', () => {
+  const items = joinReports([reportWithoutSeo], new Map([[168, openPull]]));
+  assert.deepEqual(summarizeReports(items), {
+    total: 1,
+    open: 1,
+    merged: 0,
+    closed: 0,
+    unknown: 0,
+    attention: 1,
+  });
+});
+
+test('summarizes all separate pull states', () => {
+  const reports = ['merged', 'closed', 'unknown'].map((state, index) => ({ ...reportWithoutSeo, prNumber: index + 1, seo: { enabled: false, available: false, status: 'missing' } }));
+  const pulls = new Map([
+    [1, { number: 1, state: 'merged' }],
+    [2, { number: 2, state: 'closed' }],
+    [3, { number: 3, state: 'unknown' }],
+  ]);
+  assert.deepEqual(summarizeReports(joinReports(reports, pulls)), {
+    total: 3,
+    open: 0,
+    merged: 1,
+    closed: 1,
+    unknown: 1,
+    attention: 0,
+  });
+});
+
+test('filters by query, pull request state, and review state', () => {
+  const items = joinReports([
+    reportWithoutSeo,
+    { ...reportWithoutSeo, prNumber: 169, source: { slug: 'different-post', title: 'Different title' }, seo: { enabled: false, available: false, status: 'missing' } },
+  ], new Map([[168, openPull], [169, { number: 169, state: 'closed' }]]));
+  assert.deepEqual(filterReports(items, { query: 'torch', prState: 'open', reviewState: 'pending' }).map((item) => item.prNumber), [168]);
+  assert.deepEqual(filterReports(items, { query: '', prState: 'all', reviewState: 'complete' }).map((item) => item.prNumber), [169]);
+});

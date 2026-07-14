@@ -1,0 +1,644 @@
+{
+  "reportSnapshotAt": "2026-07-11T03:41:07+00:00",
+  "reports": [
+    {
+      "prNumber": 168,
+      "quality": {
+        "available": true,
+        "checks": [
+          {
+            "status": "pass",
+            "text": "translation body is not empty"
+          },
+          {
+            "status": "pass",
+            "text": "no TODO marker remains"
+          },
+          {
+            "status": "pass",
+            "text": "code fences are balanced"
+          },
+          {
+            "status": "pass",
+            "text": "contains Korean prose"
+          },
+          {
+            "status": "pass",
+            "text": "source attribution exists"
+          }
+        ],
+        "content": "# Quality Report\n\n- Manifest: `/home/runner/work/hf-workflow/hf-workflow/reports/pr-168/manifest.yaml`\n- Translation file: `/home/runner/work/hf-workflow/hf-workflow/target-repo/_posts/2026-07-10-torch-attention-profile.md`\n- Source: https://huggingface.co/blog/torch-attention-profile\n\n## Checks\n\n- PASS: translation body is not empty\n- PASS: no TODO marker remains\n- PASS: code fences are balanced\n- PASS: contains Korean prose\n- PASS: source attribution exists\n\n## Metrics\n\n- body characters: 24961\n- Korean letter ratio: 37.92%\n- code fence markers: 24\n- TODO markers: 0\n- fetched source characters: 0\n",
+        "enabled": true,
+        "fileName": "quality-report.md",
+        "metrics": {
+          "Korean letter ratio": "37.92%",
+          "TODO markers": "0",
+          "body characters": "24961",
+          "code fence markers": "24",
+          "fetched source characters": "0"
+        },
+        "status": "pass"
+      },
+      "requestAvailable": true,
+      "run": {
+        "created_at": "2026-07-11T03:41:07+00:00",
+        "id": "2026-07-10-torch-attention-profile",
+        "target_date": "2026-07-10"
+      },
+      "seo": {
+        "available": false,
+        "checks": [],
+        "content": "",
+        "enabled": true,
+        "fileName": "seo-report.md",
+        "frontmatter": {},
+        "headings": [],
+        "status": "missing"
+      },
+      "source": {
+        "feed_url": "https://huggingface.co/blog/feed.xml",
+        "language": "en",
+        "published_at": "2026-07-10T00:00:00+00:00",
+        "published_date": "2026-07-10",
+        "slug": "torch-attention-profile",
+        "title": "Profiling in PyTorch (Part 3): Attention is all you profile",
+        "url": "https://huggingface.co/blog/torch-attention-profile"
+      },
+      "translation": {
+        "branch": "translate/torch-attention-profile",
+        "file_path": "_posts/2026-07-10-torch-attention-profile.md",
+        "locale": "ko",
+        "pr_url": "https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/168",
+        "target_repo": "Hugging-Face-KREW/hugging-face-krew.github.io"
+      }
+    },
+    {
+      "prNumber": 144,
+      "quality": {
+        "available": true,
+        "checks": [
+          {
+            "status": "pass",
+            "text": "translation body is not empty"
+          },
+          {
+            "status": "pass",
+            "text": "no TODO marker remains"
+          },
+          {
+            "status": "pass",
+            "text": "code fences are balanced"
+          },
+          {
+            "status": "pass",
+            "text": "contains Korean prose"
+          },
+          {
+            "status": "pass",
+            "text": "source attribution exists"
+          }
+        ],
+        "content": "# Quality Report\n\n- Manifest: `/home/runner/work/hf-workflow/hf-workflow/reports/pr-144/manifest.yaml`\n- Translation file: `/home/runner/work/hf-workflow/hf-workflow/target-repo/_posts/2026-06-17-agentic-resource-discovery-launch.md`\n- Source: https://huggingface.co/blog/agentic-resource-discovery-launch\n\n## Checks\n\n- PASS: translation body is not empty\n- PASS: no TODO marker remains\n- PASS: code fences are balanced\n- PASS: contains Korean prose\n- PASS: source attribution exists\n\n## Metrics\n\n- body characters: 5773\n- Korean letter ratio: 51.00%\n- code fence markers: 10\n- TODO markers: 0\n- fetched source characters: 0\n",
+        "enabled": true,
+        "fileName": "quality-report.md",
+        "metrics": {
+          "Korean letter ratio": "51.00%",
+          "TODO markers": "0",
+          "body characters": "5773",
+          "code fence markers": "10",
+          "fetched source characters": "0"
+        },
+        "status": "pass"
+      },
+      "requestAvailable": true,
+      "run": {
+        "created_at": "2026-06-18T05:00:35+00:00",
+        "id": "2026-06-17-agentic-resource-discovery-launch",
+        "target_date": "2026-06-17"
+      },
+      "seo": {
+        "available": true,
+        "checks": [
+          {
+            "status": "pass",
+            "text": "frontmatter title exists"
+          },
+          {
+            "status": "pass",
+            "text": "frontmatter slug exists"
+          },
+          {
+            "status": "pass",
+            "text": "source_url exists"
+          },
+          {
+            "status": "pass",
+            "text": "categories exists"
+          },
+          {
+            "status": "pass",
+            "text": "has H1"
+          },
+          {
+            "status": "pass",
+            "text": "has at least three section headings"
+          },
+          {
+            "status": "pass",
+            "text": "has source attribution sentence"
+          }
+        ],
+        "content": "# SEO Report\n\n- Manifest: `/home/runner/work/hf-workflow/hf-workflow/reports/pr-144/manifest.yaml`\n- Translation file: `/home/runner/work/hf-workflow/hf-workflow/target-repo/_posts/2026-06-17-agentic-resource-discovery-launch.md`\n- Source: https://huggingface.co/blog/agentic-resource-discovery-launch\n- Source title: Agentic Resource Discovery: Let agents search\n\n## Checks\n\n- PASS: frontmatter title exists\n- PASS: frontmatter slug exists\n- PASS: source_url exists\n- PASS: categories exists\n- PASS: has H1\n- PASS: has at least three section headings\n- PASS: has source attribution sentence\n\n## Frontmatter\n\n- title: 에이전트 주도 자원 발견: 에이전트가 도구, 기술 및 다른 에이전트를 검색하도록.\n- slug: agentic-resource-discovery-launch\n- categories: [Translation, HuggingFace]\n\n## Heading Snapshot\n\n- `# 에이전트 주도 자원 발견: 에이전트가 도구, 기술 및 다른 에이전트를 검색하도록.`\n- `## 발견 문제 {#section-1}`\n- `## 사양이 정의하는 두 가지 {#section-2}`\n- `## ARD 허깅페이스 허브에서 {#section-3}`\n- `## 사용하기 {#section-4}`\n- `# Install the Hugging Face CLI tool:`\n- `# Search for resources to train a model`\n- `# Find MCP Servers to generate an image`\n- `# Search other registries`\n- `### REST API 및 MCP 도구`\n",
+        "enabled": true,
+        "fileName": "seo-report.md",
+        "frontmatter": {
+          "categories": "[Translation, HuggingFace]",
+          "slug": "agentic-resource-discovery-launch",
+          "title": "에이전트 주도 자원 발견: 에이전트가 도구, 기술 및 다른 에이전트를 검색하도록."
+        },
+        "headings": [
+          "# 에이전트 주도 자원 발견: 에이전트가 도구, 기술 및 다른 에이전트를 검색하도록.",
+          "## 발견 문제 {#section-1}",
+          "## 사양이 정의하는 두 가지 {#section-2}",
+          "## ARD 허깅페이스 허브에서 {#section-3}",
+          "## 사용하기 {#section-4}",
+          "# Install the Hugging Face CLI tool:",
+          "# Search for resources to train a model",
+          "# Find MCP Servers to generate an image",
+          "# Search other registries",
+          "### REST API 및 MCP 도구"
+        ],
+        "status": "pass"
+      },
+      "source": {
+        "feed_url": "https://huggingface.co/blog/feed.xml",
+        "language": "en",
+        "published_at": "2026-06-17T00:00:00+00:00",
+        "published_date": "2026-06-17",
+        "slug": "agentic-resource-discovery-launch",
+        "title": "Agentic Resource Discovery: Let agents search",
+        "url": "https://huggingface.co/blog/agentic-resource-discovery-launch"
+      },
+      "translation": {
+        "branch": "translate/agentic-resource-discovery-launch",
+        "file_path": "_posts/2026-06-17-agentic-resource-discovery-launch.md",
+        "locale": "ko",
+        "pr_url": "https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/144",
+        "target_repo": "Hugging-Face-KREW/hugging-face-krew.github.io"
+      }
+    },
+    {
+      "prNumber": 143,
+      "quality": {
+        "available": false,
+        "checks": [],
+        "content": "",
+        "enabled": true,
+        "fileName": "quality-report.md",
+        "metrics": {},
+        "status": "missing"
+      },
+      "requestAvailable": false,
+      "run": {
+        "created_at": "2026-06-15T18:48:12+09:00",
+        "id": "2026-06-09-github-ci-hf-jobs",
+        "target_date": "2026-06-09"
+      },
+      "seo": {
+        "available": false,
+        "checks": [],
+        "content": "",
+        "enabled": true,
+        "fileName": "seo-report.md",
+        "frontmatter": {},
+        "headings": [],
+        "status": "missing"
+      },
+      "source": {
+        "feed_url": "https://huggingface.co/blog/feed.xml",
+        "language": "en",
+        "published_at": "2026-06-09T00:00:00+00:00",
+        "published_date": "2026-06-09",
+        "slug": "github-ci-hf-jobs",
+        "title": "Migrating Your GitHub CI to Hugging Face Jobs",
+        "url": "https://huggingface.co/blog/github-ci-hf-jobs"
+      },
+      "translation": {
+        "branch": "translate/github-ci-hf-jobs",
+        "file_path": "_posts/2026-06-09-github-ci-hf-jobs.md",
+        "locale": "ko",
+        "pr_url": "https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/143",
+        "target_repo": "Hugging-Face-KREW/hugging-face-krew.github.io"
+      }
+    },
+    {
+      "prNumber": 142,
+      "quality": {
+        "available": false,
+        "checks": [],
+        "content": "",
+        "enabled": true,
+        "fileName": "quality-report.md",
+        "metrics": {},
+        "status": "missing"
+      },
+      "requestAvailable": false,
+      "run": {
+        "created_at": "2026-06-15T18:48:12+09:00",
+        "id": "2026-06-08-openenv-agentic-rl",
+        "target_date": "2026-06-08"
+      },
+      "seo": {
+        "available": false,
+        "checks": [],
+        "content": "",
+        "enabled": true,
+        "fileName": "seo-report.md",
+        "frontmatter": {},
+        "headings": [],
+        "status": "missing"
+      },
+      "source": {
+        "feed_url": "https://huggingface.co/blog/feed.xml",
+        "language": "en",
+        "published_at": "2026-06-08T00:00:00+00:00",
+        "published_date": "2026-06-08",
+        "slug": "openenv-agentic-rl",
+        "title": "The Open Source Community is backing OpenEnv for Agentic RL",
+        "url": "https://huggingface.co/blog/openenv-agentic-rl"
+      },
+      "translation": {
+        "branch": "translate/openenv-agentic-rl",
+        "file_path": "_posts/2026-06-08-openenv-agentic-rl.md",
+        "locale": "ko",
+        "pr_url": "https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/142",
+        "target_repo": "Hugging-Face-KREW/hugging-face-krew.github.io"
+      }
+    },
+    {
+      "prNumber": 141,
+      "quality": {
+        "available": false,
+        "checks": [],
+        "content": "",
+        "enabled": true,
+        "fileName": "quality-report.md",
+        "metrics": {},
+        "status": "missing"
+      },
+      "requestAvailable": false,
+      "run": {
+        "created_at": "2026-06-15T18:48:12+09:00",
+        "id": "2026-05-29-torch-profiler",
+        "target_date": "2026-05-29"
+      },
+      "seo": {
+        "available": false,
+        "checks": [],
+        "content": "",
+        "enabled": true,
+        "fileName": "seo-report.md",
+        "frontmatter": {},
+        "headings": [],
+        "status": "missing"
+      },
+      "source": {
+        "feed_url": "https://huggingface.co/blog/feed.xml",
+        "language": "en",
+        "published_at": "2026-05-29T00:00:00+00:00",
+        "published_date": "2026-05-29",
+        "slug": "torch-profiler",
+        "title": "Profiling in PyTorch (Part 1): A Beginner's Guide to torch.profiler",
+        "url": "https://huggingface.co/blog/torch-profiler"
+      },
+      "translation": {
+        "branch": "translate/torch-profiler",
+        "file_path": "_posts/2026-05-29-torch-profiler.md",
+        "locale": "ko",
+        "pr_url": "https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/141",
+        "target_repo": "Hugging-Face-KREW/hugging-face-krew.github.io"
+      }
+    },
+    {
+      "prNumber": 138,
+      "quality": {
+        "available": false,
+        "checks": [],
+        "content": "",
+        "enabled": true,
+        "fileName": "quality-report.md",
+        "metrics": {},
+        "status": "missing"
+      },
+      "requestAvailable": false,
+      "run": {
+        "created_at": "2026-06-15T18:48:12+09:00",
+        "id": "2026-05-20-olmoearth-v1-1",
+        "target_date": "2026-05-20"
+      },
+      "seo": {
+        "available": false,
+        "checks": [],
+        "content": "",
+        "enabled": true,
+        "fileName": "seo-report.md",
+        "frontmatter": {},
+        "headings": [],
+        "status": "missing"
+      },
+      "source": {
+        "feed_url": "https://huggingface.co/blog/feed.xml",
+        "language": "en",
+        "published_at": "2026-05-19T18:38:09+00:00",
+        "published_date": "2026-05-19",
+        "slug": "olmoearth-v1-1",
+        "title": "OlmoEarth v1.1: A more efficient family of models",
+        "url": "https://huggingface.co/blog/allenai/olmoearth-v1-1"
+      },
+      "translation": {
+        "branch": "translate/olmoearth-v1-1",
+        "file_path": "_posts/2026-05-20-olmoearth-v1-1.md",
+        "locale": "ko",
+        "pr_url": "https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/138",
+        "target_repo": "Hugging-Face-KREW/hugging-face-krew.github.io"
+      }
+    },
+    {
+      "prNumber": 137,
+      "quality": {
+        "available": false,
+        "checks": [],
+        "content": "",
+        "enabled": true,
+        "fileName": "quality-report.md",
+        "metrics": {},
+        "status": "missing"
+      },
+      "requestAvailable": false,
+      "run": {
+        "created_at": "2026-06-15T18:48:12+09:00",
+        "id": "2026-05-19-paddleocr-transformers",
+        "target_date": "2026-05-19"
+      },
+      "seo": {
+        "available": false,
+        "checks": [],
+        "content": "",
+        "enabled": true,
+        "fileName": "seo-report.md",
+        "frontmatter": {},
+        "headings": [],
+        "status": "missing"
+      },
+      "source": {
+        "feed_url": "https://huggingface.co/blog/feed.xml",
+        "language": "en",
+        "published_at": "2026-05-18T15:12:46+00:00",
+        "published_date": "2026-05-18",
+        "slug": "paddleocr-transformers",
+        "title": "PaddleOCR 3.5: Running OCR and Document Parsing Tasks with a Transformers Backend",
+        "url": "https://huggingface.co/blog/PaddlePaddle/paddleocr-transformers"
+      },
+      "translation": {
+        "branch": "translate/paddleocr-transformers",
+        "file_path": "_posts/2026-05-19-paddleocr-transformers.md",
+        "locale": "ko",
+        "pr_url": "https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/137",
+        "target_repo": "Hugging-Face-KREW/hugging-face-krew.github.io"
+      }
+    },
+    {
+      "prNumber": 132,
+      "quality": {
+        "available": true,
+        "checks": [
+          {
+            "status": "pass",
+            "text": "translation body is not empty"
+          },
+          {
+            "status": "pass",
+            "text": "no TODO marker remains"
+          },
+          {
+            "status": "pass",
+            "text": "code fences are balanced"
+          },
+          {
+            "status": "pass",
+            "text": "contains Korean prose"
+          },
+          {
+            "status": "pass",
+            "text": "source attribution exists"
+          }
+        ],
+        "content": "# Quality Report\n\n- Manifest: `/home/runner/work/hf-workflow/hf-workflow/reports/pr-132/manifest.yaml`\n- Translation file: `/home/runner/work/hf-workflow/hf-workflow/target-repo/_posts/2026-05-15-granite-embedding-multilingual-r2.md`\n- Source: https://huggingface.co/blog/ibm-granite/granite-embedding-multilingual-r2\n\n## Checks\n\n- PASS: translation body is not empty\n- PASS: no TODO marker remains\n- PASS: code fences are balanced\n- PASS: contains Korean prose\n- PASS: source attribution exists\n\n## Metrics\n\n- body characters: 17410\n- Korean letter ratio: 42.28%\n- code fence markers: 14\n- TODO markers: 0\n- fetched source characters: 0\n",
+        "enabled": true,
+        "fileName": "quality-report.md",
+        "metrics": {
+          "Korean letter ratio": "42.28%",
+          "TODO markers": "0",
+          "body characters": "17410",
+          "code fence markers": "14",
+          "fetched source characters": "0"
+        },
+        "status": "pass"
+      },
+      "requestAvailable": true,
+      "run": {
+        "created_at": "2026-05-15T04:15:50+00:00",
+        "id": "2026-05-15-granite-embedding-multilingual-r2",
+        "target_date": "2026-05-15"
+      },
+      "seo": {
+        "available": true,
+        "checks": [
+          {
+            "status": "pass",
+            "text": "frontmatter title exists"
+          },
+          {
+            "status": "pass",
+            "text": "frontmatter slug exists"
+          },
+          {
+            "status": "pass",
+            "text": "source_url exists"
+          },
+          {
+            "status": "pass",
+            "text": "categories exists"
+          },
+          {
+            "status": "pass",
+            "text": "has H1"
+          },
+          {
+            "status": "pass",
+            "text": "has at least three section headings"
+          },
+          {
+            "status": "pass",
+            "text": "has source attribution sentence"
+          }
+        ],
+        "content": "# SEO Report\n\n- Manifest: `/home/runner/work/hf-workflow/hf-workflow/reports/pr-132/manifest.yaml`\n- Translation file: `/home/runner/work/hf-workflow/hf-workflow/target-repo/_posts/2026-05-15-granite-embedding-multilingual-r2.md`\n- Source: https://huggingface.co/blog/ibm-granite/granite-embedding-multilingual-r2\n- Source title: Granite Embedding Multilingual R2: Open Apache 2.0 Multilingual Embeddings with 32K Context — Best Sub-100M Retrieval Quality\n\n## Checks\n\n- PASS: frontmatter title exists\n- PASS: frontmatter slug exists\n- PASS: source_url exists\n- PASS: categories exists\n- PASS: has H1\n- PASS: has at least three section headings\n- PASS: has source attribution sentence\n\n## Frontmatter\n\n- title: Granite Embedding Multilingual R2: 32K 컨텍스트를 갖춘 Apache 2.0 다국어 임베딩 — 100M 미만 중 최상의 검색 품질\n- slug: granite-embedding-multilingual-r2\n- categories: [Translation, HuggingFace]\n\n## Heading Snapshot\n\n- `# Granite Embedding Multilingual R2: 32K 컨텍스트를 갖춘 Apache 2.0 다국어 임베딩 — 100M 미만 중 최상의 검색 품질`\n- `## Enterprise-Ready by Design`\n- `## A Strong Sub-100M Multilingual Model`\n- `## What Changed from R1`\n- `## Training the Full-Size 311M Model`\n- `## Building the compact 97M Multilingual model`\n- `## Benchmark Results`\n- `### Multilingual Retrieval`\n- `### 속도 및 처리량`\n- `## Matryoshka Embeddings (311M)`\n",
+        "enabled": true,
+        "fileName": "seo-report.md",
+        "frontmatter": {
+          "categories": "[Translation, HuggingFace]",
+          "slug": "granite-embedding-multilingual-r2",
+          "title": "Granite Embedding Multilingual R2: 32K 컨텍스트를 갖춘 Apache 2.0 다국어 임베딩 — 100M 미만 중 최상의 검색 품질"
+        },
+        "headings": [
+          "# Granite Embedding Multilingual R2: 32K 컨텍스트를 갖춘 Apache 2.0 다국어 임베딩 — 100M 미만 중 최상의 검색 품질",
+          "## Enterprise-Ready by Design",
+          "## A Strong Sub-100M Multilingual Model",
+          "## What Changed from R1",
+          "## Training the Full-Size 311M Model",
+          "## Building the compact 97M Multilingual model",
+          "## Benchmark Results",
+          "### Multilingual Retrieval",
+          "### 속도 및 처리량",
+          "## Matryoshka Embeddings (311M)"
+        ],
+        "status": "pass"
+      },
+      "source": {
+        "feed_url": "https://huggingface.co/blog/feed.xml",
+        "language": "en",
+        "published_at": "2026-05-14T18:55:01+00:00",
+        "published_date": "2026-05-14",
+        "slug": "granite-embedding-multilingual-r2",
+        "title": "Granite Embedding Multilingual R2: Open Apache 2.0 Multilingual Embeddings with 32K Context — Best Sub-100M Retrieval Quality",
+        "url": "https://huggingface.co/blog/ibm-granite/granite-embedding-multilingual-r2"
+      },
+      "translation": {
+        "branch": "translate/granite-embedding-multilingual-r2",
+        "file_path": "_posts/2026-05-15-granite-embedding-multilingual-r2.md",
+        "locale": "ko",
+        "pr_url": "https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/132",
+        "target_repo": "Hugging-Face-KREW/hugging-face-krew.github.io"
+      }
+    },
+    {
+      "prNumber": 131,
+      "quality": {
+        "available": true,
+        "checks": [
+          {
+            "status": "pass",
+            "text": "translation body is not empty"
+          },
+          {
+            "status": "pass",
+            "text": "no TODO marker remains"
+          },
+          {
+            "status": "pass",
+            "text": "code fences are balanced"
+          },
+          {
+            "status": "pass",
+            "text": "contains Korean prose"
+          },
+          {
+            "status": "pass",
+            "text": "source attribution exists"
+          }
+        ],
+        "content": "# Quality Report\n\n- Manifest: `/home/runner/work/hf-workflow/hf-workflow/reports/pr-131/manifest.yaml`\n- Translation file: `/home/runner/work/hf-workflow/hf-workflow/target-repo/_posts/2026-05-12-foundation-model-building-blocks.md`\n- Source: https://huggingface.co/blog/amazon/foundation-model-building-blocks\n\n## Checks\n\n- PASS: translation body is not empty\n- PASS: no TODO marker remains\n- PASS: code fences are balanced\n- PASS: contains Korean prose\n- PASS: source attribution exists\n\n## Metrics\n\n- body characters: 22436\n- Korean letter ratio: 50.87%\n- code fence markers: 0\n- TODO markers: 0\n- fetched source characters: 0\n",
+        "enabled": true,
+        "fileName": "quality-report.md",
+        "metrics": {
+          "Korean letter ratio": "50.87%",
+          "TODO markers": "0",
+          "body characters": "22436",
+          "code fence markers": "0",
+          "fetched source characters": "0"
+        },
+        "status": "pass"
+      },
+      "requestAvailable": true,
+      "run": {
+        "created_at": "2026-05-12T04:03:56+00:00",
+        "id": "2026-05-12-foundation-model-building-blocks",
+        "target_date": "2026-05-12"
+      },
+      "seo": {
+        "available": true,
+        "checks": [
+          {
+            "status": "pass",
+            "text": "frontmatter title exists"
+          },
+          {
+            "status": "pass",
+            "text": "frontmatter slug exists"
+          },
+          {
+            "status": "pass",
+            "text": "source_url exists"
+          },
+          {
+            "status": "pass",
+            "text": "categories exists"
+          },
+          {
+            "status": "pass",
+            "text": "has H1"
+          },
+          {
+            "status": "pass",
+            "text": "has at least three section headings"
+          },
+          {
+            "status": "pass",
+            "text": "has source attribution sentence"
+          }
+        ],
+        "content": "# SEO Report\n\n- Manifest: `/home/runner/work/hf-workflow/hf-workflow/reports/pr-131/manifest.yaml`\n- Translation file: `/home/runner/work/hf-workflow/hf-workflow/target-repo/_posts/2026-05-12-foundation-model-building-blocks.md`\n- Source: https://huggingface.co/blog/amazon/foundation-model-building-blocks\n- Source title: Building Blocks for Foundation Model Training and Inference on AWS\n\n## Checks\n\n- PASS: frontmatter title exists\n- PASS: frontmatter slug exists\n- PASS: source_url exists\n- PASS: categories exists\n- PASS: has H1\n- PASS: has at least three section headings\n- PASS: has source attribution sentence\n\n## Frontmatter\n\n- title: AWS에서 Foundation Model 학습 및 추론을 위한 구성 요소\n- slug: foundation-model-building-blocks\n- categories: [Translation, HuggingFace]\n\n## Heading Snapshot\n\n- `# AWS에서 Foundation Model 학습 및 추론을 위한 구성 요소`\n- `## AWS 빌딩 블록`\n- `### 인프라: 컴퓨트, 네트워크, 및 스토리지`\n- `### 리소스 오케스트레이션: Slurm과 Kubernetes`\n- `### ML 소프트웨어 스택`\n- `#### 하드웨어 활성화: 커널 드라이버`\n- `#### 가속기 런타임, 컴파일러, 커널 라이브러리`\n- `#### 통신 기반: NCCL 및 트랜스포트 플러그인`\n- `#### ML 프레임워크: PyTorch`\n- `#### 분산 학습 및 추론 프레임워크`\n",
+        "enabled": true,
+        "fileName": "seo-report.md",
+        "frontmatter": {
+          "categories": "[Translation, HuggingFace]",
+          "slug": "foundation-model-building-blocks",
+          "title": "AWS에서 Foundation Model 학습 및 추론을 위한 구성 요소"
+        },
+        "headings": [
+          "# AWS에서 Foundation Model 학습 및 추론을 위한 구성 요소",
+          "## AWS 빌딩 블록",
+          "### 인프라: 컴퓨트, 네트워크, 및 스토리지",
+          "### 리소스 오케스트레이션: Slurm과 Kubernetes",
+          "### ML 소프트웨어 스택",
+          "#### 하드웨어 활성화: 커널 드라이버",
+          "#### 가속기 런타임, 컴파일러, 커널 라이브러리",
+          "#### 통신 기반: NCCL 및 트랜스포트 플러그인",
+          "#### ML 프레임워크: PyTorch",
+          "#### 분산 학습 및 추론 프레임워크"
+        ],
+        "status": "pass"
+      },
+      "source": {
+        "feed_url": "https://huggingface.co/blog/feed.xml",
+        "language": "en",
+        "published_at": "2026-05-11T23:18:26+00:00",
+        "published_date": "2026-05-11",
+        "slug": "foundation-model-building-blocks",
+        "title": "Building Blocks for Foundation Model Training and Inference on AWS",
+        "url": "https://huggingface.co/blog/amazon/foundation-model-building-blocks"
+      },
+      "translation": {
+        "branch": "translate/foundation-model-building-blocks",
+        "file_path": "_posts/2026-05-12-foundation-model-building-blocks.md",
+        "locale": "ko",
+        "pr_url": "https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/131",
+        "target_repo": "Hugging-Face-KREW/hugging-face-krew.github.io"
+      }
+    }
+  ],
+  "repository": "Hugging-Face-KREW/hugging-face-krew.github.io",
+  "schemaVersion": 1,
+  "sourceArchive": "hf-workflow-main.zip"
+}

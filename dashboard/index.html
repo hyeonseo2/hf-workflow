@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HF KREW 번역 모니터</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-brand">
+      <img src="./assets/hf-krew.png" width="48" height="48" alt="Hugging Face KREW 조직 로고">
+      <div>
+        <h1>HF KREW 번역 모니터</h1>
+        <a href="https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io" target="_blank" rel="noopener noreferrer">Hugging-Face-KREW/hugging-face-krew.github.io ↗</a>
+      </div>
+    </div>
+    <div class="header-status">
+      <p id="api-status" aria-live="polite">API 상태: 준비 중</p>
+      <p id="synced-at">동기화: 아직 없음</p>
+      <button id="refresh-button" type="button" aria-label="GitHub 상태 새로고침" title="GitHub 상태 새로고침">↻</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="summary-grid" id="summary" aria-label="번역 보고서 요약"></section>
+
+    <section class="filters" aria-label="보고서 필터">
+      <div class="search-field">
+        <label for="search-input">보고서 검색</label>
+        <input id="search-input" type="search" placeholder="PR 번호, 제목, 슬러그 검색" autocomplete="off">
+      </div>
+      <fieldset id="pr-state-controls">
+        <legend>PR 상태</legend>
+        <div class="segmented-control">
+          <button type="button" data-pr-state="all" aria-pressed="true">전체</button>
+          <button type="button" data-pr-state="open" aria-pressed="false">열림</button>
+          <button type="button" data-pr-state="merged" aria-pressed="false">병합</button>
+          <button type="button" data-pr-state="closed" aria-pressed="false">닫힘</button>
+        </div>
+      </fieldset>
+      <div class="select-field">
+        <label for="review-state">검토 상태</label>
+        <select id="review-state">
+          <option value="all">전체</option>
+          <option value="attention">확인 필요</option>
+          <option value="pending">검토 대기</option>
+          <option value="complete">검토 완료</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="table-region" aria-label="번역 보고서 목록">
+      <table id="report-table">
+        <caption>번역 Pull Request 상태와 품질 및 SEO 검토 결과</caption>
+        <thead>
+          <tr><th scope="col">PR</th><th scope="col">원문</th><th scope="col">PR 상태</th><th scope="col">검토</th><th scope="col">번역 경로</th><th scope="col">상세</th></tr>
+        </thead>
+        <tbody id="report-rows">
+          <tr class="empty-row"><td colspan="6">보고서를 불러오는 중입니다.</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <dialog id="details-dialog" aria-labelledby="details-title">
+    <div class="dialog-header">
+      <p>번역 보고서 상세</p>
+      <button id="details-close" type="button" aria-label="상세 패널 닫기" title="닫기">×</button>
+    </div>
+    <div id="details-content"></div>
+  </dialog>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
