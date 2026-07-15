@@ -16,6 +16,9 @@ test('index contains the monitor landmarks and module entrypoint', async () => {
   assert.match(html, /id="details-dialog"/);
   assert.match(html, /type="module" src="\.\/js\/app\.js"/);
   assert.match(html, /src="\.\/assets\/hf-krew\.png"/);
+  assert.match(html, /rel="icon"[^>]*href="\.\/assets\/hf-krew\.png"/);
+  assert.match(html, /id="api-status-text"/);
+  assert.match(html, /option value="needs-review"/);
 });
 
 test('bundled organization image is a PNG', async () => {
@@ -65,6 +68,7 @@ test('app lifecycle loads cached reports, safely refreshes GitHub state, and wir
   assert.match(app, /finally/);
   assert.match(app, /searchInput\.addEventListener\('input'/);
   assert.match(app, /prStateControls\.addEventListener\('click'/);
+  assert.match(app, /summary\.addEventListener\('click'/);
   assert.match(app, /setAttribute\('aria-pressed'/);
   assert.match(app, /reviewState\.addEventListener\('change'/);
   assert.match(app, /reportRows\.addEventListener\('click'/);

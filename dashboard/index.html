@@ -3,7 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Hugging Face KREW 번역 Pull Request 상태와 품질·SEO 검토 결과 모니터">
   <title>HF KREW 번역 모니터</title>
+  <link rel="icon" type="image/png" href="./assets/hf-krew.png">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
@@ -16,7 +18,7 @@
       </div>
     </div>
     <div class="header-status">
-      <p id="api-status" aria-live="polite">API 상태: 준비 중</p>
+      <p id="api-status" aria-live="polite" data-tone="busy"><span class="status-dot" aria-hidden="true"></span><span id="api-status-text">API 상태: 준비 중</span></p>
       <p id="synced-at">동기화: 아직 없음</p>
       <button id="refresh-button" type="button" aria-label="GitHub 상태 새로고침" title="GitHub 상태 새로고침">↻</button>
     </div>
@@ -43,6 +45,7 @@
         <label for="review-state">검토 상태</label>
         <select id="review-state">
           <option value="all">전체</option>
+          <option value="needs-review">확인 필요 · 검토 대기</option>
           <option value="attention">확인 필요</option>
           <option value="pending">검토 대기</option>
           <option value="complete">검토 완료</option>

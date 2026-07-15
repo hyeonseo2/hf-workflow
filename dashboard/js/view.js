@@ -116,19 +116,22 @@ export function safeExternalUrl(value) {
   }
 }
 
-export function renderSummary(summary = {}) {
+export function renderSummary(summary = {}, activeFilter = 'all') {
   const tiles = [
-    ['전체', 'total', 'neutral'],
-    ['열림', 'open', 'open'],
-    ['병합', 'merged', 'merged'],
-    ['닫힘', 'closed', 'closed'],
-    ['확인 필요', 'attention', 'attention'],
+    ['전체', 'total', 'neutral', 'all'],
+    ['열림', 'open', 'open', 'open'],
+    ['병합', 'merged', 'merged', 'merged'],
+    ['닫힘', 'closed', 'closed', 'closed'],
+    ['확인 필요', 'attention', 'attention', 'needs-review'],
   ];
-  return tiles.map(([label, key, color]) => (
-    `<section class="summary-tile summary-${color}" aria-label="${label} ${numberValue(recordValue(summary, key))}건">
-      <span>${label}</span><strong>${numberValue(recordValue(summary, key))}</strong>
-    </section>`
-  )).join('');
+  return tiles.map(([label, key, color, filter]) => {
+    const value = numberValue(recordValue(summary, key));
+    const alert = color === 'attention' && value !== '0' ? ' summary-alert' : '';
+    return `<button type="button" class="summary-tile summary-${color}${alert}" data-summary-filter="${filter}"
+      aria-pressed="${activeFilter === filter}" aria-label="${label} ${value}건 필터">
+      <span>${label}</span><strong>${value}</strong>
+    </button>`;
+  }).join('');
 }
 
 export function renderRows(items = []) {
@@ -149,13 +152,15 @@ export function renderRows(items = []) {
     const reviewLabel = stateLabel(REVIEW_STATE_LABELS, reviewState, '미확인');
     const qualityLabel = reportStatus(recordValue(item, 'quality'));
     const seoLabel = reportStatus(recordValue(item, 'seo'));
+    const filePath = stringValue(recordValue(translation, 'file_path'));
+    const fileName = filePath.split('/').pop();
 
     return `<tr>
-      <td data-label="PR"><strong>#${escapeHtml(prNumber)}</strong><br>${externalLink(pullUrl, 'PR 보기')}</td>
-      <td data-label="원문"><strong>${escapeHtml(title)}</strong><br><span class="path">${escapeHtml(slug)}</span><br>${externalLink(recordValue(source, 'url'), '원문 보기')}</td>
+      <td data-label="PR">${externalLink(pullUrl, `#${prNumber}`)}</td>
+      <td data-label="원문">${externalLink(recordValue(source, 'url'), title)}<br><span class="path">${escapeHtml(slug)}</span></td>
       <td data-label="PR 상태"><span class="status status-${statusClass(prState)}">${escapeHtml(stateLabel(PULL_STATE_LABELS, prState, '미확인'))}</span></td>
       <td data-label="검토"><span class="status status-${statusClass(reviewState)}">${escapeHtml(reviewLabel)}</span><br><span class="report-summary">품질 ${escapeHtml(qualityLabel)} · SEO ${escapeHtml(seoLabel)}</span></td>
-      <td data-label="번역 경로"><span class="path">${escapeHtml(recordValue(translation, 'file_path'))}</span></td>
+      <td data-label="번역 경로"><span class="path" title="${escapeHtml(filePath)}">${escapeHtml(fileName)}</span></td>
       <td data-label="상세"><button type="button" class="detail-button" data-action="details" data-pr-number="${escapeHtml(prNumber)}">상세</button></td>
     </tr>`;
   }).join('');

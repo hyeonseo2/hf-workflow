@@ -56,9 +56,13 @@ export function filterReports(items, { query = '', prState = 'all', reviewState 
       .filter((value) => value !== null && value !== undefined)
       .join(' ')
       .toLocaleLowerCase();
+    const reviewMatches = reviewState === 'all'
+      || (reviewState === 'needs-review'
+        ? item.reviewState === 'attention' || item.reviewState === 'pending'
+        : item.reviewState === reviewState);
     return (!normalizedQuery || searchable.includes(normalizedQuery))
       && (prState === 'all' || item.pr?.state === prState)
-      && (reviewState === 'all' || item.reviewState === reviewState);
+      && reviewMatches;
   });
 }
 

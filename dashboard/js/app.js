@@ -11,6 +11,7 @@ const REPOSITORY = 'Hugging-Face-KREW/hugging-face-krew.github.io';
 const CACHE_KEY = 'hf-krew-pr-snapshot';
 
 const apiStatus = document.querySelector('#api-status');
+const apiStatusText = document.querySelector('#api-status-text');
 const syncedAt = document.querySelector('#synced-at');
 const refreshButton = document.querySelector('#refresh-button');
 const summary = document.querySelector('#summary');
@@ -44,23 +45,63 @@ function isValidReport(report) {
     && report.translation.target_repo === REPOSITORY;
 }
 
-function setApiStatus(message) {
-  apiStatus.textContent = message;
+function setApiStatus(message, tone = 'ok') {
+  apiStatusText.textContent = message;
+  apiStatus.dataset.tone = tone;
 }
 
 function formatTime(value) {
   return new Date(value).toLocaleString('ko-KR');
 }
 
+function formatRelativeTime(value) {
+  const elapsed = Date.now() - new Date(value).getTime();
+  if (!Number.isFinite(elapsed) || elapsed < 0) {
+    return formatTime(value);
+  }
+  const minutes = Math.floor(elapsed / 60_000);
+  if (minutes < 1) {
+    return '방금 전';
+  }
+  if (minutes < 60) {
+    return `${minutes}분 전`;
+  }
+  const hours = Math.floor(minutes / 60);
+  return hours < 24 ? `${hours}시간 전` : formatTime(value);
+}
+
+function renderSyncedAt() {
+  if (!lastSyncedAt) {
+    return;
+  }
+  syncedAt.textContent = `동기화 ${formatRelativeTime(lastSyncedAt)}`;
+  syncedAt.title = formatTime(lastSyncedAt);
+}
+
 function setSyncedAt(value) {
   lastSyncedAt = value;
-  syncedAt.textContent = value ? `동기화: ${formatTime(value)}` : '동기화: 아직 없음';
+  if (!value) {
+    syncedAt.textContent = '동기화: 아직 없음';
+    syncedAt.removeAttribute('title');
+    return;
+  }
+  renderSyncedAt();
+}
+
+function activeSummaryFilter({ prState, reviewState: review }) {
+  if (prState === 'all' && review === 'all') {
+    return 'all';
+  }
+  if (review === 'all') {
+    return prState;
+  }
+  return prState === 'all' && review === 'needs-review' ? 'needs-review' : 'none';
 }
 
 function render() {
   const items = joinReports(reports, pulls);
   renderedItems = filterReports(items, filters);
-  summary.innerHTML = renderSummary(summarizeReports(items));
+  summary.innerHTML = renderSummary(summarizeReports(items), activeSummaryFilter(filters));
   reportRows.innerHTML = renderRows(renderedItems);
 }
 
@@ -68,8 +109,9 @@ function renderFatalLoadError() {
   reportsReady = false;
   reports = [];
   pulls = new Map();
+  lastSyncedAt = null;
   render();
-  setApiStatus('보고서 로드 오류: 데이터 파일을 확인하세요.');
+  setApiStatus('보고서 로드 오류: 데이터 파일을 확인하세요.', 'error');
   syncedAt.textContent = '동기화: 불가';
   refreshButton.disabled = true;
 }
@@ -97,7 +139,7 @@ const refresh = createSingleFlight(async () => {
     return;
   }
   refreshButton.disabled = true;
-  setApiStatus('GitHub 상태를 확인하는 중입니다.');
+  setApiStatus('GitHub 상태를 확인하는 중입니다.', 'busy');
 
   try {
     const snapshot = await fetchPullStatuses({
@@ -117,7 +159,7 @@ const refresh = createSingleFlight(async () => {
     render();
   } catch (error) {
     const preservedTime = lastSyncedAt ? ` 마지막 동기화: ${formatTime(lastSyncedAt)}.` : '';
-    setApiStatus(`GitHub 상태를 갱신하지 못했습니다. 표시 중인 데이터를 유지합니다.${preservedTime}`);
+    setApiStatus(`GitHub 상태를 갱신하지 못했습니다. 표시 중인 데이터를 유지합니다.${preservedTime}`, 'error');
     render();
   } finally {
     refreshButton.disabled = false;
@@ -133,11 +175,27 @@ function openDetails(prNumber) {
   detailsDialog.showModal();
 }
 
+function syncFilterControls() {
+  for (const control of prStateControls.querySelectorAll('button[data-pr-state]')) {
+    control.setAttribute('aria-pressed', String(control.dataset.prState === filters.prState));
+  }
+  reviewState.value = filters.reviewState;
+}
+
 function applyPrState(button) {
   filters = { ...filters, prState: button.dataset.prState };
-  for (const control of prStateControls.querySelectorAll('button[data-pr-state]')) {
-    control.setAttribute('aria-pressed', String(control === button));
+  syncFilterControls();
+  render();
+}
+
+function applySummaryFilter(value) {
+  const next = activeSummaryFilter(filters) === value ? 'all' : value;
+  if (next === 'needs-review') {
+    filters = { ...filters, prState: 'all', reviewState: 'needs-review' };
+  } else {
+    filters = { ...filters, prState: next === 'all' ? 'all' : next, reviewState: 'all' };
   }
+  syncFilterControls();
   render();
 }
 
@@ -151,6 +209,12 @@ function registerControls() {
     const button = event.target.closest('button[data-pr-state]');
     if (button && prStateControls.contains(button)) {
       applyPrState(button);
+    }
+  });
+  summary.addEventListener('click', (event) => {
+    const tile = event.target.closest('button[data-summary-filter]');
+    if (tile && summary.contains(tile)) {
+      applySummaryFilter(tile.dataset.summaryFilter);
     }
   });
   reviewState.addEventListener('change', () => {
@@ -177,6 +241,7 @@ function registerControls() {
     }
     void refresh();
   }, 300_000);
+  window.setInterval(renderSyncedAt, 60_000);
 }
 
 async function start() {

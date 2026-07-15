@@ -82,6 +82,21 @@ test('renders summary tiles and an explicit empty table state', () => {
   assert.match(renderRows([]), /표시할 번역 보고서가 없습니다/);
 });
 
+test('renders summary tiles as filter buttons with a pressed active tile', () => {
+  const summary = renderSummary({ total: 7, open: 2, merged: 3, closed: 1, attention: 4 }, 'open');
+
+  assert.match(summary, /<button type="button" class="summary-tile summary-neutral"/);
+  assert.match(summary, /data-summary-filter="all"/);
+  assert.match(summary, /data-summary-filter="open"[\s\S]*?aria-pressed="true"/);
+  assert.match(summary, /data-summary-filter="merged"[\s\S]*?aria-pressed="false"/);
+  assert.match(summary, /data-summary-filter="needs-review"/);
+  assert.match(summary, /summary-attention summary-alert/);
+  assert.doesNotMatch(
+    renderSummary({ total: 1, open: 1, merged: 0, closed: 0, attention: 0 }),
+    /summary-alert/,
+  );
+});
+
 test('renders raw quality and SEO report files behind file-view controls', () => {
   const html = renderDetails({
     ...item,

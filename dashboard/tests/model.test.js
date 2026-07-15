@@ -79,3 +79,16 @@ test('filters by query, pull request state, and review state', () => {
   assert.deepEqual(filterReports(items, { query: 'torch', prState: 'open', reviewState: 'pending' }).map((item) => item.prNumber), [168]);
   assert.deepEqual(filterReports(items, { query: '', prState: 'all', reviewState: 'complete' }).map((item) => item.prNumber), [169]);
 });
+
+test('filters needs-review as attention or pending combined', () => {
+  const items = joinReports([
+    reportWithoutSeo,
+    { ...reportWithoutSeo, prNumber: 169, quality: { enabled: true, available: true, status: 'fail' }, seo: { enabled: false, available: false, status: 'missing' } },
+    { ...reportWithoutSeo, prNumber: 170, quality: { enabled: true, available: true, status: 'pass' }, seo: { enabled: false, available: false, status: 'missing' } },
+  ], new Map([[168, openPull]]));
+
+  assert.deepEqual(
+    filterReports(items, { reviewState: 'needs-review' }).map((item) => item.prNumber),
+    [168, 169],
+  );
+});
