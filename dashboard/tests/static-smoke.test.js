@@ -19,6 +19,8 @@ test('index contains the monitor landmarks and module entrypoint', async () => {
   assert.match(html, /rel="icon"[^>]*href="\.\/assets\/hf-krew\.png"/);
   assert.match(html, /id="api-status-text"/);
   assert.match(html, /option value="needs-review"/);
+  assert.match(html, /id="progress"/);
+  assert.match(html, /id="check-stats"/);
 });
 
 test('bundled organization image is a PNG', async () => {
@@ -50,6 +52,7 @@ test('styles include responsive records, focus, and reduced motion support', asy
 test('app lifecycle loads cached reports, safely refreshes GitHub state, and wires controls', async () => {
   const app = await readFile(new URL('../js/app.js', import.meta.url), 'utf8');
 
+  assert.match(app, /from '\.\/blog\.js'/);
   assert.match(app, /from '\.\/github\.js'/);
   assert.match(app, /from '\.\/model\.js'/);
   assert.match(app, /from '\.\/view\.js'/);
@@ -60,6 +63,12 @@ test('app lifecycle loads cached reports, safely refreshes GitHub state, and wir
   assert.match(app, /fetchPullStatuses\(/);
   assert.match(app, /renderRows\(/);
   assert.match(app, /renderSummary\(/);
+  assert.match(app, /renderProgress\(/);
+  assert.match(app, /renderCheckStats\(/);
+  assert.match(app, /fetchBlogIndex\(/);
+  assert.match(app, /eligibleBlogPosts\(/);
+  assert.match(app, /readCachedBlogStats\(/);
+  assert.match(app, /writeCachedBlogStats\(/);
   assert.match(app, /setInterval\([^,]+,\s*300_000\)/);
   assert.match(app, /document\.visibilityState\s*!==\s*'visible'/);
   assert.match(app, /visibilitychange/);

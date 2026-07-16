@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { filterReports, joinReports, summarizeReports } from '../js/model.js';
+import { computeProgress, filterReports, joinReports, summarizeChecks, summarizeReports } from '../js/model.js';
 
 const reportWithoutSeo = {
   prNumber: 168,
@@ -78,6 +78,66 @@ test('filters by query, pull request state, and review state', () => {
   ], new Map([[168, openPull], [169, { number: 169, state: 'closed' }]]));
   assert.deepEqual(filterReports(items, { query: 'torch', prState: 'open', reviewState: 'pending' }).map((item) => item.prNumber), [168]);
   assert.deepEqual(filterReports(items, { query: '', prState: 'all', reviewState: 'complete' }).map((item) => item.prNumber), [169]);
+});
+
+test('computes blog progress from merged and open tracked slugs', () => {
+  const posts = [
+    { slug: 'torch-attention-profile', date: '2026-07-10', tags: [] },
+    { slug: 'open-post', date: '2026-07-11', tags: [] },
+    { slug: 'untranslated-post', date: '2026-07-12', tags: [] },
+    { slug: 'closed-post', date: '2026-07-13', tags: [] },
+  ];
+  const items = joinReports([
+    reportWithoutSeo,
+    { ...reportWithoutSeo, prNumber: 169, source: { slug: 'open-post', title: 'Open post' } },
+    { ...reportWithoutSeo, prNumber: 170, source: { slug: 'closed-post', title: 'Closed post' } },
+    { ...reportWithoutSeo, prNumber: 171, source: { slug: 'not-in-blog', title: 'Untracked slug' } },
+  ], new Map([
+    [168, { number: 168, state: 'merged' }],
+    [169, openPull],
+    [170, { number: 170, state: 'closed' }],
+    [171, { number: 171, state: 'merged' }],
+  ]));
+
+  assert.deepEqual(computeProgress(posts, items), {
+    total: 4,
+    merged: 1,
+    open: 1,
+    remaining: 2,
+    percent: 25,
+  });
+  assert.deepEqual(computeProgress([], items), {
+    total: 0,
+    merged: 0,
+    open: 0,
+    remaining: 0,
+    percent: 0,
+  });
+});
+
+test('aggregates quality and SEO check outcomes by criterion', () => {
+  const items = [
+    {
+      quality: { checks: [{ status: 'pass', text: 'no TODO marker remains' }, { status: 'fail', text: 'code fences are balanced' }] },
+      seo: { checks: [{ status: 'pass', text: 'frontmatter title exists' }] },
+    },
+    {
+      quality: { checks: [{ status: 'warning', text: 'no TODO marker remains' }, { status: 'unknown', text: 'ignored status' }, { status: 'pass', text: '' }] },
+      seo: { checks: [] },
+    },
+    { quality: null, seo: undefined },
+  ];
+
+  assert.deepEqual(summarizeChecks(items), {
+    quality: [
+      { text: 'no TODO marker remains', pass: 1, warning: 1, fail: 0, total: 2 },
+      { text: 'code fences are balanced', pass: 0, warning: 0, fail: 1, total: 1 },
+    ],
+    seo: [
+      { text: 'frontmatter title exists', pass: 1, warning: 0, fail: 0, total: 1 },
+    ],
+  });
+  assert.deepEqual(summarizeChecks([]), { quality: [], seo: [] });
 });
 
 test('filters needs-review as attention or pending combined', () => {

@@ -1,20 +1,30 @@
 import {
+  eligibleBlogPosts,
+  fetchBlogIndex,
+  fetchFirstPullCreatedAt,
+  readCachedBlogStats,
+  writeCachedBlogStats,
+} from './blog.js';
+import {
   createSingleFlight,
   fetchPullStatuses,
   readCachedSnapshot,
   writeCachedSnapshot,
 } from './github.js';
-import { filterReports, joinReports, summarizeReports } from './model.js';
-import { renderDetails, renderRows, renderSummary } from './view.js';
+import { computeProgress, filterReports, joinReports, summarizeChecks, summarizeReports } from './model.js';
+import { renderCheckStats, renderDetails, renderProgress, renderRows, renderSummary } from './view.js';
 
 const REPOSITORY = 'Hugging-Face-KREW/hugging-face-krew.github.io';
 const CACHE_KEY = 'hf-krew-pr-snapshot';
+const BLOG_CACHE_KEY = 'hf-krew-blog-stats';
 
 const apiStatus = document.querySelector('#api-status');
 const apiStatusText = document.querySelector('#api-status-text');
 const syncedAt = document.querySelector('#synced-at');
 const refreshButton = document.querySelector('#refresh-button');
 const summary = document.querySelector('#summary');
+const progress = document.querySelector('#progress');
+const checkStats = document.querySelector('#check-stats');
 const searchInput = document.querySelector('#search-input');
 const prStateControls = document.querySelector('#pr-state-controls');
 const reviewState = document.querySelector('#review-state');
@@ -31,6 +41,7 @@ let renderedItems = [];
 let lastSyncedAt = null;
 let filters = { query: '', prState: 'all', reviewState: 'all' };
 let reportsReady = false;
+let blogStats = null;
 
 function isValidReport(report) {
   return report
@@ -98,11 +109,48 @@ function activeSummaryFilter({ prState, reviewState: review }) {
   return prState === 'all' && review === 'needs-review' ? 'needs-review' : 'none';
 }
 
+function progressModel(items) {
+  if (!blogStats?.posts || !blogStats?.baselineAt) {
+    return null;
+  }
+  const baselineDate = String(blogStats.baselineAt).slice(0, 10);
+  const eligible = eligibleBlogPosts(blogStats.posts, { baselineDate });
+  return { ...computeProgress(eligible, items), baselineDate };
+}
+
 function render() {
   const items = joinReports(reports, pulls);
   renderedItems = filterReports(items, filters);
   summary.innerHTML = renderSummary(summarizeReports(items), activeSummaryFilter(filters));
+  progress.innerHTML = renderProgress(progressModel(items));
+  checkStats.innerHTML = renderCheckStats(summarizeChecks(items));
   reportRows.innerHTML = renderRows(renderedItems);
+}
+
+async function refreshBlogStats() {
+  const cached = readCachedBlogStats({ key: BLOG_CACHE_KEY, repository: REPOSITORY });
+  if (cached) {
+    blogStats = cached;
+    if (!cached.stale) {
+      return;
+    }
+  }
+  try {
+    const [posts, baselineAt] = await Promise.all([
+      fetchBlogIndex(),
+      blogStats?.baselineAt ?? fetchFirstPullCreatedAt({ repository: REPOSITORY }),
+    ]);
+    blogStats = { posts, baselineAt };
+    writeCachedBlogStats({
+      key: BLOG_CACHE_KEY,
+      repository: REPOSITORY,
+      fetchedAt: new Date().toISOString(),
+      baselineAt,
+      posts,
+    });
+  } catch {
+    // 블로그 목록 갱신 실패 시 이전(캐시) 진행률을 유지한다.
+  }
 }
 
 function renderFatalLoadError() {
@@ -140,6 +188,7 @@ const refresh = createSingleFlight(async () => {
   }
   refreshButton.disabled = true;
   setApiStatus('GitHub 상태를 확인하는 중입니다.', 'busy');
+  await refreshBlogStats();
 
   try {
     const snapshot = await fetchPullStatuses({

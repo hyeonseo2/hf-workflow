@@ -66,6 +66,58 @@ export function filterReports(items, { query = '', prState = 'all', reviewState 
   });
 }
 
+export function computeProgress(posts = [], items = []) {
+  const states = new Map();
+  for (const item of items) {
+    if (item?.slug) {
+      states.set(item.slug, item.pr?.state);
+    }
+  }
+  let merged = 0;
+  let open = 0;
+  for (const post of posts) {
+    const state = states.get(post?.slug);
+    if (state === 'merged') {
+      merged += 1;
+    } else if (state === 'open') {
+      open += 1;
+    }
+  }
+  const total = posts.length;
+  return {
+    total,
+    merged,
+    open,
+    remaining: Math.max(total - merged - open, 0),
+    percent: total > 0 ? Math.round((merged / total) * 1000) / 10 : 0,
+  };
+}
+
+const CHECK_COUNT_STATUSES = new Set(['pass', 'warning', 'fail']);
+
+export function summarizeChecks(items) {
+  const groups = { quality: new Map(), seo: new Map() };
+  for (const item of items ?? []) {
+    for (const kind of ['quality', 'seo']) {
+      const checks = Array.isArray(item?.[kind]?.checks) ? item[kind].checks : [];
+      for (const check of checks) {
+        const text = typeof check?.text === 'string' ? check.text.trim() : '';
+        if (!text || !CHECK_COUNT_STATUSES.has(check?.status)) {
+          continue;
+        }
+        const entry = groups[kind].get(text) ?? { text, pass: 0, warning: 0, fail: 0, total: 0 };
+        entry[check.status] += 1;
+        entry.total += 1;
+        groups[kind].set(text, entry);
+      }
+    }
+  }
+  return {
+    quality: [...groups.quality.values()],
+    seo: [...groups.seo.values()],
+  };
+}
+
 export function summarizeReports(items) {
   return items.reduce((summary, item) => {
     summary.total += 1;

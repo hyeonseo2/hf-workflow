@@ -3,7 +3,9 @@ import test from 'node:test';
 
 import {
   escapeHtml,
+  renderCheckStats,
   renderDetails,
+  renderProgress,
   renderRows,
   renderSummary,
   safeExternalUrl,
@@ -95,6 +97,47 @@ test('renders summary tiles as filter buttons with a pressed active tile', () =>
     renderSummary({ total: 1, open: 1, merged: 0, closed: 0, attention: 0 }),
     /summary-alert/,
   );
+});
+
+test('renders blog progress as a stacked bar with counts and baseline note', () => {
+  const html = renderProgress({
+    total: 190, merged: 3, open: 2, remaining: 185, percent: 1.6, baselineDate: '2024-09-18',
+  });
+
+  assert.match(html, />1\.6%<\/strong>/);
+  assert.match(html, /대상 190편 중 3편 병합/);
+  assert.match(html, /aria-label="대상 190편 중 병합 3편, 번역 진행 중 2편"/);
+  assert.match(html, /progress-fill-merged/);
+  assert.match(html, /progress-fill-open/);
+  assert.match(html, /병합 3편/);
+  assert.match(html, /진행 중 2편/);
+  assert.match(html, /남은 글 185편/);
+  assert.match(html, /2024-09-18/);
+  assert.match(html, /community\/enterprise 글 제외/);
+  assert.doesNotMatch(renderProgress({ total: 4, merged: 0, open: 0, remaining: 4, percent: 0, baselineDate: '2024-09-18' }), /progress-fill/);
+  assert.match(renderProgress(null), /불러오는 중/);
+  assert.match(renderProgress({ percent: 50 }), /불러오는 중/);
+});
+
+test('renders per-criterion check bars with escaped labels and counts', () => {
+  const html = renderCheckStats({
+    quality: [
+      { text: 'no TODO marker remains', pass: 2, warning: 1, fail: 0, total: 3 },
+      { text: '<svg onload=alert(1)>', pass: 0, warning: 0, fail: 1, total: 1 },
+    ],
+    seo: [],
+  });
+
+  assert.match(html, /품질 기준/);
+  assert.match(html, /SEO 기준/);
+  assert.match(html, /통과 2 · 경고 1/);
+  assert.match(html, /check-seg-pass/);
+  assert.match(html, /check-seg-warning/);
+  assert.match(html, /check-seg-fail/);
+  assert.doesNotMatch(html, /<svg/);
+  assert.match(html, /&lt;svg/);
+  assert.match(html, /집계할 검토 항목이 아직 없습니다/);
+  assert.match(renderCheckStats({}), /집계할 검토 항목이 아직 없습니다/);
 });
 
 test('renders raw quality and SEO report files behind file-view controls', () => {

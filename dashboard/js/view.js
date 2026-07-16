@@ -116,6 +116,82 @@ export function safeExternalUrl(value) {
   }
 }
 
+function safePercent(value) {
+  return Number.isFinite(value) && value > 0 ? Math.min(value, 100) : 0;
+}
+
+export function renderProgress(progress = null) {
+  if (!progress || !Number.isFinite(progress.total)) {
+    return '<p class="progress-empty">huggingface.co/blog 글 목록을 불러오는 중입니다.</p>';
+  }
+  const total = Math.max(Number(progress.total) || 0, 0);
+  const merged = Math.max(Number(progress.merged) || 0, 0);
+  const open = Math.max(Number(progress.open) || 0, 0);
+  const remaining = Math.max(Number(progress.remaining) || 0, 0);
+  const percent = safePercent(progress.percent);
+  const mergedWidth = safePercent(total > 0 ? (merged / total) * 100 : 0);
+  const openWidth = safePercent(total > 0 ? (open / total) * 100 : 0);
+  const baselineDate = escapeHtml(progress.baselineDate ?? '');
+
+  return `<div class="progress-head">
+    <p class="progress-percent"><strong>${percent}%</strong> 병합 완료</p>
+    <p class="progress-count">대상 ${total}편 중 ${merged}편 병합</p>
+  </div>
+  <div class="progress-track" role="img" aria-label="대상 ${total}편 중 병합 ${merged}편, 번역 진행 중 ${open}편">
+    ${merged > 0 ? `<div class="progress-fill progress-fill-merged" style="width: ${mergedWidth}%"></div>` : ''}
+    ${open > 0 ? `<div class="progress-fill progress-fill-open" style="width: ${openWidth}%"></div>` : ''}
+  </div>
+  <p class="progress-legend">
+    <span class="legend-item"><span class="legend-chip chip-merged" aria-hidden="true"></span>병합 ${merged}편</span>
+    <span class="legend-item"><span class="legend-chip chip-open" aria-hidden="true"></span>진행 중 ${open}편</span>
+    <span class="legend-item"><span class="legend-chip chip-remaining" aria-hidden="true"></span>남은 글 ${remaining}편</span>
+  </p>
+  <p class="progress-note">기준: 저장소 첫 PR 시작일(${baselineDate}) 이후 huggingface.co/blog 공식 글 · community/enterprise 글 제외</p>`;
+}
+
+const CHECK_SEGMENTS = [
+  ['pass', '통과'],
+  ['warning', '경고'],
+  ['fail', '실패'],
+];
+
+function renderCheckRow(check) {
+  const total = Math.max(Number(check.total) || 0, 0);
+  const counts = [];
+  const segments = [];
+  for (const [status, label] of CHECK_SEGMENTS) {
+    const value = Math.max(Number(check[status]) || 0, 0);
+    if (value === 0) {
+      continue;
+    }
+    counts.push(`${label} ${value}`);
+    const width = safePercent(total > 0 ? (value / total) * 100 : 0);
+    segments.push(`<span class="check-seg check-seg-${status}" style="width: ${width}%"></span>`);
+  }
+  const countText = counts.join(' · ') || '집계 없음';
+  return `<li class="check-row">
+    <span class="check-name">${escapeHtml(check.text)}</span>
+    <span class="check-bar" role="img" aria-label="${escapeHtml(check.text)}: ${escapeHtml(countText)}">${segments.join('')}</span>
+    <span class="check-counts">${escapeHtml(countText)}</span>
+  </li>`;
+}
+
+export function renderCheckStats(stats = {}) {
+  const groups = [
+    ['품질 기준', stats.quality],
+    ['SEO 기준', stats.seo],
+  ];
+  return groups.map(([label, checks]) => {
+    const rows = Array.isArray(checks) && checks.length > 0
+      ? checks.map(renderCheckRow).join('')
+      : '<li class="check-empty">집계할 검토 항목이 아직 없습니다.</li>';
+    return `<section class="check-group" aria-label="${label} 현황">
+      <h3>${label}</h3>
+      <ul class="check-rows">${rows}</ul>
+    </section>`;
+  }).join('');
+}
+
 export function renderSummary(summary = {}, activeFilter = 'all') {
   const tiles = [
     ['전체', 'total', 'neutral', 'all'],

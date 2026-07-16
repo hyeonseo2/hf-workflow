@@ -38,6 +38,22 @@ subject to GitHub's public rate limit. After a successful response the browser
 stores a normalized local cache. If a later request is unavailable or limited,
 the dashboard retains the cached and report data and shows a stale status.
 
+## Translation Progress Panel
+
+The progress panel compares merged translations against official posts on
+https://huggingface.co/blog. The browser reads two additional public sources:
+
+- `https://raw.githubusercontent.com/huggingface/blog/main/_blog.yml` for the
+  official post list (posts tagged `community` or `enterprise` are excluded,
+  and org/user community articles are not in this file at all).
+- The target repository's earliest pull request creation date (one public API
+  GET, cached), which sets the baseline date: only posts published on or after
+  that date count toward the progress denominator.
+
+Both results are cached in `localStorage` for one hour. If either fetch fails,
+the panel keeps the last cached progress and the rest of the dashboard is
+unaffected.
+
 ## Static Hosting
 
 1. Regenerate and review `dashboard/data/reports.json` locally.
