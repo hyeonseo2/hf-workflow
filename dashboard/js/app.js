@@ -1,7 +1,7 @@
 import {
   eligibleBlogPosts,
   fetchBlogIndex,
-  fetchFirstPullCreatedAt,
+  fetchFirstBlogAgentPullCreatedAt,
   readCachedBlogStats,
   writeCachedBlogStats,
 } from './blog.js';
@@ -138,7 +138,7 @@ async function refreshBlogStats() {
   try {
     const [posts, baselineAt] = await Promise.all([
       fetchBlogIndex(),
-      blogStats?.baselineAt ?? fetchFirstPullCreatedAt({ repository: REPOSITORY }),
+      blogStats?.baselineAt ?? fetchFirstBlogAgentPullCreatedAt({ repository: REPOSITORY }),
     ]);
     blogStats = { posts, baselineAt };
     writeCachedBlogStats({

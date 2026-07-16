@@ -46,9 +46,10 @@ https://huggingface.co/blog. The browser reads two additional public sources:
 - `https://raw.githubusercontent.com/huggingface/blog/main/_blog.yml` for the
   official post list (posts tagged `community` or `enterprise` are excluded,
   and org/user community articles are not in this file at all).
-- The target repository's earliest pull request creation date (one public API
-  GET, cached), which sets the baseline date: only posts published on or after
-  that date count toward the progress denominator.
+- The target repository's earliest pull request whose title starts with
+  `Translate Hugging Face blog post:`. This is treated as the HuggingFace Blog
+  Agent adoption date, and only posts published on or after that date count
+  toward the progress denominator.
 
 Both results are cached in `localStorage` for one hour. If either fetch fails,
 the panel keeps the last cached progress and the rest of the dashboard is

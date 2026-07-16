@@ -4,7 +4,7 @@ import test from 'node:test';
 import {
   eligibleBlogPosts,
   fetchBlogIndex,
-  fetchFirstPullCreatedAt,
+  fetchFirstBlogAgentPullCreatedAt,
   parseBlogDate,
   parseBlogIndex,
   readCachedBlogStats,
@@ -95,21 +95,42 @@ test('fetches and validates the blog index over HTTPS', async () => {
   await assert.rejects(fetchBlogIndex({ fetchImpl: async () => ({ ok: true, text: async () => '' }) }), TypeError);
 });
 
-test('fetches the earliest pull request creation date read-only', async () => {
-  const createdAt = await fetchFirstPullCreatedAt({
+test('fetches the earliest Blog Agent pull request creation date read-only', async () => {
+  const requests = [];
+  const createdAt = await fetchFirstBlogAgentPullCreatedAt({
     repository: 'Hugging-Face-KREW/hugging-face-krew.github.io',
     fetchImpl: async (url, options) => {
+      requests.push(url);
       assert.match(url, /^https:\/\/api\.github\.com\/repos\/Hugging-Face-KREW\/hugging-face-krew\.github\.io\/pulls\?/);
       assert.match(url, /direction=asc/);
-      assert.match(url, /per_page=1/);
+      assert.match(url, /per_page=100/);
       assert.equal(options.method, undefined);
-      return { ok: true, json: async () => [{ number: 1, created_at: '2024-09-18T11:32:57Z' }] };
+      const page = new URL(url).searchParams.get('page');
+      return {
+        ok: true,
+        json: async () => (page === '1'
+          ? [
+            ...Array.from({ length: 100 }, (_, index) => ({
+              number: index + 1,
+              title: `Maintenance PR ${index + 1}`,
+              created_at: '2024-09-18T11:32:57Z',
+            })),
+          ]
+          : [
+            {
+              number: 101,
+              title: 'Translate Hugging Face blog post: torch-attention-profile',
+              created_at: '2026-07-10T09:00:00Z',
+            },
+          ]),
+      };
     },
   });
-  assert.equal(createdAt, '2024-09-18T11:32:57Z');
+  assert.equal(createdAt, '2026-07-10T09:00:00Z');
+  assert.equal(requests.length, 2);
 
-  await assert.rejects(fetchFirstPullCreatedAt({ repository: 'bad' }), TypeError);
-  await assert.rejects(fetchFirstPullCreatedAt({
+  await assert.rejects(fetchFirstBlogAgentPullCreatedAt({ repository: 'bad' }), TypeError);
+  await assert.rejects(fetchFirstBlogAgentPullCreatedAt({
     repository: 'a/b',
     fetchImpl: async () => ({ ok: true, json: async () => [] }),
   }), TypeError);

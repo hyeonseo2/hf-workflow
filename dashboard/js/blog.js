@@ -1,8 +1,9 @@
 const BLOG_INDEX_URL = 'https://raw.githubusercontent.com/huggingface/blog/main/_blog.yml';
 const API_VERSION = '2022-11-28';
-const CACHE_SCHEMA_VERSION = 1;
+const CACHE_SCHEMA_VERSION = 2;
 const CACHE_STALE_AFTER_MS = 3_600_000;
 const EXCLUDED_TAGS = new Set(['community', 'enterprise']);
+const BLOG_AGENT_TITLE_PREFIX = 'Translate Hugging Face blog post:';
 
 const MONTHS = new Map([
   ['january', 1], ['february', 2], ['march', 3], ['april', 4], ['may', 5], ['june', 6],
@@ -93,28 +94,48 @@ export async function fetchBlogIndex({ fetchImpl = globalThis.fetch } = {}) {
   return posts;
 }
 
-export async function fetchFirstPullCreatedAt({ repository, fetchImpl = globalThis.fetch } = {}) {
+export async function fetchFirstBlogAgentPullCreatedAt({ repository, fetchImpl = globalThis.fetch } = {}) {
   const parts = typeof repository === 'string' ? repository.split('/') : [];
   if (parts.length !== 2 || parts.some((part) => part.length === 0)) {
     throw new TypeError('repository must be an owner/repo string');
   }
-  const query = new URLSearchParams({ state: 'all', sort: 'created', direction: 'asc', per_page: '1' });
-  const url = `https://api.github.com/repos/${encodeURIComponent(parts[0])}/${encodeURIComponent(parts[1])}/pulls?${query}`;
-  const response = await fetchImpl(url, {
-    headers: {
-      Accept: 'application/vnd.github+json',
-      'X-GitHub-Api-Version': API_VERSION,
-    },
-  });
-  if (!response?.ok) {
-    throw new Error(`first pull request lookup failed with status ${response?.status ?? 0}`);
+
+  let page = 1;
+  while (true) {
+    const query = new URLSearchParams({
+      state: 'all',
+      sort: 'created',
+      direction: 'asc',
+      per_page: '100',
+      page: String(page),
+    });
+    const url = `https://api.github.com/repos/${encodeURIComponent(parts[0])}/${encodeURIComponent(parts[1])}/pulls?${query}`;
+    const response = await fetchImpl(url, {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': API_VERSION,
+      },
+    });
+    if (!response?.ok) {
+      throw new Error(`Blog Agent pull request lookup failed with status ${response?.status ?? 0}`);
+    }
+    const pulls = await response.json();
+    if (!Array.isArray(pulls)) {
+      throw new TypeError('GitHub pull response must be an array');
+    }
+    for (const pull of pulls) {
+      if (typeof pull?.title === 'string'
+        && pull.title.startsWith(BLOG_AGENT_TITLE_PREFIX)
+        && isTimestamp(pull.created_at)) {
+        return pull.created_at;
+      }
+    }
+    if (pulls.length < 100) {
+      break;
+    }
+    page += 1;
   }
-  const pulls = await response.json();
-  const createdAt = Array.isArray(pulls) ? pulls[0]?.created_at : null;
-  if (!isTimestamp(createdAt)) {
-    throw new TypeError('first pull request creation date is unavailable');
-  }
-  return createdAt;
+  throw new TypeError('first Blog Agent pull request creation date is unavailable');
 }
 
 function isValidPost(value) {

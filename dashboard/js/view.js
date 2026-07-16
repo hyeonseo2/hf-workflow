@@ -146,34 +146,35 @@ export function renderProgress(progress = null) {
     <span class="legend-item"><span class="legend-chip chip-open" aria-hidden="true"></span>진행 중 ${open}편</span>
     <span class="legend-item"><span class="legend-chip chip-remaining" aria-hidden="true"></span>남은 글 ${remaining}편</span>
   </p>
-  <p class="progress-note">기준: 저장소 첫 PR 시작일(${baselineDate}) 이후 huggingface.co/blog 공식 글 · community/enterprise 글 제외</p>`;
+  <p class="progress-note">기준: HuggingFace Blog Agent 적용일(${baselineDate}) 이후 huggingface.co/blog 공식 글 · community/enterprise 글 제외</p>`;
 }
 
-const CHECK_SEGMENTS = [
-  ['pass', '통과'],
-  ['warning', '경고'],
-  ['fail', '실패'],
-];
-
-function renderCheckRow(check) {
-  const total = Math.max(Number(check.total) || 0, 0);
-  const counts = [];
-  const segments = [];
-  for (const [status, label] of CHECK_SEGMENTS) {
-    const value = Math.max(Number(check[status]) || 0, 0);
-    if (value === 0) {
-      continue;
-    }
-    counts.push(`${label} ${value}`);
-    const width = safePercent(total > 0 ? (value / total) * 100 : 0);
-    segments.push(`<span class="check-seg check-seg-${status}" style="width: ${width}%"></span>`);
+function renderCheckRate(label, stats = {}) {
+  const total = Math.max(Number(stats.total) || 0, 0);
+  if (total === 0) {
+    return '<p class="check-empty">집계할 검토 항목이 아직 없습니다.</p>';
   }
-  const countText = counts.join(' · ') || '집계 없음';
-  return `<li class="check-row">
-    <span class="check-name">${escapeHtml(check.text)}</span>
-    <span class="check-bar" role="img" aria-label="${escapeHtml(check.text)}: ${escapeHtml(countText)}">${segments.join('')}</span>
-    <span class="check-counts">${escapeHtml(countText)}</span>
-  </li>`;
+  const pass = Math.max(Number(stats.pass) || 0, 0);
+  const reviewNeeded = Math.max(Number(stats.reviewNeeded) || 0, 0);
+  const passPercent = safePercent(Number(stats.passPercent));
+  const passWidth = safePercent(total > 0 ? (pass / total) * 100 : 0);
+  const reviewWidth = safePercent(total > 0 ? (reviewNeeded / total) * 100 : 0);
+  const safeLabel = escapeHtml(label);
+
+  return `<div class="check-rate">
+    <div class="check-rate-head">
+      <span>현재 PR ${total}건</span>
+      <strong>통과율 ${passPercent}%</strong>
+    </div>
+    <div class="check-bar check-rate-bar" role="img" aria-label="${safeLabel}: 현재 PR ${total}건 중 통과 ${pass}건, 검토필요 ${reviewNeeded}건">
+      ${pass > 0 ? `<span class="check-seg check-seg-pass" style="width: ${passWidth}%"></span>` : ''}
+      ${reviewNeeded > 0 ? `<span class="check-seg check-seg-review" style="width: ${reviewWidth}%"></span>` : ''}
+    </div>
+    <p class="check-rate-counts">
+      <span><strong>통과</strong> ${pass}건</span>
+      <span><strong>검토필요</strong> ${reviewNeeded}건</span>
+    </p>
+  </div>`;
 }
 
 export function renderCheckStats(stats = {}) {
@@ -181,15 +182,12 @@ export function renderCheckStats(stats = {}) {
     ['품질 기준', stats.quality],
     ['SEO 기준', stats.seo],
   ];
-  return groups.map(([label, checks]) => {
-    const rows = Array.isArray(checks) && checks.length > 0
-      ? checks.map(renderCheckRow).join('')
-      : '<li class="check-empty">집계할 검토 항목이 아직 없습니다.</li>';
-    return `<section class="check-group" aria-label="${label} 현황">
+  return groups.map(([label, checkStats]) => (
+    `<section class="check-group" aria-label="${label} 현황">
       <h3>${label}</h3>
-      <ul class="check-rows">${rows}</ul>
-    </section>`;
-  }).join('');
+      ${renderCheckRate(label, checkStats)}
+    </section>`
+  )).join('');
 }
 
 export function renderSummary(summary = {}, activeFilter = 'all') {

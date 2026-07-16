@@ -115,29 +115,34 @@ test('computes blog progress from merged and open tracked slugs', () => {
   });
 });
 
-test('aggregates quality and SEO check outcomes by criterion', () => {
+test('summarizes quality and SEO pass rates by current PR report status', () => {
   const items = [
     {
-      quality: { checks: [{ status: 'pass', text: 'no TODO marker remains' }, { status: 'fail', text: 'code fences are balanced' }] },
-      seo: { checks: [{ status: 'pass', text: 'frontmatter title exists' }] },
+      quality: { enabled: true, available: true, status: 'pass' },
+      seo: { enabled: true, available: true, status: 'pass' },
     },
     {
-      quality: { checks: [{ status: 'warning', text: 'no TODO marker remains' }, { status: 'unknown', text: 'ignored status' }, { status: 'pass', text: '' }] },
-      seo: { checks: [] },
+      quality: { enabled: true, available: true, status: 'fail' },
+      seo: { enabled: true, available: false, status: 'missing' },
     },
-    { quality: null, seo: undefined },
+    {
+      quality: { enabled: true, available: false, status: 'missing' },
+      seo: { enabled: false, available: false, status: 'missing' },
+    },
+    {
+      quality: { enabled: false, available: false, status: 'missing' },
+      seo: { enabled: true, available: true, status: 'warning' },
+    },
   ];
 
   assert.deepEqual(summarizeChecks(items), {
-    quality: [
-      { text: 'no TODO marker remains', pass: 1, warning: 1, fail: 0, total: 2 },
-      { text: 'code fences are balanced', pass: 0, warning: 0, fail: 1, total: 1 },
-    ],
-    seo: [
-      { text: 'frontmatter title exists', pass: 1, warning: 0, fail: 0, total: 1 },
-    ],
+    quality: { pass: 1, reviewNeeded: 2, total: 3, passPercent: 33.3 },
+    seo: { pass: 1, reviewNeeded: 2, total: 3, passPercent: 33.3 },
   });
-  assert.deepEqual(summarizeChecks([]), { quality: [], seo: [] });
+  assert.deepEqual(summarizeChecks([]), {
+    quality: { pass: 0, reviewNeeded: 0, total: 0, passPercent: 0 },
+    seo: { pass: 0, reviewNeeded: 0, total: 0, passPercent: 0 },
+  });
 });
 
 test('filters needs-review as attention or pending combined', () => {

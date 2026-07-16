@@ -21,6 +21,7 @@ test('index contains the monitor landmarks and module entrypoint', async () => {
   assert.match(html, /option value="needs-review"/);
   assert.match(html, /id="progress"/);
   assert.match(html, /id="check-stats"/);
+  assert.match(html, /현재 PR별 통과율/);
 });
 
 test('bundled organization image is a PNG', async () => {
@@ -66,6 +67,7 @@ test('app lifecycle loads cached reports, safely refreshes GitHub state, and wir
   assert.match(app, /renderProgress\(/);
   assert.match(app, /renderCheckStats\(/);
   assert.match(app, /fetchBlogIndex\(/);
+  assert.match(app, /fetchFirstBlogAgentPullCreatedAt\(/);
   assert.match(app, /eligibleBlogPosts\(/);
   assert.match(app, /readCachedBlogStats\(/);
   assert.match(app, /writeCachedBlogStats\(/);

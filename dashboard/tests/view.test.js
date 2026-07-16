@@ -99,7 +99,7 @@ test('renders summary tiles as filter buttons with a pressed active tile', () =>
   );
 });
 
-test('renders blog progress as a stacked bar with counts and baseline note', () => {
+test('renders blog progress as a stacked bar with counts and Blog Agent baseline note', () => {
   const html = renderProgress({
     total: 190, merged: 3, open: 2, remaining: 185, percent: 1.6, baselineDate: '2024-09-18',
   });
@@ -113,31 +113,29 @@ test('renders blog progress as a stacked bar with counts and baseline note', () 
   assert.match(html, /진행 중 2편/);
   assert.match(html, /남은 글 185편/);
   assert.match(html, /2024-09-18/);
+  assert.match(html, /HuggingFace Blog Agent 적용일/);
   assert.match(html, /community\/enterprise 글 제외/);
   assert.doesNotMatch(renderProgress({ total: 4, merged: 0, open: 0, remaining: 4, percent: 0, baselineDate: '2024-09-18' }), /progress-fill/);
   assert.match(renderProgress(null), /불러오는 중/);
   assert.match(renderProgress({ percent: 50 }), /불러오는 중/);
 });
 
-test('renders per-criterion check bars with escaped labels and counts', () => {
+test('renders quality and SEO pass rates against current PR reports', () => {
   const html = renderCheckStats({
-    quality: [
-      { text: 'no TODO marker remains', pass: 2, warning: 1, fail: 0, total: 3 },
-      { text: '<svg onload=alert(1)>', pass: 0, warning: 0, fail: 1, total: 1 },
-    ],
-    seo: [],
+    quality: { pass: 4, reviewNeeded: 5, total: 9, passPercent: 44.4 },
+    seo: { pass: 3, reviewNeeded: 6, total: 9, passPercent: 33.3 },
   });
 
   assert.match(html, /품질 기준/);
   assert.match(html, /SEO 기준/);
-  assert.match(html, /통과 2 · 경고 1/);
+  assert.match(html, /현재 PR 9건/);
+  assert.match(html, /통과율 44\.4%/);
+  assert.match(html, /통과 4건/);
+  assert.match(html, /검토필요 5건/);
+  assert.match(html, /aria-label="품질 기준: 현재 PR 9건 중 통과 4건, 검토필요 5건"/);
   assert.match(html, /check-seg-pass/);
-  assert.match(html, /check-seg-warning/);
-  assert.match(html, /check-seg-fail/);
-  assert.doesNotMatch(html, /<svg/);
-  assert.match(html, /&lt;svg/);
-  assert.match(html, /집계할 검토 항목이 아직 없습니다/);
-  assert.match(renderCheckStats({}), /집계할 검토 항목이 아직 없습니다/);
+  assert.match(html, /check-seg-review/);
+  assert.match(renderCheckStats({ quality: { pass: 0, reviewNeeded: 0, total: 0, passPercent: 0 } }), /집계할 검토 항목이 아직 없습니다/);
 });
 
 test('renders raw quality and SEO report files behind file-view controls', () => {

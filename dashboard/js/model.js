@@ -93,28 +93,39 @@ export function computeProgress(posts = [], items = []) {
   };
 }
 
-const CHECK_COUNT_STATUSES = new Set(['pass', 'warning', 'fail']);
+function emptyCheckSummary() {
+  return { pass: 0, reviewNeeded: 0, total: 0, passPercent: 0 };
+}
+
+function reportPassState(report) {
+  if (report?.enabled === false) {
+    return 'excluded';
+  }
+  return report?.available === true && report?.status === 'pass' ? 'pass' : 'reviewNeeded';
+}
+
+function withPassPercent(summary) {
+  return {
+    ...summary,
+    passPercent: summary.total > 0 ? Math.round((summary.pass / summary.total) * 1000) / 10 : 0,
+  };
+}
 
 export function summarizeChecks(items) {
-  const groups = { quality: new Map(), seo: new Map() };
+  const groups = { quality: emptyCheckSummary(), seo: emptyCheckSummary() };
   for (const item of items ?? []) {
     for (const kind of ['quality', 'seo']) {
-      const checks = Array.isArray(item?.[kind]?.checks) ? item[kind].checks : [];
-      for (const check of checks) {
-        const text = typeof check?.text === 'string' ? check.text.trim() : '';
-        if (!text || !CHECK_COUNT_STATUSES.has(check?.status)) {
-          continue;
-        }
-        const entry = groups[kind].get(text) ?? { text, pass: 0, warning: 0, fail: 0, total: 0 };
-        entry[check.status] += 1;
-        entry.total += 1;
-        groups[kind].set(text, entry);
+      const state = reportPassState(item?.[kind]);
+      if (state === 'excluded') {
+        continue;
       }
+      groups[kind].total += 1;
+      groups[kind][state] += 1;
     }
   }
   return {
-    quality: [...groups.quality.values()],
-    seo: [...groups.seo.values()],
+    quality: withPassPercent(groups.quality),
+    seo: withPassPercent(groups.seo),
   };
 }
 
