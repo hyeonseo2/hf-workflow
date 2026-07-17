@@ -67,12 +67,12 @@ handoff:
     return manifest
 
 
-def test_harness_accepts_good_translation_without_hard_failures(tmp_path: Path) -> None:
+def test_harness_routes_good_translation_to_review_without_semantic_evaluation(tmp_path: Path) -> None:
     manifest = manifest_for(tmp_path, "target_good.md")
 
     report = build_report(manifest, FIXTURES, source_path=FIXTURES / "source.md")
 
-    assert report["status"] == "auto_pass"
+    assert report["status"] == "review_required"
     assert report["hard_failures"] == []
     assert report["dimension_scores"]["publishing_integrity"] == 100.0
     assert report["metadata"]["source_segment_count"] == report["metadata"]["target_segment_count"]
@@ -81,6 +81,103 @@ def test_harness_accepts_good_translation_without_hard_failures(tmp_path: Path) 
     assert report["segments"]["source"]
     assert report["segments"]["target"]
     assert report["segment_alignment"]
+
+
+def test_harness_rejects_when_source_is_unavailable(tmp_path: Path) -> None:
+    manifest = manifest_for(tmp_path, "target_good.md")
+
+    report = build_report(manifest, FIXTURES, fetch_source_url=False)
+
+    assert report["status"] == "reject"
+    assert report["metadata"]["source_available"] is False
+    assert any("Source document is unavailable" in issue["message"] for issue in report["hard_failures"])
+
+
+def test_harness_does_not_auto_pass_unrelated_same_length_korean(tmp_path: Path) -> None:
+    source = tmp_path / "source.md"
+    target = tmp_path / "target.md"
+    manifest = tmp_path / "manifest.yaml"
+    source.write_text(
+        """---
+title: Original
+---
+
+# Technical update
+
+This article explains a reliable process for teams working together in demanding production environments.
+""",
+        encoding="utf-8",
+    )
+    target.write_text(
+        """---
+title: 오늘의 점심 메뉴
+---
+
+# 주말 여행 계획
+
+이번 글에서는 가족과 함께 떠나는 여름 바다 여행과 맛있는 지역 음식점에 관한 즐거운 경험을 자세히 소개합니다.
+""",
+        encoding="utf-8",
+    )
+    manifest.write_text(
+        """version: 1
+source:
+  file_path: source.md
+translation:
+  file_path: target.md
+""",
+        encoding="utf-8",
+    )
+
+    report = build_report(manifest, tmp_path)
+
+    assert report["metrics"]["summary"]["qe_average"] == 1.0
+    assert report["status"] == "review_required"
+    assert report["metadata"]["semantic_evaluation_complete"] is False
+
+
+def test_harness_loads_evaluation_thresholds_from_config(tmp_path: Path) -> None:
+    manifest = manifest_for(tmp_path, "target_good.md")
+    config = tmp_path / "eval-config.yml"
+    config.write_text(
+        """version: 1
+language:
+  min_korean_letter_ratio: 0.99
+""",
+        encoding="utf-8",
+    )
+
+    report = build_report(
+        manifest,
+        FIXTURES,
+        source_path=FIXTURES / "source.md",
+        evaluation_config_path=config,
+    )
+
+    assert any("Korean letter ratio is low" in issue["message"] for issue in report["issues"])
+    assert report["metadata"]["evaluation_config_path"] == str(config)
+
+
+def test_harness_loads_number_gate_from_config(tmp_path: Path) -> None:
+    source = tmp_path / "source.md"
+    target = tmp_path / "target.md"
+    manifest = tmp_path / "manifest.yaml"
+    gates = tmp_path / "gates.yml"
+    source.write_text("---\ntitle: Numbers\n---\n\nThe system uses 3 workers.\n", encoding="utf-8")
+    target.write_text("---\ntitle: 숫자\n---\n\n시스템은 4개의 워커를 사용합니다.\n", encoding="utf-8")
+    manifest.write_text(
+        "version: 1\nsource:\n  file_path: source.md\ntranslation:\n  file_path: target.md\n",
+        encoding="utf-8",
+    )
+    gates.write_text(
+        "version: 1\nhard_gates:\n  numbers:\n    status: reject\n",
+        encoding="utf-8",
+    )
+
+    report = build_report(manifest, tmp_path, gates_config_path=gates)
+
+    assert any("number/unit token" in issue["message"] for issue in report["hard_failures"])
+    assert report["metadata"]["gates_config_path"] == str(gates)
 
 
 def test_harness_rejects_code_mutation(tmp_path: Path) -> None:
@@ -226,9 +323,9 @@ def test_cli_writes_markdown_and_json_reports(tmp_path: Path) -> None:
     )
 
     assert exit_code == 0
-    assert "Status: auto_pass" in output_md.read_text(encoding="utf-8")
+    assert "Status: review_required" in output_md.read_text(encoding="utf-8")
     loaded = json.loads(output_json.read_text(encoding="utf-8"))
-    assert loaded["status"] == "auto_pass"
+    assert loaded["status"] == "review_required"
 
 
 def test_cli_fail_on_reject_returns_nonzero(tmp_path: Path) -> None:
@@ -301,7 +398,7 @@ def test_harness_accepts_matching_manifest_source_hash(tmp_path: Path) -> None:
 
     report = build_report(manifest, FIXTURES, source_path=FIXTURES / "source.md")
 
-    assert report["status"] == "auto_pass"
+    assert report["status"] == "review_required"
     assert report["metadata"]["source_changed"] is False
 
 
@@ -321,7 +418,7 @@ translation:
 
     report = build_report(manifest, FIXTURES)
 
-    assert report["status"] == "auto_pass"
+    assert report["status"] == "review_required"
     assert report["metadata"]["source_available"] is True
     assert report["metadata"]["source_format"] == "url_markdown"
     assert report["metadata"]["source_path"] == source_url
@@ -412,7 +509,7 @@ def test_qe_metric_can_be_disabled(tmp_path: Path) -> None:
         metric_config=MetricConfig(qe_metric="off", enable_embedding_similarity=False),
     )
 
-    assert report["status"] == "auto_pass"
+    assert report["status"] == "review_required"
     assert report["metrics"]["summary"]["qe_enabled"] is False
     assert report["metrics"]["summary"]["embedding_similarity_enabled"] is False
     assert all("QE metric score is low" not in issue["message"] for issue in report["issues"])
@@ -466,7 +563,7 @@ def test_cometkiwi_wrapper_falls_back_without_breaking_deterministic_gates(tmp_p
 
     report = build_report(manifest, FIXTURES, source_path=FIXTURES / "source.md", metric_config=config)
 
-    assert report["status"] == "auto_pass"
+    assert report["status"] == "review_required"
     assert report["metrics"]["summary"]["qe_metric"] == "cometkiwi"
     assert "qe_average" in report["metrics"]["summary"]
     assert report["metrics"]["summary"]["warnings"]
@@ -524,6 +621,42 @@ def test_fixture_mqm_judge_routes_feedback_into_report(tmp_path: Path) -> None:
     assert report["dimension_scores"]["adequacy"] == 41.0
     assert report["style_guide"]["issue_count"] == 0
     assert any(issue["message"] == "MQM judge reported accuracy issue." for issue in report["issues"])
+
+
+def test_complete_clean_mqm_evaluation_allows_auto_pass(tmp_path: Path) -> None:
+    manifest = manifest_for(tmp_path, "target_good.md")
+    source = markdown_doc((FIXTURES / "source.md").read_text(encoding="utf-8"))
+    target = markdown_doc((FIXTURES / "target_good.md").read_text(encoding="utf-8"))
+    fixture = tmp_path / "complete-mqm-fixture.jsonl"
+    fixture.write_text(
+        "\n".join(
+            json.dumps(
+                {
+                    "segment_id": item["target_id"],
+                    "adequacy_score": 1.0,
+                    "fluency_score": 1.0,
+                    "technical_score": 1.0,
+                    "errors": [],
+                },
+                ensure_ascii=False,
+            )
+            for item in align_segments(source, target)
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    config = MetricConfig(
+        qe_metric="off",
+        enable_embedding_similarity=False,
+        llm_judge_provider="fixture",
+        llm_judge_fixture_path=fixture,
+    )
+
+    report = build_report(manifest, FIXTURES, source_path=FIXTURES / "source.md", metric_config=config)
+
+    assert report["status"] == "auto_pass"
+    assert report["metadata"]["semantic_evaluation_complete"] is True
+    assert not any("Semantic adequacy evaluation is incomplete" in issue["message"] for issue in report["issues"])
 
 
 def test_mqm_judge_downgrades_wording_only_accuracy_major(tmp_path: Path) -> None:
@@ -617,7 +750,7 @@ def test_openai_mqm_judge_skips_without_api_key(tmp_path: Path) -> None:
 
     report = build_report(manifest, FIXTURES, source_path=FIXTURES / "source.md", metric_config=config)
 
-    assert report["status"] == "auto_pass"
+    assert report["status"] == "review_required"
     assert report["mqm_judge"]["enabled"] is True
     assert report["mqm_judge"]["provider"] == "openai"
     assert report["mqm_judge"]["reasoning_effort"] == "minimal"
@@ -689,7 +822,7 @@ def test_openai_mqm_judge_reuses_cached_segments_without_api_key(tmp_path: Path)
 
     report = build_report(manifest, FIXTURES, source_path=FIXTURES / "source.md", metric_config=config)
 
-    assert report["status"] == "auto_pass"
+    assert report["status"] == "review_required"
     assert report["mqm_judge"]["segment_count"] == 1
     assert report["mqm_judge"]["cache_hits"] == 1
     assert report["mqm_judge"]["cache_misses"] == 0
@@ -757,12 +890,12 @@ handoff:
     return manifest
 
 
-def test_style_guide_good_translation_auto_passes(tmp_path: Path) -> None:
+def test_style_guide_good_translation_requires_semantic_review(tmp_path: Path) -> None:
     manifest = style_manifest_for(tmp_path, "style_target_good.md")
 
     report = build_report(manifest, FIXTURES, source_path=FIXTURES / "style_source.md")
 
-    assert report["status"] == "auto_pass"
+    assert report["status"] == "review_required"
     assert report["style_guide"]["enabled"] is True
     assert report["style_guide"]["issue_count"] == 0
     assert report["dimension_scores"]["style_locale"] == 100.0

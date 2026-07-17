@@ -200,6 +200,18 @@ def test_create_manifest_records_source_snapshot_metadata(tmp_path: Path) -> Non
     assert "hash: abc123" in text
 
 
+def test_daily_workflow_publishes_reports_before_enforcing_quality_gate() -> None:
+    workflow = (Path(__file__).resolve().parents[2] / ".github" / "workflows" / "daily-translation.yml").read_text(
+        encoding="utf-8"
+    )
+
+    upload_index = workflow.index("- name: Upload run artifacts")
+    enforce_index = workflow.index("- name: Enforce quality gate")
+
+    assert upload_index < enforce_index
+    assert 'report.get("status") == "reject"' in workflow
+
+
 def init_git_repo(path: Path) -> None:
     run_cmd(["git", "init"], cwd=path)
     run_cmd(["git", "config", "user.email", "test@example.com"], cwd=path)

@@ -10,3 +10,7 @@ __pycache__/
 run-summary.json
 target-repo/
 hugging-face-krew.github.io/
+
+# Generated quality-harness PR samples live in CI artifacts. Keep only the
+# hand-written summary README under each sample-results directory.
+skills/quality/reports/workflow-harness-sample-results-*/pr-*/

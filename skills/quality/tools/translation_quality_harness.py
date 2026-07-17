@@ -49,6 +49,8 @@ EMOJI_RE = re.compile(
 DEFAULT_STYLE_GUIDE_PATH = QUALITY_ROOT / "style" / "hf-blog-ko-translation-guide.md"
 DEFAULT_STYLE_POLICY_PATH = QUALITY_ROOT / "configs" / "style_policy.yml"
 DEFAULT_MQM_PROMPT_PATH = QUALITY_ROOT / "judges" / "mqm_prompt.md"
+DEFAULT_EVALUATION_CONFIG_PATH = QUALITY_ROOT / "configs" / "eval_config.yml"
+DEFAULT_GATES_CONFIG_PATH = QUALITY_ROOT / "configs" / "gates.yml"
 MQM_CATEGORIES = {"accuracy", "terminology", "technical", "fluency", "style_locale", "formatting"}
 SEVERITIES = {"neutral", "minor", "major", "critical"}
 
@@ -122,6 +124,28 @@ class StylePolicy:
     forbid_added_emoji: bool
     list_consistency_enabled: bool
     require_korean_alt_text: bool
+
+
+@dataclass
+class EvaluationPolicy:
+    evaluation_config_path: Path | None = DEFAULT_EVALUATION_CONFIG_PATH
+    gates_config_path: Path | None = DEFAULT_GATES_CONFIG_PATH
+    auto_pass_score: float = 90.0
+    review_required_min_score: float = 75.0
+    style_review_required_min_score: float = 60.0
+    min_korean_letter_ratio: float = 0.20
+    max_untranslated_english_ratio: float = 0.60
+    min_target_to_source_ratio: float = 0.35
+    max_target_to_source_ratio: float = 2.60
+    gate_statuses: dict[str, str] | None = None
+
+    def severity(self, gate: str, fallback: str) -> str:
+        status = (self.gate_statuses or {}).get(gate, "")
+        if status == "reject":
+            return "critical"
+        if status == "review_required":
+            return "major"
+        return fallback
 
 
 @dataclass
@@ -749,7 +773,12 @@ def align_segments(source: MarkdownDoc, target: MarkdownDoc) -> list[dict[str, s
     return alignments
 
 
-def validate_segment_coverage(issues: list[Issue], source: MarkdownDoc, target: MarkdownDoc) -> None:
+def validate_segment_coverage(
+    issues: list[Issue],
+    source: MarkdownDoc,
+    target: MarkdownDoc,
+    policy: EvaluationPolicy,
+) -> None:
     source_count = len(source.segments)
     target_count = len(target.segments)
     if target_count < source_count:
@@ -795,7 +824,7 @@ def validate_segment_coverage(issues: list[Issue], source: MarkdownDoc, target: 
     source_length = sum(len(segment.text) for segment in source.segments)
     target_length = sum(len(segment.text) for segment in target.segments)
     ratio = target_length / max(1, source_length)
-    if ratio < 0.35 or ratio > 2.60:
+    if ratio < policy.min_target_to_source_ratio or ratio > policy.max_target_to_source_ratio:
         issue(
             issues,
             "accuracy",
@@ -804,7 +833,10 @@ def validate_segment_coverage(issues: list[Issue], source: MarkdownDoc, target: 
             source_span=f"source_chars={source_length}",
             target_span=f"target_chars={target_length}, ratio={ratio:.2f}",
             suggested_fix="Check for omitted prose, over-expanded translation, or invented content.",
-            reason="Length ratio validator uses configured Phase 2 review thresholds.",
+            reason=(
+                "Length ratio is outside configured review thresholds "
+                f"{policy.min_target_to_source_ratio:.2f}..{policy.max_target_to_source_ratio:.2f}."
+            ),
         )
 
 
@@ -937,7 +969,66 @@ def parse_yaml_scalar(value: str) -> object:
         return value[1:-1]
     if value.startswith("'") and value.endswith("'"):
         return value[1:-1]
+    try:
+        return int(value)
+    except ValueError:
+        pass
+    try:
+        return float(value)
+    except ValueError:
+        pass
     return value
+
+
+def read_yaml_scalars(path: Path | None) -> dict[tuple[str, ...], object]:
+    if path is None or not path.exists():
+        return {}
+    values: dict[tuple[str, ...], object] = {}
+    path_by_level: dict[int, str] = {}
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        stripped = raw_line.strip()
+        if not stripped or stripped.startswith("#") or stripped.startswith("- ") or ":" not in stripped:
+            continue
+        indent = len(raw_line) - len(raw_line.lstrip(" "))
+        level = indent // 2
+        for existing in list(path_by_level):
+            if existing >= level:
+                del path_by_level[existing]
+        key, raw_value = stripped.split(":", 1)
+        path_by_level[level] = key.strip()
+        if raw_value.strip():
+            key_path = tuple(path_by_level[index] for index in sorted(path_by_level))
+            values[key_path] = parse_yaml_scalar(raw_value)
+    return values
+
+
+def load_evaluation_policy(
+    evaluation_config_path: Path | None = DEFAULT_EVALUATION_CONFIG_PATH,
+    gates_config_path: Path | None = DEFAULT_GATES_CONFIG_PATH,
+) -> EvaluationPolicy:
+    policy = EvaluationPolicy(
+        evaluation_config_path=evaluation_config_path,
+        gates_config_path=gates_config_path,
+        gate_statuses={},
+    )
+    evaluation_values = read_yaml_scalars(evaluation_config_path)
+    field_paths = {
+        ("score", "auto_pass_score"): "auto_pass_score",
+        ("score", "review_required_min_score"): "review_required_min_score",
+        ("score", "style_review_required_min_score"): "style_review_required_min_score",
+        ("language", "min_korean_letter_ratio"): "min_korean_letter_ratio",
+        ("language", "max_untranslated_english_ratio"): "max_untranslated_english_ratio",
+        ("length_ratio", "min_target_to_source"): "min_target_to_source_ratio",
+        ("length_ratio", "max_target_to_source"): "max_target_to_source_ratio",
+    }
+    for key_path, field_name in field_paths.items():
+        if key_path in evaluation_values:
+            setattr(policy, field_name, float(evaluation_values[key_path]))
+
+    for key_path, value in read_yaml_scalars(gates_config_path).items():
+        if len(key_path) == 3 and key_path[0] in {"hard_gates", "review_gates"} and key_path[2] == "status":
+            policy.gate_statuses[key_path[1]] = str(value)
+    return policy
 
 
 def load_style_policy(style_guide_path: Path | None, style_policy_path: Path | None) -> StylePolicy:
@@ -2201,12 +2292,14 @@ def validate_documents(
     translation_memory: dict[str, str] | None = None,
     metric_config: MetricConfig | None = None,
     style_policy: StylePolicy | None = None,
+    evaluation_policy: EvaluationPolicy | None = None,
 ) -> dict[str, object]:
     issues: list[Issue] = []
     source_changed = False
     glossary_entries = glossary or []
     memory = translation_memory or {}
     metric_settings = metric_config or MetricConfig(qe_metric="off", enable_embedding_similarity=False)
+    gate_policy = evaluation_policy or load_evaluation_policy()
     active_style_policy = style_policy if metric_settings.enable_style_guide else None
     metrics: dict[str, object] = {
         "summary": {
@@ -2226,13 +2319,19 @@ def validate_documents(
     source_is_structural = source is not None and source_format in {"", "markdown", "url_markdown"}
 
     for error in target.parse_errors:
-        issue(issues, "formatting", "critical", error, reason="Target Markdown parse failed.")
+        issue(
+            issues,
+            "formatting",
+            gate_policy.severity("markdown_parse", "critical"),
+            error,
+            reason="Target Markdown parse failed.",
+        )
 
     if "title" not in target.frontmatter:
         issue(
             issues,
             "formatting",
-            "critical",
+            gate_policy.severity("front_matter", "critical"),
             "Target front matter is missing required key: title.",
             suggested_fix="Add a translated title to front matter.",
         )
@@ -2241,13 +2340,22 @@ def validate_documents(
         issue(
             issues,
             "formatting",
-            "critical",
+            gate_policy.severity("todo_markers", "critical"),
             "TODO/FIXME/TBD or unresolved placeholder marker remains.",
             target_span=", ".join(sorted(set(target.todo_markers))),
             suggested_fix="Remove unresolved markers before publishing.",
         )
 
-    if source is not None:
+    if source is None:
+        issue(
+            issues,
+            "accuracy",
+            "critical",
+            "Source document is unavailable.",
+            suggested_fix="Restore source.file_path or make source.url retrievable before evaluating the translation.",
+            reason="Fidelity and structural checks cannot run without the source document.",
+        )
+    else:
         if expected_source_hash and source.source_hash != expected_source_hash:
             source_changed = True
             issue(
@@ -2283,30 +2391,107 @@ def validate_documents(
                         suggested_fix=f"Preserve front matter `{key}` exactly.",
                     )
 
-            compare_counter(issues, "formatting", "code block hash", code_hashes(source.code_blocks), code_hashes(target.code_blocks))
-            compare_counter(issues, "technical", "inline code", source.inline_code, target.inline_code)
-            compare_counter(issues, "formatting", "link target", source.link_targets, target.link_targets)
-            compare_counter(issues, "formatting", "image target", source.image_targets, target.image_targets)
-            compare_counter(issues, "formatting", "bare URL", source.urls, target.urls, severity="major")
-            compare_counter(issues, "technical", "model or dataset id", source.model_ids, target.model_ids, severity="major")
-            compare_counter(issues, "technical", "Python/API identifier", source.python_identifiers, target.python_identifiers, severity="major")
-            compare_counter(issues, "technical", "environment variable", source.env_vars, target.env_vars)
-            compare_counter(issues, "technical", "CLI flag", source.cli_flags, target.cli_flags)
-            compare_counter(issues, "technical", "number/unit token", source.numbers, target.numbers, severity="major")
-            compare_counter(issues, "technical", "LaTeX token", source.latex_inline, target.latex_inline)
+            compare_counter(
+                issues,
+                "formatting",
+                "code block hash",
+                code_hashes(source.code_blocks),
+                code_hashes(target.code_blocks),
+                severity=gate_policy.severity("code_blocks", "critical"),
+            )
+            compare_counter(
+                issues,
+                "technical",
+                "inline code",
+                source.inline_code,
+                target.inline_code,
+                severity=gate_policy.severity("inline_code", "critical"),
+            )
+            compare_counter(
+                issues,
+                "formatting",
+                "link target",
+                source.link_targets,
+                target.link_targets,
+                severity=gate_policy.severity("links", "critical"),
+            )
+            compare_counter(
+                issues,
+                "formatting",
+                "image target",
+                source.image_targets,
+                target.image_targets,
+                severity=gate_policy.severity("images", "critical"),
+            )
+            compare_counter(
+                issues,
+                "formatting",
+                "bare URL",
+                source.urls,
+                target.urls,
+                severity=gate_policy.severity("bare_urls", "major"),
+            )
+            compare_counter(
+                issues,
+                "technical",
+                "model or dataset id",
+                source.model_ids,
+                target.model_ids,
+                severity=gate_policy.severity("protected_tokens", "major"),
+            )
+            compare_counter(
+                issues,
+                "technical",
+                "Python/API identifier",
+                source.python_identifiers,
+                target.python_identifiers,
+                severity=gate_policy.severity("protected_tokens", "major"),
+            )
+            compare_counter(
+                issues,
+                "technical",
+                "environment variable",
+                source.env_vars,
+                target.env_vars,
+                severity=gate_policy.severity("environment_variables", "critical"),
+            )
+            compare_counter(
+                issues,
+                "technical",
+                "CLI flag",
+                source.cli_flags,
+                target.cli_flags,
+                severity=gate_policy.severity("cli_flags", "critical"),
+            )
+            compare_counter(
+                issues,
+                "technical",
+                "number/unit token",
+                source.numbers,
+                target.numbers,
+                severity=gate_policy.severity("numbers", "major"),
+            )
+            compare_counter(
+                issues,
+                "technical",
+                "LaTeX token",
+                source.latex_inline,
+                target.latex_inline,
+                severity=gate_policy.severity("latex", "critical"),
+            )
 
             if source.table_shapes != target.table_shapes:
                 issue(
                     issues,
                     "formatting",
-                    "critical",
+                    gate_policy.severity("tables", "critical"),
                     "Markdown table shape mismatch.",
                     source_span=str(source.table_shapes),
                     target_span=str(target.table_shapes),
                     suggested_fix="Preserve source table row and column counts.",
                 )
 
-            validate_segment_coverage(issues, source, target)
+            validate_segment_coverage(issues, source, target, gate_policy)
             metrics = evaluate_metrics(source, target, metric_settings)
             validate_metric_thresholds(issues, metrics, metric_settings)
             mqm_judge = evaluate_mqm_judge(segment_alignment, metric_settings)
@@ -2325,7 +2510,7 @@ def validate_documents(
     validate_style_guide(issues, source, target, active_style_policy)
 
     kr_ratio = korean_ratio(target.body)
-    if kr_ratio < 0.20:
+    if kr_ratio < gate_policy.min_korean_letter_ratio:
         issue(
             issues,
             "fluency",
@@ -2336,7 +2521,7 @@ def validate_documents(
         )
 
     en_ratio = english_ratio(target.body)
-    if en_ratio > 0.60:
+    if en_ratio > gate_policy.max_untranslated_english_ratio:
         issue(
             issues,
             "fluency",
@@ -2344,6 +2529,22 @@ def validate_documents(
             "English prose ratio is high.",
             target_span=f"{en_ratio:.2%}",
             suggested_fix="Verify that non-code English prose is intentionally preserved.",
+        )
+
+    semantic_evaluation_complete = bool(
+        segment_alignment
+        and mqm_judge.get("enabled")
+        and int(mqm_judge.get("segment_count", 0)) == len(segment_alignment)
+        and int(mqm_judge.get("skipped_segment_count", 0)) == 0
+    )
+    if source is not None and not semantic_evaluation_complete:
+        issue(
+            issues,
+            "accuracy",
+            "major",
+            "Semantic adequacy evaluation is incomplete.",
+            suggested_fix="Complete MQM evaluation for every aligned segment before auto-passing.",
+            reason="Heuristic QE only checks surface signals and cannot establish semantic equivalence.",
         )
 
     critical = [item for item in issues if item.severity == "critical"]
@@ -2364,9 +2565,11 @@ def validate_documents(
         status = "reject"
     elif source_changed:
         status = "source_changed"
-    elif quality_score >= 90 and not major and not style_issues:
+    elif quality_score >= gate_policy.auto_pass_score and not major and not style_issues and semantic_evaluation_complete:
         status = "auto_pass"
-    elif quality_score >= 75 or (style_issues and quality_score >= 60):
+    elif quality_score >= gate_policy.review_required_min_score or (
+        style_issues and quality_score >= gate_policy.style_review_required_min_score
+    ):
         status = "review_required"
     else:
         status = "reject"
@@ -2433,6 +2636,7 @@ def validate_documents(
             "expected_source_hash": expected_source_hash,
             "target_hash": target.source_hash,
             "source_available": source is not None,
+            "semantic_evaluation_complete": semantic_evaluation_complete,
             "source_changed": source_changed,
             "source_segment_count": len(source.segments) if source else 0,
             "target_segment_count": len(target.segments),
@@ -2452,6 +2656,8 @@ def validate_documents(
             "style_guide_path": str(active_style_policy.guide_path if active_style_policy else ""),
             "style_policy_path": str(active_style_policy.policy_path if active_style_policy else ""),
             "style_policy_version": active_style_policy.version if active_style_policy else 0,
+            "evaluation_config_path": str(gate_policy.evaluation_config_path or ""),
+            "gates_config_path": str(gate_policy.gates_config_path or ""),
             "tool": "translation_quality_harness",
             "tool_version": "0.5.0",
         },
@@ -2648,6 +2854,8 @@ def build_report(
     metric_config: MetricConfig | None = None,
     style_guide_path: Path | None = None,
     style_policy_path: Path | None = None,
+    evaluation_config_path: Path | None = DEFAULT_EVALUATION_CONFIG_PATH,
+    gates_config_path: Path | None = DEFAULT_GATES_CONFIG_PATH,
     fetch_source_url: bool = True,
 ) -> dict[str, object]:
     manifest = read_simple_manifest(manifest_path)
@@ -2689,6 +2897,7 @@ def build_report(
         translation_memory=load_translation_memory(translation_memory_path),
         metric_config=metric_config or MetricConfig(),
         style_policy=load_style_policy(style_guide_path or DEFAULT_STYLE_GUIDE_PATH, style_policy_path or DEFAULT_STYLE_POLICY_PATH),
+        evaluation_policy=load_evaluation_policy(evaluation_config_path, gates_config_path),
     )
 
 
@@ -2724,6 +2933,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--qe-review-threshold", type=float, default=0.55, help="Review threshold for low QE segment scores.")
     parser.add_argument("--style-guide", help="Optional Korean localization style guide Markdown path.")
     parser.add_argument("--style-policy", help="Optional style policy YAML path.")
+    parser.add_argument("--evaluation-config", help="Optional evaluation thresholds YAML path.")
+    parser.add_argument("--gates-config", help="Optional hard/review gate policy YAML path.")
     parser.add_argument("--disable-style-guide", action="store_true", help="Disable style-guide validators.")
     parser.add_argument(
         "--llm-judge-provider",
@@ -2783,6 +2994,10 @@ def main(argv: list[str] | None = None) -> int:
         metric_config=metric_config,
         style_guide_path=metric_config.style_guide_path,
         style_policy_path=metric_config.style_policy_path,
+        evaluation_config_path=(
+            Path(args.evaluation_config).resolve() if args.evaluation_config else DEFAULT_EVALUATION_CONFIG_PATH
+        ),
+        gates_config_path=Path(args.gates_config).resolve() if args.gates_config else DEFAULT_GATES_CONFIG_PATH,
         fetch_source_url=not args.no_fetch_source_url,
     )
 

@@ -18,24 +18,24 @@ hard_gates:
   inline_code:
     status: reject
     exact_match: true
+  environment_variables:
+    status: reject
+    exact_match: true
+  cli_flags:
+    status: reject
+    exact_match: true
   links:
     status: reject
     exact_target_match: true
   images:
     status: reject
     exact_target_match: true
-  numbers:
-    status: reject
-    exact_match: true
   latex:
     status: reject
     exact_match: true
   tables:
     status: reject
     compare_shape: true
-  protected_tokens:
-    status: reject
-    exact_match: true
   todo_markers:
     status: reject
     markers:
@@ -46,6 +46,15 @@ hard_gates:
       - "}}"
 
 review_gates:
+  numbers:
+    status: review_required
+    exact_match: true
+  protected_tokens:
+    status: review_required
+    exact_match: true
+  bare_urls:
+    status: review_required
+    exact_match: true
   untranslated_english:
     status: review_required
   korean_ratio:

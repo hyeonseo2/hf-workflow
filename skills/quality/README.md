@@ -52,6 +52,8 @@ python skills/quality/tools/translation_quality_harness.py \
   --metric-cache reports/pr-130/metric-cache.json \
   --style-guide skills/quality/style/hf-blog-ko-translation-guide.md \
   --style-policy skills/quality/configs/style_policy.yml \
+  --evaluation-config skills/quality/configs/eval_config.yml \
+  --gates-config skills/quality/configs/gates.yml \
   --fail-on-reject
 ```
 
@@ -88,6 +90,16 @@ Phase 3 adds automatic metric triage:
   when an approved Korean reference exists.
 - `--metric-cache path.json`: caches metric results by source/target segment
   hash so repeated runs are stable and cheap.
+
+Heuristic QE is a surface-level triage signal, not proof of semantic adequacy.
+The harness therefore returns at most `review_required` until every aligned
+segment has a successful MQM evaluation. `auto_pass` is only available after a
+complete, clean semantic evaluation. A missing source document is always a hard
+failure because fidelity checks cannot run without it.
+
+Runtime thresholds are loaded from `configs/eval_config.yml`, and hard/review
+gate routing is loaded from `configs/gates.yml`. Use `--evaluation-config` and
+`--gates-config` to supply an alternate tracked policy.
 
 Style-guide evaluation is enabled by default:
 
