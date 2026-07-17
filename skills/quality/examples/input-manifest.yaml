@@ -1,6 +1,8 @@
 version: 1
 source:
   url: https://huggingface.co/blog/example-post
+  file_path: source-snapshot.md
+  hash: example-source-sha256
   title: Example Post
 translation:
   file_path: posts/ko/example-post.md

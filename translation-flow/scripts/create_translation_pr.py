@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import html
 import json
+import os
 import re
 import subprocess
 import sys
@@ -274,6 +276,8 @@ def render_source_frontmatter_lines(source_frontmatter: Optional[SourceFrontmatt
     if source_frontmatter is None:
         return []
     lines: list[str] = []
+    if source_frontmatter.thumbnail:
+        lines.append(f"thumbnail: {source_frontmatter.thumbnail}")
     if source_frontmatter.image:
         lines.append(f"image: {source_frontmatter.image}")
     if source_frontmatter.authors:
@@ -985,6 +989,9 @@ def create_manifest(
     pr_url: str,
     target_date: date,
     manifest_path: Path,
+    source_file_path: str = "",
+    source_hash: str = "",
+    commit_sha: str = "",
 ) -> None:
     created_at = datetime.now().astimezone().isoformat(timespec="seconds")
     content = f"""version: 1
@@ -997,6 +1004,8 @@ run:
 source:
   feed_url: {feed_url}
   url: {post.url}
+  file_path: {source_file_path}
+  hash: {source_hash}
   slug: {post.slug}
   title: "{escape_yaml_string(post.title)}"
   published_date: {post.published_date.isoformat()}
@@ -1006,6 +1015,7 @@ source:
 translation:
   target_repo: {target_repo}
   branch: {branch}
+  commit_sha: {commit_sha}
   file_path: {file_path}
   pr_url: {pr_url}
   locale: {DEFAULT_LOCALE}
@@ -1138,6 +1148,10 @@ def create_pr(
 
 def default_manifest_path(post: FeedPost, target_date: date) -> Path:
     return Path("manifests") / f"{target_date.isoformat()}-{post.slug}.yaml"
+
+
+def default_source_snapshot_path(post: FeedPost, target_date: date) -> Path:
+    return Path("source-snapshots") / f"{target_date.isoformat()}-{post.slug}.md"
 
 
 def default_translation_file_path(posts_dir: str, post: FeedPost, target_date: date) -> str:
@@ -1339,6 +1353,12 @@ def main(argv: Optional[list[str]] = None) -> int:
             continue
         if not source_markdown_raw:
             raise RuntimeError(f"Could not extract source markdown from {post.url}")
+        source_snapshot_path = default_source_snapshot_path(post, target_date)
+        source_snapshot_path.parent.mkdir(parents=True, exist_ok=True)
+        source_snapshot_path.write_text(source_markdown_raw, encoding="utf-8")
+        source_hash = hashlib.sha256(source_markdown_raw.encode("utf-8")).hexdigest()
+        source_file_path = os.path.relpath(source_snapshot_path, manifest_path.parent)
+        log(f"Wrote source snapshot: {source_snapshot_path}")
         source_frontmatter, source_markdown = split_source_frontmatter(source_markdown_raw)
         if source_frontmatter.thumbnail or source_frontmatter.authors:
             log(
@@ -1410,6 +1430,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             [path for path in [file_path, thumbnail_file_path] if path],
             f"Add Korean translation draft for {post.slug}",
         )
+        commit_sha = run_cmd(["git", "rev-parse", "HEAD"], cwd=target_worktree).stdout.strip()
 
         pr_title = f"Translate Hugging Face blog post: {post.title}"
         pr_body = textwrap.dedent(
@@ -1440,6 +1461,9 @@ def main(argv: Optional[list[str]] = None) -> int:
             pr_url,
             target_date,
             manifest_path,
+            source_file_path=source_file_path,
+            source_hash=source_hash,
+            commit_sha=commit_sha,
         )
         log(f"Wrote manifest: {manifest_path}")
         run_results.append(
@@ -1450,6 +1474,7 @@ def main(argv: Optional[list[str]] = None) -> int:
                 "file_path": file_path,
                 "manifest_path": str(manifest_path),
                 "pr_url": pr_url,
+                "commit_sha": commit_sha,
             }
         )
 

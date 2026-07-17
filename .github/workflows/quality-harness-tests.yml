@@ -1,0 +1,40 @@
+name: Quality Harness Tests
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+      - "scripts/**"
+      - "skills/quality/**"
+      - "translation-flow/**"
+      - "tests/**"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/**"
+      - "scripts/**"
+      - "skills/quality/**"
+      - "translation-flow/**"
+      - "tests/**"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test dependencies
+        run: |
+          python -m pip install -e "skills/quality[dev]"
+          python -m pip install -e "translation-flow[dev]"
+      - name: Run quality harness and workflow tests
+        run: |
+          python -m pytest -q skills/quality/tests
+          python -m pytest -q tests/test_enforce_quality_gate.py tests/test_generate_review_reports.py
+          python -m pytest -q translation-flow/tests

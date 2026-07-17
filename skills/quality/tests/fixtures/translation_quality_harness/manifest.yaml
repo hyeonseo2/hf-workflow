@@ -1,0 +1,12 @@
+version: 1
+source:
+  url: https://huggingface.co/blog/testing-spaces
+  title: Testing Hugging Face Spaces
+  file_path: source.md
+translation:
+  file_path: target_good.md
+handoff:
+  quality:
+    enabled: true
+    checks:
+      - hard_gates

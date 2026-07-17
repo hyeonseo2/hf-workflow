@@ -20,7 +20,12 @@ Those live in `seo-skills` and `quality-skills`.
 ## Manifest
 
 The manifest is the handoff artifact. It tells downstream skills which source
-post and translation file to operate on.
+post and translation file to operate on. New runs also store the raw source
+Markdown under `source-snapshots/` and record `source.file_path` plus
+`source.hash` in the manifest so quality checks can distinguish source drift
+from translation errors. Created results also record `translation.commit_sha`
+and the same `commit_sha` in `run-summary.json`, allowing downstream quality
+checks to publish status only for the exact target revision they evaluated.
 
 See:
 
@@ -167,5 +172,7 @@ The workflow:
 1. resolves today's date in `Asia/Seoul`
 2. clones the KREW GitHub Pages repo
 3. generates a translation draft and PR
-4. uploads the manifest and run summary as artifacts
-5. dispatches SEO and quality skill workflows with the manifest payload
+4. writes the manifest and source snapshot
+5. generates local SEO and quality reports under `reports/`
+6. posts or updates the quality PR comment on the translation PR
+7. uploads the run summary, manifests, source snapshots, and reports as artifacts

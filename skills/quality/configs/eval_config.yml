@@ -1,0 +1,14 @@
+version: 1
+
+score:
+  auto_pass_score: 90
+  review_required_min_score: 75
+  style_review_required_min_score: 60
+
+language:
+  max_untranslated_english_ratio: 0.60
+  min_korean_letter_ratio: 0.20
+
+length_ratio:
+  min_target_to_source: 0.35
+  max_target_to_source: 2.60

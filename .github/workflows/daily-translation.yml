@@ -28,11 +28,14 @@ jobs:
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       OPENAI_MODEL: gpt-5-nano
+      LLM_JUDGE_MODEL: gpt-5.6-luna
       SEO_OPENAI_REQUIRED: "1"
       BOT_TOKEN: ${{ secrets.KREW_BOT_TOKEN }}
       GH_TOKEN: ${{ secrets.KREW_BOT_TOKEN }}
       KREW_REPO: Hugging-Face-KREW/hugging-face-krew.github.io
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      QUALITY_LLM_JUDGE_PROVIDER: ${{ vars.QUALITY_LLM_JUDGE_PROVIDER || 'off' }}
+      QUALITY_LLM_JUDGE_MAX_SEGMENTS: ${{ vars.QUALITY_LLM_JUDGE_MAX_SEGMENTS || '0' }}
 
     steps:
       - name: Checkout hf workflow
@@ -110,44 +113,80 @@ jobs:
 
       - name: Generate SEO and quality reports
         if: ${{ inputs.dry_run != true }}
+        run: python scripts/generate_review_reports.py --summary run-summary.json --target-root target-repo
+
+      - name: Post quality report PR comments
+        if: ${{ inputs.dry_run != true && env.GH_TOKEN != '' }}
         run: |
           python - <<'PY'
           import json
+          import os
+          import re
           import subprocess
           from pathlib import Path
 
-          def resolve_manifest_path(raw_path):
-              manifest = Path(raw_path)
-              candidates = [manifest]
-              if not manifest.is_absolute():
-                  candidates.append(Path("translation-flow") / manifest)
-              for candidate in candidates:
-                  if candidate.exists():
-                      return candidate
-              tried = ", ".join(str(candidate) for candidate in candidates)
-              raise FileNotFoundError(f"Manifest file not found. Tried: {tried}")
-
+          marker = "<!-- hf-workflow-quality-report -->"
           summary_path = Path("run-summary.json")
           if not summary_path.exists():
-              print("No run summary found; skipping reports.")
+              print("No run summary found; skipping PR comments.")
+              raise SystemExit(0)
+          if not os.environ.get("GH_TOKEN"):
+              print("GH_TOKEN is empty; skipping PR comments.")
               raise SystemExit(0)
 
           summary = json.loads(summary_path.read_text())
           for result in summary["results"]:
-              if result["status"] != "created":
+              pr_url = result.get("pr_url") or ""
+              if result.get("status") != "created" or not pr_url:
                   continue
-              manifest = resolve_manifest_path(result["manifest_path"])
-              subprocess.run(
-                  [
-                      "python",
-                      "scripts/run_local_review.py",
-                      "--manifest",
-                      str(manifest),
-                      "--target-root",
-                      "target-repo",
-                  ],
-                  check=True,
+              match = re.search(r"github\.com/([^/]+/[^/]+)/pull/(\d+)", pr_url)
+              if not match:
+                  print(f"Could not parse PR URL; skipping: {pr_url}")
+                  continue
+              repo, pr_number = match.groups()
+              report_dir = Path("reports") / f"pr-{pr_number}"
+              comment_path = report_dir / "pr-comment.md"
+              if not comment_path.exists():
+                  print(f"No PR comment report found; skipping: {comment_path}")
+                  continue
+
+              body = marker + "\n" + comment_path.read_text(encoding="utf-8")
+              comments = json.loads(
+                  subprocess.check_output(
+                      ["gh", "api", f"repos/{repo}/issues/{pr_number}/comments"],
+                      text=True,
+                  )
               )
+              existing = next(
+                  (comment for comment in comments if marker in (comment.get("body") or "")),
+                  None,
+              )
+              if existing:
+                  subprocess.run(
+                      [
+                          "gh",
+                          "api",
+                          f"repos/{repo}/issues/comments/{existing['id']}",
+                          "-X",
+                          "PATCH",
+                          "-f",
+                          f"body={body}",
+                      ],
+                      check=True,
+                  )
+                  print(f"Updated quality comment on {pr_url}")
+              else:
+                  subprocess.run(
+                      [
+                          "gh",
+                          "api",
+                          f"repos/{repo}/issues/{pr_number}/comments",
+                          "-f",
+                          f"body={body}",
+                      ],
+                      check=True,
+                  )
+                  print(f"Created quality comment on {pr_url}")
           PY
 
       - name: Commit manifests and reports
@@ -170,3 +209,7 @@ jobs:
           path: |
             run-summary.json
             reports/**
+
+      - name: Enforce quality gate on target PR
+        if: ${{ inputs.dry_run != true }}
+        run: python scripts/enforce_quality_gate.py --summary run-summary.json --reports-root reports --target-root target-repo

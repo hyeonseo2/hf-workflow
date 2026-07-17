@@ -1,0 +1,94 @@
+version: 1
+fixtures:
+  - id: bad_code
+    source: fixtures/translation_quality_harness/source.md
+    target: fixtures/translation_quality_harness/target_bad_code.md
+    expected_status: reject
+    expected_categories:
+      - technical
+      - formatting
+    expected_issues:
+      - message: code block hash mismatch.
+        severity: critical
+  - id: bad_number
+    source: fixtures/translation_quality_harness/source.md
+    target: fixtures/translation_quality_harness/target_bad_number.md
+    expected_status: reject
+    expected_categories:
+      - technical
+    expected_issues:
+      - message: number/unit token mismatch.
+        severity: major
+  - id: bad_link
+    source: fixtures/translation_quality_harness/source.md
+    target: fixtures/translation_quality_harness/target_bad_link.md
+    expected_status: reject
+    expected_categories:
+      - formatting
+    expected_issues:
+      - message: link target mismatch.
+        severity: critical
+  - id: bad_frontmatter
+    source: fixtures/translation_quality_harness/source.md
+    target: fixtures/translation_quality_harness/target_bad_frontmatter.md
+    expected_status: reject
+    expected_categories:
+      - formatting
+    expected_issues:
+      - message: Front matter key `authors` changed or is missing.
+        severity: critical
+  - id: bad_table_latex
+    source: fixtures/translation_quality_harness/source.md
+    target: fixtures/translation_quality_harness/target_bad_table_latex.md
+    expected_status: reject
+    expected_categories:
+      - formatting
+      - technical
+    expected_issues:
+      - message: LaTeX token mismatch.
+        severity: critical
+      - message: Markdown table shape mismatch.
+        severity: critical
+  - id: bad_glossary
+    source: fixtures/translation_quality_harness/source.md
+    target: fixtures/translation_quality_harness/target_bad_glossary.md
+    expected_status: review_required
+    expected_categories:
+      - terminology
+    expected_issues:
+      - message: Required glossary term is not used.
+        severity: major
+  - id: bad_addition_duplicate
+    source: fixtures/translation_quality_harness/source.md
+    target: fixtures/translation_quality_harness/target_bad_addition_duplicate.md
+    expected_status: review_required
+    expected_categories:
+      - accuracy
+    expected_issues:
+      - message: Duplicate target segments detected.
+        severity: major
+  - id: bad_style_guide
+    source: fixtures/translation_quality_harness/style_source.md
+    target: fixtures/translation_quality_harness/style_target_bad.md
+    expected_status: review_required
+    expected_categories:
+      - accuracy
+      - style_locale
+      - fluency
+      - terminology
+    expected_guide_rules:
+      - modal_strength
+      - overstatement
+      - translationese
+      - emoji_delta
+      - list_consistency
+      - title_quality
+      - alt_text_caption
+      - link_text_translation
+      - first_mention_bilingual
+      - information_addition
+    expected_issues:
+      - message: Modal or certainty strength may have changed.
+        severity: major
+      - message: Translationese expression found.
+        severity: minor

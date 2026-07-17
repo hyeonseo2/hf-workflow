@@ -1,0 +1,13 @@
+source_term	ko_term	policy
+Hugging Face	Hugging Face	preserve_product_name
+Hugging Face Hub	Hugging Face Hub	preserve_product_name
+Hub	Hugging Face Hub	preserve_or_first_mention
+Transformers	Transformers	preserve_product_name
+Datasets	Datasets	preserve_product_name
+Spaces	Spaces	preserve_product_name
+Space	Space	preserve_product_name
+Gradio	Gradio	preserve_product_name
+Inference Endpoints	Inference Endpoints	preserve_product_name
+Inference Providers	Inference Providers	preserve_product_name
+Diffusers	Diffusers	preserve_product_name
+Tokenizers	Tokenizers	preserve_product_name

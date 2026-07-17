@@ -1,0 +1,63 @@
+version: 1
+
+hard_gates:
+  markdown_parse:
+    status: reject
+  front_matter:
+    status: reject
+    required_target_keys:
+      - title
+    preserved_source_keys:
+      - authors
+      - thumbnail
+      - tags
+      - blog
+  code_blocks:
+    status: reject
+    compare_hashes: true
+  inline_code:
+    status: reject
+    exact_match: true
+  environment_variables:
+    status: reject
+    exact_match: true
+  cli_flags:
+    status: reject
+    exact_match: true
+  links:
+    status: reject
+    exact_target_match: true
+  images:
+    status: reject
+    exact_target_match: true
+  latex:
+    status: reject
+    exact_match: true
+  tables:
+    status: reject
+    compare_shape: true
+  todo_markers:
+    status: reject
+    markers:
+      - TODO
+      - FIXME
+      - TBD
+      - "{{"
+      - "}}"
+
+review_gates:
+  numbers:
+    status: review_required
+    exact_match: true
+  protected_tokens:
+    status: review_required
+    exact_match: true
+  bare_urls:
+    status: review_required
+    exact_match: true
+  untranslated_english:
+    status: review_required
+  korean_ratio:
+    status: review_required
+  length_ratio:
+    status: review_required
