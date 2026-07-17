@@ -11,7 +11,7 @@ import {
   readCachedSnapshot,
   writeCachedSnapshot,
 } from './github.js';
-import { computeProgress, filterReports, joinReports, summarizeChecks, summarizeReports } from './model.js';
+import { computeProgress, filterReports, joinReports, sortByPublishedDate, summarizeChecks, summarizeReports } from './model.js';
 import { renderCheckStats, renderDetails, renderProgress, renderRows, renderSummary } from './view.js';
 
 const REPOSITORY = 'Hugging-Face-KREW/hugging-face-krew.github.io';
@@ -29,6 +29,7 @@ const searchInput = document.querySelector('#search-input');
 const prStateControls = document.querySelector('#pr-state-controls');
 const reviewState = document.querySelector('#review-state');
 const reportRows = document.querySelector('#report-rows');
+const sortDateButton = document.querySelector('#sort-date');
 const detailsDialog = document.querySelector('#details-dialog');
 const detailsContent = document.querySelector('#details-content');
 const detailsClose = document.querySelector('#details-close');
@@ -40,6 +41,7 @@ let pulls = new Map();
 let renderedItems = [];
 let lastSyncedAt = null;
 let filters = { query: '', prState: 'all', reviewState: 'all' };
+let dateSort = 'desc';
 let reportsReady = false;
 let blogStats = null;
 
@@ -120,7 +122,7 @@ function progressModel(items) {
 
 function render() {
   const items = joinReports(reports, pulls);
-  renderedItems = filterReports(items, filters);
+  renderedItems = sortByPublishedDate(filterReports(items, filters), dateSort);
   summary.innerHTML = renderSummary(summarizeReports(items), activeSummaryFilter(filters));
   progress.innerHTML = renderProgress(progressModel(items));
   checkStats.innerHTML = renderCheckStats(summarizeChecks(items));
@@ -237,6 +239,13 @@ function applyPrState(button) {
   render();
 }
 
+function resetFilters() {
+  filters = { query: '', prState: 'all', reviewState: 'all' };
+  searchInput.value = '';
+  syncFilterControls();
+  render();
+}
+
 function applySummaryFilter(value) {
   const next = activeSummaryFilter(filters) === value ? 'all' : value;
   if (next === 'needs-review') {
@@ -270,13 +279,37 @@ function registerControls() {
     filters = { ...filters, reviewState: reviewState.value };
     render();
   });
+  sortDateButton.addEventListener('click', () => {
+    dateSort = dateSort === 'desc' ? 'asc' : 'desc';
+    sortDateButton.dataset.dir = dateSort;
+    render();
+  });
   reportRows.addEventListener('click', (event) => {
-    const button = event.target.closest('button[data-action="details"]');
-    if (button && reportRows.contains(button)) {
-      openDetails(Number(button.dataset.prNumber));
+    if (event.target.closest('button[data-action="reset-filters"]')) {
+      resetFilters();
+      return;
+    }
+    const row = event.target.closest('tr[data-pr-number]');
+    if (row && reportRows.contains(row)) {
+      openDetails(Number(row.dataset.prNumber));
+    }
+  });
+  reportRows.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return;
+    }
+    const row = event.target.closest('tr[data-pr-number]');
+    if (row && reportRows.contains(row)) {
+      event.preventDefault();
+      openDetails(Number(row.dataset.prNumber));
     }
   });
   detailsClose.addEventListener('click', () => { detailsDialog.close(); });
+  detailsDialog.addEventListener('click', (event) => {
+    if (event.target === detailsDialog) {
+      detailsDialog.close();
+    }
+  });
   detailsDialog.addEventListener('cancel', () => {});
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {

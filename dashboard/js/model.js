@@ -73,60 +73,68 @@ export function computeProgress(posts = [], items = []) {
       states.set(item.slug, item.pr?.state);
     }
   }
-  let merged = 0;
-  let open = 0;
+  const mergedSlugs = [];
+  const openSlugs = [];
   for (const post of posts) {
     const state = states.get(post?.slug);
     if (state === 'merged') {
-      merged += 1;
+      mergedSlugs.push(post.slug);
     } else if (state === 'open') {
-      open += 1;
+      openSlugs.push(post.slug);
     }
   }
   const total = posts.length;
+  const merged = mergedSlugs.length;
+  const open = openSlugs.length;
   return {
     total,
     merged,
     open,
     remaining: Math.max(total - merged - open, 0),
     percent: total > 0 ? Math.round((merged / total) * 1000) / 10 : 0,
-  };
-}
-
-function emptyCheckSummary() {
-  return { pass: 0, reviewNeeded: 0, total: 0, passPercent: 0 };
-}
-
-function reportPassState(report) {
-  if (report?.enabled === false) {
-    return 'excluded';
-  }
-  return report?.available === true && report?.status === 'pass' ? 'pass' : 'reviewNeeded';
-}
-
-function withPassPercent(summary) {
-  return {
-    ...summary,
-    passPercent: summary.total > 0 ? Math.round((summary.pass / summary.total) * 1000) / 10 : 0,
+    mergedSlugs,
+    openSlugs,
   };
 }
 
 export function summarizeChecks(items) {
-  const groups = { quality: emptyCheckSummary(), seo: emptyCheckSummary() };
-  for (const item of items ?? []) {
-    for (const kind of ['quality', 'seo']) {
-      const state = reportPassState(item?.[kind]);
-      if (state === 'excluded') {
+  const openItems = (items ?? []).filter((item) => item?.pr?.state === 'open');
+  const breakdown = { quality: [], seo: [], openCount: openItems.length };
+  for (const kind of ['quality', 'seo']) {
+    const byName = new Map();
+    for (const item of openItems) {
+      const report = item?.[kind];
+      if (report?.enabled === false || !Array.isArray(report?.checks)) {
         continue;
       }
-      groups[kind].total += 1;
-      groups[kind][state] += 1;
+      for (const check of report.checks) {
+        const name = String(check?.text ?? '').split(' — ')[0].trim();
+        if (!name) {
+          continue;
+        }
+        const entry = byName.get(name) ?? { name, pass: 0, total: 0 };
+        entry.total += 1;
+        if (check?.status === 'pass') {
+          entry.pass += 1;
+        }
+        byName.set(name, entry);
+      }
     }
+    breakdown[kind] = [...byName.values()].sort((a, b) => (a.pass / a.total) - (b.pass / b.total));
   }
-  return {
-    quality: withPassPercent(groups.quality),
-    seo: withPassPercent(groups.seo),
-  };
+  return breakdown;
+}
+
+export function sortByPublishedDate(items, direction = 'desc') {
+  const factor = direction === 'asc' ? 1 : -1;
+  return [...(items ?? [])].sort((a, b) => {
+    const left = String(a?.source?.published_date ?? '');
+    const right = String(b?.source?.published_date ?? '');
+    if (left !== right) {
+      return left < right ? -factor : factor;
+    }
+    return ((a?.prNumber ?? 0) - (b?.prNumber ?? 0)) * factor;
+  });
 }
 
 export function summarizeReports(items) {

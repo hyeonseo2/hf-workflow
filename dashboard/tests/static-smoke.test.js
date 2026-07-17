@@ -21,7 +21,9 @@ test('index contains the monitor landmarks and module entrypoint', async () => {
   assert.match(html, /option value="needs-review"/);
   assert.match(html, /id="progress"/);
   assert.match(html, /id="check-stats"/);
-  assert.match(html, /현재 PR별 통과율/);
+  assert.match(html, /id="sort-date"/);
+  assert.match(html, /평가 기준별 통과율/);
+  assert.match(html, /현재 열려 있는 PR 기준/);
 });
 
 test('bundled organization image is a PNG', async () => {
@@ -46,7 +48,9 @@ test('styles include responsive records, focus, and reduced motion support', asy
   assert.match(css, /:focus-visible/);
   assert.match(css, /prefers-reduced-motion:\s*reduce/);
   assert.doesNotMatch(css, /gradient/i);
-  assert.doesNotMatch(css, /border-radius\s*:\s*(?:9|[1-9]\d+)px/i);
+  for (const rule of css.match(/border-radius\s*:\s*[^;{}]+/gi) ?? []) {
+    assert.match(rule, /^border-radius\s*:\s*(?:999px|(?:10|[0-9](?:\.5)?)px|0)$/i, `unexpected radius: ${rule}`);
+  }
   assert.doesNotMatch(css, /font-size\s*:[^;{}]*(?:vw|vh|vmin|vmax)/i);
 });
 
@@ -82,7 +86,11 @@ test('app lifecycle loads cached reports, safely refreshes GitHub state, and wir
   assert.match(app, /summary\.addEventListener\('click'/);
   assert.match(app, /setAttribute\('aria-pressed'/);
   assert.match(app, /reviewState\.addEventListener\('change'/);
+  assert.match(app, /sortByPublishedDate\(/);
+  assert.match(app, /sortDateButton\.addEventListener\('click'/);
   assert.match(app, /reportRows\.addEventListener\('click'/);
+  assert.match(app, /reportRows\.addEventListener\('keydown'/);
+  assert.match(app, /data-action="reset-filters"/);
   assert.match(app, /renderDetails\(/);
   assert.match(app, /detailsDialog\.showModal\(\)/);
   assert.match(app, /detailsClose\.addEventListener\('click'/);

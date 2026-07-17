@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { computeProgress, filterReports, joinReports, summarizeChecks, summarizeReports } from '../js/model.js';
+import { computeProgress, filterReports, joinReports, sortByPublishedDate, summarizeChecks, summarizeReports } from '../js/model.js';
 
 const reportWithoutSeo = {
   prNumber: 168,
@@ -105,6 +105,8 @@ test('computes blog progress from merged and open tracked slugs', () => {
     open: 1,
     remaining: 2,
     percent: 25,
+    mergedSlugs: ['torch-attention-profile'],
+    openSlugs: ['open-post'],
   });
   assert.deepEqual(computeProgress([], items), {
     total: 0,
@@ -112,37 +114,57 @@ test('computes blog progress from merged and open tracked slugs', () => {
     open: 0,
     remaining: 0,
     percent: 0,
+    mergedSlugs: [],
+    openSlugs: [],
   });
 });
 
-test('summarizes quality and SEO pass rates by current PR report status', () => {
+test('aggregates per-check pass rates over open PRs with the worst check first', () => {
   const items = [
     {
-      quality: { enabled: true, available: true, status: 'pass' },
-      seo: { enabled: true, available: true, status: 'pass' },
+      pr: { state: 'open' },
+      quality: { enabled: true, checks: [
+        { status: 'pass', text: 'contains Korean prose' },
+        { status: 'fail', text: 'code fences are balanced' },
+      ] },
+      seo: { enabled: true, checks: [] },
     },
     {
-      quality: { enabled: true, available: true, status: 'fail' },
-      seo: { enabled: true, available: false, status: 'missing' },
+      pr: { state: 'open' },
+      quality: { enabled: true, checks: [
+        { status: 'pass', text: 'contains Korean prose — 2 untranslated blocks' },
+        { status: 'pass', text: 'code fences are balanced' },
+      ] },
+      seo: { enabled: false, checks: [{ status: 'fail', text: 'excluded because seo is disabled' }] },
     },
     {
-      quality: { enabled: true, available: false, status: 'missing' },
-      seo: { enabled: false, available: false, status: 'missing' },
-    },
-    {
-      quality: { enabled: false, available: false, status: 'missing' },
-      seo: { enabled: true, available: true, status: 'warning' },
+      pr: { state: 'merged' },
+      quality: { enabled: true, checks: [{ status: 'fail', text: 'contains Korean prose' }] },
+      seo: { enabled: true, checks: [{ status: 'pass', text: 'title length' }] },
     },
   ];
 
   assert.deepEqual(summarizeChecks(items), {
-    quality: { pass: 1, reviewNeeded: 2, total: 3, passPercent: 33.3 },
-    seo: { pass: 1, reviewNeeded: 2, total: 3, passPercent: 33.3 },
+    quality: [
+      { name: 'code fences are balanced', pass: 1, total: 2 },
+      { name: 'contains Korean prose', pass: 2, total: 2 },
+    ],
+    seo: [],
+    openCount: 2,
   });
-  assert.deepEqual(summarizeChecks([]), {
-    quality: { pass: 0, reviewNeeded: 0, total: 0, passPercent: 0 },
-    seo: { pass: 0, reviewNeeded: 0, total: 0, passPercent: 0 },
-  });
+  assert.deepEqual(summarizeChecks([]), { quality: [], seo: [], openCount: 0 });
+});
+
+test('sorts report items by published date with PR number tiebreak', () => {
+  const items = [
+    { prNumber: 1, source: { published_date: '2026-06-01' } },
+    { prNumber: 3, source: { published_date: '2026-07-01' } },
+    { prNumber: 2, source: { published_date: '2026-06-01' } },
+    { prNumber: 4, source: {} },
+  ];
+
+  assert.deepEqual(sortByPublishedDate(items, 'desc').map((item) => item.prNumber), [3, 2, 1, 4]);
+  assert.deepEqual(sortByPublishedDate(items, 'asc').map((item) => item.prNumber), [4, 1, 2, 3]);
 });
 
 test('filters needs-review as attention or pending combined', () => {

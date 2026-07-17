@@ -99,43 +99,57 @@ test('renders summary tiles as filter buttons with a pressed active tile', () =>
   );
 });
 
-test('renders blog progress as a stacked bar with counts and Blog Agent baseline note', () => {
+test('renders blog progress as a waffle with per-post cells and Blog Agent baseline note', () => {
   const html = renderProgress({
-    total: 190, merged: 3, open: 2, remaining: 185, percent: 1.6, baselineDate: '2024-09-18',
+    total: 6, merged: 2, open: 1, remaining: 3, percent: 33.3, baselineDate: '2026-04-28',
+    mergedSlugs: ['torch-profiler', 'olmoearth-v1-1'], openSlugs: ['torch-attention-profile'],
   });
 
-  assert.match(html, />1\.6%<\/strong>/);
-  assert.match(html, /대상 190편 중 3편 병합/);
-  assert.match(html, /aria-label="대상 190편 중 병합 3편, 번역 진행 중 2편"/);
-  assert.match(html, /progress-fill-merged/);
-  assert.match(html, /progress-fill-open/);
-  assert.match(html, /병합 3편/);
-  assert.match(html, /진행 중 2편/);
-  assert.match(html, /남은 글 185편/);
-  assert.match(html, /2024-09-18/);
+  assert.match(html, />33<small>%<\/small>/);
+  assert.match(html, /대상 6편 중 2편 병합 \(33\.3%\)/);
+  assert.match(html, /aria-label="대상 6편 중 병합 2편, 번역 진행 중 1편, 남은 글 3편"/);
+  assert.equal((html.match(/class="cell/g) ?? []).length, 6);
+  assert.match(html, /class="cell cell-merged" data-tip="병합 · torch-profiler"/);
+  assert.match(html, /class="cell cell-open" data-tip="번역 진행 중 · torch-attention-profile"/);
+  assert.match(html, /class="cell" data-tip="남은 글"/);
+  assert.match(html, /병합 2편/);
+  assert.match(html, /번역 진행 중 1편/);
+  assert.match(html, /남은 글 3편/);
+  assert.match(html, /2026-04-28/);
   assert.match(html, /HuggingFace Blog Agent 적용일/);
   assert.match(html, /community\/enterprise 글 제외/);
-  assert.doesNotMatch(renderProgress({ total: 4, merged: 0, open: 0, remaining: 4, percent: 0, baselineDate: '2024-09-18' }), /progress-fill/);
+  assert.doesNotMatch(
+    renderProgress({ total: 2, merged: 0, open: 0, remaining: 2, percent: 0, baselineDate: '2026-04-28' }),
+    /cell-merged|cell-open/,
+  );
   assert.match(renderProgress(null), /불러오는 중/);
   assert.match(renderProgress({ percent: 50 }), /불러오는 중/);
 });
 
-test('renders quality and SEO pass rates against current PR reports', () => {
+test('renders per-check pass rates for open PRs with a priority marker on the worst check', () => {
   const html = renderCheckStats({
-    quality: { pass: 4, reviewNeeded: 5, total: 9, passPercent: 44.4 },
-    seo: { pass: 3, reviewNeeded: 6, total: 9, passPercent: 33.3 },
+    quality: [
+      { name: 'code fences are balanced', pass: 1, total: 3 },
+      { name: 'contains Korean prose', pass: 3, total: 3 },
+      { name: 'unmapped custom check', pass: 3, total: 3 },
+    ],
+    seo: [],
+    openCount: 3,
   });
 
-  assert.match(html, /품질 기준/);
-  assert.match(html, /SEO 기준/);
-  assert.match(html, /현재 PR 9건/);
-  assert.match(html, /통과율 44\.4%/);
-  assert.match(html, /통과 4건/);
-  assert.match(html, /검토필요 5건/);
-  assert.match(html, /aria-label="품질 기준: 현재 PR 9건 중 통과 4건, 검토필요 5건"/);
-  assert.match(html, /check-seg-pass/);
-  assert.match(html, /check-seg-review/);
-  assert.match(renderCheckStats({ quality: { pass: 0, reviewNeeded: 0, total: 0, passPercent: 0 } }), /집계할 검토 항목이 아직 없습니다/);
+  assert.match(html, />품질<\/p>/);
+  assert.match(html, />SEO<\/p>/);
+  assert.match(html, /check-worst">코드 펜스 균형/);
+  assert.doesNotMatch(html, /check-worst">한국어 본문 포함/);
+  assert.match(html, /unmapped custom check/);
+  assert.match(html, /check-bar-low/);
+  assert.match(html, /aria-label="코드 펜스 균형 통과 1\/3"/);
+  assert.match(html, /1\/3/);
+  assert.match(html, /3\/3/);
+  assert.match(html, /현재 열린 PR에 SEO 보고서가 없습니다/);
+  const empty = renderCheckStats({ quality: [], seo: [], openCount: 0 });
+  assert.match(empty, /현재 열린 PR에 품질 보고서가 없습니다/);
+  assert.match(empty, /현재 열린 PR에 SEO 보고서가 없습니다/);
 });
 
 test('renders raw quality and SEO report files behind file-view controls', () => {
