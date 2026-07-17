@@ -1,0 +1,27 @@
+version: 1
+fixtures:
+  - id: approved_general_article
+    source: fixtures/translation_quality_harness/source.md
+    target: fixtures/translation_quality_harness/target_good.md
+    allowed_statuses: [review_required]
+    forbid_hard_failures: true
+  - id: approved_style_article
+    source: fixtures/translation_quality_harness/style_source.md
+    target: fixtures/translation_quality_harness/style_target_good.md
+    allowed_statuses: [review_required]
+    forbid_hard_failures: true
+  - id: approved_tutorial
+    source: fixtures/translation_quality_harness/golden/tutorial_source.md
+    target: fixtures/translation_quality_harness/golden/tutorial_target.md
+    allowed_statuses: [review_required]
+    forbid_hard_failures: true
+  - id: approved_benchmark
+    source: fixtures/translation_quality_harness/golden/benchmark_source.md
+    target: fixtures/translation_quality_harness/golden/benchmark_target.md
+    allowed_statuses: [review_required]
+    forbid_hard_failures: true
+  - id: approved_product_announcement
+    source: fixtures/translation_quality_harness/golden/product_source.md
+    target: fixtures/translation_quality_harness/golden/product_target.md
+    allowed_statuses: [review_required]
+    forbid_hard_failures: true

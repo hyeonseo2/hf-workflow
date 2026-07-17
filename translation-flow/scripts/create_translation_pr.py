@@ -923,6 +923,7 @@ def create_manifest(
     manifest_path: Path,
     source_file_path: str = "",
     source_hash: str = "",
+    commit_sha: str = "",
 ) -> None:
     created_at = datetime.now().astimezone().isoformat(timespec="seconds")
     content = f"""version: 1
@@ -946,6 +947,7 @@ source:
 translation:
   target_repo: {target_repo}
   branch: {branch}
+  commit_sha: {commit_sha}
   file_path: {file_path}
   pr_url: {pr_url}
   locale: {DEFAULT_LOCALE}
@@ -1335,6 +1337,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             file_path,
             f"Add Korean translation draft for {post.slug}",
         )
+        commit_sha = run_cmd(["git", "rev-parse", "HEAD"], cwd=target_worktree).stdout.strip()
 
         pr_title = f"Translate Hugging Face blog post: {post.title}"
         pr_body = textwrap.dedent(
@@ -1367,6 +1370,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             manifest_path,
             source_file_path=source_file_path,
             source_hash=source_hash,
+            commit_sha=commit_sha,
         )
         log(f"Wrote manifest: {manifest_path}")
         run_results.append(
@@ -1377,6 +1381,7 @@ def main(argv: Optional[list[str]] = None) -> int:
                 "file_path": file_path,
                 "manifest_path": str(manifest_path),
                 "pr_url": pr_url,
+                "commit_sha": commit_sha,
             }
         )
 

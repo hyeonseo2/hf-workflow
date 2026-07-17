@@ -97,9 +97,29 @@ segment has a successful MQM evaluation. `auto_pass` is only available after a
 complete, clean semantic evaluation. A missing source document is always a hard
 failure because fidelity checks cannot run without it.
 
+MQM completion also requires an exact one-to-one match between aligned target
+segment IDs and judge result IDs. Missing, duplicate, or unknown IDs keep the
+report in `review_required` and are recorded as judge warnings.
+
 Runtime thresholds are loaded from `configs/eval_config.yml`, and hard/review
 gate routing is loaded from `configs/gates.yml`. Use `--evaluation-config` and
 `--gates-config` to supply an alternate tracked policy.
+
+The committed challenge and golden acceptance suites are executed by pytest.
+The initial golden set contains five approved translations and enforces a false
+reject rate of at most 10%; the challenge set verifies expected status,
+categories, and style-guide rules.
+
+The daily workflow publishes the `hf-workflow/translation-quality` commit
+status to the exact translated commit recorded in `run-summary.json`. If the PR
+HEAD changes after evaluation, the new HEAD receives an error instead of a
+stale success. Before publishing the final result, the workflow verifies the
+report's commit SHA and target content hash against the Git object and replaces
+any previous success with `pending`; unexpected verification errors fail
+closed. `reject`, `source_changed`, missing reports, and unknown statuses also
+publish a blocking failure/error. Configure that context as a required status
+check in the target repository ruleset, and grant `KREW_BOT_TOKEN` permission
+to read pull requests and write commit statuses.
 
 Style-guide evaluation is enabled by default:
 
@@ -118,7 +138,7 @@ LLM MQM judge evaluation is optional and disabled by default:
 - `--llm-judge-provider off|openai|fixture`: keeps the default deterministic
   mode, calls OpenAI Responses API, or reads a local fixture for reproducible
   tests.
-- `--llm-judge-model gpt-5-nano`: selects the OpenAI model when the provider is
+- `--llm-judge-model gpt-5.6-luna`: selects the calibrated OpenAI model when the provider is
   `openai`.
 - `--llm-judge-prompt path.md`: uses `judges/mqm_prompt.md` by default.
 - `--llm-judge-max-segments N`: limits evaluated segments for cost control; `0`
@@ -129,17 +149,20 @@ LLM MQM judge evaluation is optional and disabled by default:
   used for OpenAI authentication.
 - `--llm-judge-base-url URL`: optionally points the OpenAI client at a compatible
   endpoint.
-- `--llm-judge-reasoning-effort minimal`: reasoning effort for GPT-5/o-series
+- `--llm-judge-reasoning-effort none`: reasoning effort for GPT-5/o-series
   judge calls. The default keeps short segment checks from spending the whole
   output budget on hidden reasoning.
+- `--llm-judge-max-output-tokens 2400`: leaves enough room for strict structured
+  output without silently accepting incomplete judge responses.
 - `--output-mqm-judge-jsonl path.jsonl`: writes raw normalized MQM segment
   results for audit/debugging.
 
 OpenAI MQM results are merged into `issues`, included in the Markdown and PR
 comment summaries, and written under `mqm_judge` in `quality-report.json`. When
-`--metric-cache` is provided, MQM judge responses are cached by source segment
-hash, target segment hash, prompt content hash, and model. This keeps repeated
-runs stable and avoids paying for unchanged segment reviews.
+`--metric-cache` is provided, MQM judge responses are cached by source and target
+segment hashes plus model, reasoning effort, endpoint, prompt hash, and schema
+hash. This keeps repeated runs stable and prevents incompatible judge settings
+from sharing cached decisions.
 
 The OpenAI judge prompt embeds a digest of
 `style/hf-blog-ko-translation-guide.md`; the model does not merely receive a

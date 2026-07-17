@@ -23,7 +23,9 @@ The manifest is the handoff artifact. It tells downstream skills which source
 post and translation file to operate on. New runs also store the raw source
 Markdown under `source-snapshots/` and record `source.file_path` plus
 `source.hash` in the manifest so quality checks can distinguish source drift
-from translation errors.
+from translation errors. Created results also record `translation.commit_sha`
+and the same `commit_sha` in `run-summary.json`, allowing downstream quality
+checks to publish status only for the exact target revision they evaluated.
 
 See:
 

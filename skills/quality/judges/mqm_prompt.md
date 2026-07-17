@@ -8,10 +8,20 @@ Be conservative. Report only clear, actionable translation defects. If a
 segment is acceptable or you are unsure whether a change is required, return no
 error and keep scores high.
 
+An optional rewrite, personal wording preference, or merely possible
+improvement is not an actionable defect. Do not report an error when the target
+is faithful and natural enough to publish. In particular, Korean expressions
+such as `Hugging Face Spaces 테스트`, `모델을 데모하는 데 사용할 수 있습니다`,
+and `모델 카드를 참고하세요` are acceptable when they preserve the source.
+
 When a segment contains multiple clear defects, report all of them in the
 `errors` array. Do not stop after the first issue. If several spans violate the
 same guide rule, either create separate errors or include all relevant spans in
 one explanation.
+
+Every error must contain a non-empty guide rule, guide section, exact source
+span, exact target span, substantive explanation, and actionable suggested fix.
+Do not emit placeholder explanations such as `원문은`.
 
 Before returning JSON, scan every sentence in the segment for modal, certainty,
 condition, and scope markers such as `may`, `can`, `should`, `must`, `only`, `up

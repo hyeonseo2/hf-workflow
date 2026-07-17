@@ -193,23 +193,31 @@ def test_create_manifest_records_source_snapshot_metadata(tmp_path: Path) -> Non
         manifest,
         source_file_path="../source-snapshots/hello.md",
         source_hash="abc123",
+        commit_sha="deadbeef",
     )
 
     text = manifest.read_text()
     assert "file_path: ../source-snapshots/hello.md" in text
     assert "hash: abc123" in text
+    assert "commit_sha: deadbeef" in text
 
 
-def test_daily_workflow_publishes_reports_before_enforcing_quality_gate() -> None:
+def test_daily_workflow_publishes_reports_before_enforcing_target_pr_quality_gate() -> None:
     workflow = (Path(__file__).resolve().parents[2] / ".github" / "workflows" / "daily-translation.yml").read_text(
         encoding="utf-8"
     )
 
     upload_index = workflow.index("- name: Upload run artifacts")
-    enforce_index = workflow.index("- name: Enforce quality gate")
+    enforce_index = workflow.index("- name: Enforce quality gate on target PR")
 
     assert upload_index < enforce_index
-    assert 'report.get("status") == "reject"' in workflow
+    assert "python scripts/enforce_quality_gate.py" in workflow
+    assert "LLM_JUDGE_MODEL: gpt-5.6-luna" in workflow
+    gate_script = (Path(__file__).resolve().parents[2] / "scripts" / "enforce_quality_gate.py").read_text(
+        encoding="utf-8"
+    )
+    assert "source_changed" in gate_script
+    assert "repos/{repo}/statuses/{head_sha}" in gate_script
 
 
 def init_git_repo(path: Path) -> None:

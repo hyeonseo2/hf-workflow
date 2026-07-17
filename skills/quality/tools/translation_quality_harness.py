@@ -49,10 +49,22 @@ EMOJI_RE = re.compile(
 DEFAULT_STYLE_GUIDE_PATH = QUALITY_ROOT / "style" / "hf-blog-ko-translation-guide.md"
 DEFAULT_STYLE_POLICY_PATH = QUALITY_ROOT / "configs" / "style_policy.yml"
 DEFAULT_MQM_PROMPT_PATH = QUALITY_ROOT / "judges" / "mqm_prompt.md"
+DEFAULT_MQM_SCHEMA_PATH = QUALITY_ROOT / "schemas" / "mqm_judge.schema.json"
 DEFAULT_EVALUATION_CONFIG_PATH = QUALITY_ROOT / "configs" / "eval_config.yml"
 DEFAULT_GATES_CONFIG_PATH = QUALITY_ROOT / "configs" / "gates.yml"
 MQM_CATEGORIES = {"accuracy", "terminology", "technical", "fluency", "style_locale", "formatting"}
 SEVERITIES = {"neutral", "minor", "major", "critical"}
+MQM_RESULT_FIELDS = {"segment_id", "adequacy_score", "fluency_score", "technical_score", "errors"}
+MQM_ERROR_FIELDS = {
+    "guide_rule",
+    "guide_section",
+    "category",
+    "severity",
+    "source_span",
+    "target_span",
+    "explanation",
+    "suggested_fix",
+}
 
 
 @dataclass
@@ -99,7 +111,7 @@ class MetricConfig:
     style_guide_path: Path | None = DEFAULT_STYLE_GUIDE_PATH
     style_policy_path: Path | None = DEFAULT_STYLE_POLICY_PATH
     llm_judge_provider: str = "off"
-    llm_judge_model: str = "gpt-5-nano"
+    llm_judge_model: str = "gpt-5.6-luna"
     llm_judge_prompt_path: Path | None = DEFAULT_MQM_PROMPT_PATH
     llm_judge_fixture_path: Path | None = None
     llm_judge_max_segments: int = 0
@@ -107,8 +119,8 @@ class MetricConfig:
     llm_judge_api_key_env: str = "OPENAI_API_KEY"
     llm_judge_base_url: str = ""
     llm_judge_timeout_seconds: float = 60.0
-    llm_judge_max_output_tokens: int = 1200
-    llm_judge_reasoning_effort: str = "minimal"
+    llm_judge_max_output_tokens: int = 2400
+    llm_judge_reasoning_effort: str = "none"
 
 
 @dataclass
@@ -138,6 +150,7 @@ class EvaluationPolicy:
     min_target_to_source_ratio: float = 0.35
     max_target_to_source_ratio: float = 2.60
     gate_statuses: dict[str, str] | None = None
+    gate_options: dict[str, dict[str, object]] | None = None
 
     def severity(self, gate: str, fallback: str) -> str:
         status = (self.gate_statuses or {}).get(gate, "")
@@ -146,6 +159,18 @@ class EvaluationPolicy:
         if status == "review_required":
             return "major"
         return fallback
+
+    def option(self, gate: str, name: str, fallback: object) -> object:
+        return (self.gate_options or {}).get(gate, {}).get(name, fallback)
+
+    def enabled(self, gate: str, name: str, fallback: bool = True) -> bool:
+        return bool(self.option(gate, name, fallback))
+
+    def list_option(self, gate: str, name: str, fallback: list[str]) -> list[str]:
+        value = self.option(gate, name, fallback)
+        if not isinstance(value, list):
+            return fallback
+        return [str(item) for item in value]
 
 
 @dataclass
@@ -828,7 +853,7 @@ def validate_segment_coverage(
         issue(
             issues,
             "accuracy",
-            "major",
+            policy.severity("length_ratio", "major"),
             "Target/source segment length ratio is outside the expected range.",
             source_span=f"source_chars={source_length}",
             target_span=f"target_chars={target_length}, ratio={ratio:.2f}",
@@ -987,10 +1012,19 @@ def read_yaml_scalars(path: Path | None) -> dict[tuple[str, ...], object]:
     path_by_level: dict[int, str] = {}
     for raw_line in path.read_text(encoding="utf-8").splitlines():
         stripped = raw_line.strip()
-        if not stripped or stripped.startswith("#") or stripped.startswith("- ") or ":" not in stripped:
+        if not stripped or stripped.startswith("#"):
             continue
         indent = len(raw_line) - len(raw_line.lstrip(" "))
         level = indent // 2
+        if stripped.startswith("- "):
+            key_path = tuple(path_by_level[index] for index in sorted(path_by_level))
+            if key_path:
+                current = values.setdefault(key_path, [])
+                if isinstance(current, list):
+                    current.append(parse_yaml_scalar(stripped[2:]))
+            continue
+        if ":" not in stripped:
+            continue
         for existing in list(path_by_level):
             if existing >= level:
                 del path_by_level[existing]
@@ -1010,6 +1044,7 @@ def load_evaluation_policy(
         evaluation_config_path=evaluation_config_path,
         gates_config_path=gates_config_path,
         gate_statuses={},
+        gate_options={},
     )
     evaluation_values = read_yaml_scalars(evaluation_config_path)
     field_paths = {
@@ -1026,8 +1061,13 @@ def load_evaluation_policy(
             setattr(policy, field_name, float(evaluation_values[key_path]))
 
     for key_path, value in read_yaml_scalars(gates_config_path).items():
-        if len(key_path) == 3 and key_path[0] in {"hard_gates", "review_gates"} and key_path[2] == "status":
-            policy.gate_statuses[key_path[1]] = str(value)
+        if len(key_path) != 3 or key_path[0] not in {"hard_gates", "review_gates"}:
+            continue
+        gate, option = key_path[1], key_path[2]
+        if option == "status":
+            policy.gate_statuses[gate] = str(value)
+        else:
+            policy.gate_options.setdefault(gate, {})[option] = value
     return policy
 
 
@@ -1485,6 +1525,28 @@ def is_style_guide_issue(item: Issue | dict[str, object]) -> bool:
     return bool(guide_rule) and not is_mqm_judge_issue(item)
 
 
+def deduplicate_detector_issues(issues: list[Issue]) -> list[Issue]:
+    severity_rank = {"neutral": 0, "minor": 1, "major": 2, "critical": 3}
+    suppressed: set[int] = set()
+    for mqm_index, mqm_item in enumerate(issues):
+        if not is_mqm_judge_issue(mqm_item) or not mqm_item.source_span:
+            continue
+        for deterministic_index, deterministic_item in enumerate(issues):
+            if is_mqm_judge_issue(deterministic_item) or not deterministic_item.source_span:
+                continue
+            if mqm_item.segment_id != deterministic_item.segment_id or mqm_item.guide_rule != deterministic_item.guide_rule:
+                continue
+            mqm_span = normalize_lookup_text(mqm_item.source_span)
+            deterministic_span = normalize_lookup_text(deterministic_item.source_span)
+            if mqm_span not in deterministic_span and deterministic_span not in mqm_span:
+                continue
+            if severity_rank.get(mqm_item.severity, 0) >= severity_rank.get(deterministic_item.severity, 0):
+                suppressed.add(deterministic_index)
+            else:
+                suppressed.add(mqm_index)
+    return [item for index, item in enumerate(issues) if index not in suppressed]
+
+
 def text_tokens(text: str) -> list[str]:
     return re.findall(r"[A-Za-z0-9가-힣_/-]+", normalize_lookup_text(text))
 
@@ -1755,6 +1817,49 @@ def clamp_score(value: object, default: float = 1.0) -> float:
     return round(max(0.0, min(1.0, score)), 4)
 
 
+def strict_mqm_score(value: object, field: str, segment_id: str, warnings: list[str]) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        warnings.append(f"Skipped MQM result for segment {segment_id}: {field} must be a number.")
+        return None
+    score = float(value)
+    if not math.isfinite(score) or not 0.0 <= score <= 1.0:
+        warnings.append(f"Skipped MQM result for segment {segment_id}: {field} must be between 0 and 1.")
+        return None
+    return round(score, 4)
+
+
+def load_mqm_schema() -> dict[str, object]:
+    loaded = json.loads(DEFAULT_MQM_SCHEMA_PATH.read_text(encoding="utf-8"))
+    if not isinstance(loaded, dict):
+        raise ValueError("MQM judge schema must be a JSON object.")
+    return loaded
+
+
+def mqm_response_format() -> dict[str, object]:
+    return {
+        "type": "json_schema",
+        "name": "mqm_judge_segment_result",
+        "description": "A strict MQM assessment for one aligned translation segment.",
+        "strict": True,
+        "schema": load_mqm_schema(),
+    }
+
+
+def mqm_cache_namespace(config: MetricConfig, prompt_hash: str, schema_hash: str) -> str:
+    endpoint_hash = hashlib.sha256((config.llm_judge_base_url or "openai-default").encode("utf-8")).hexdigest()[:12]
+    return ":".join(
+        [
+            "mqm-v2",
+            config.llm_judge_model,
+            config.llm_judge_reasoning_effort or "none",
+            str(config.llm_judge_max_output_tokens),
+            endpoint_hash,
+            prompt_hash,
+            schema_hash,
+        ]
+    )
+
+
 def style_guide_digest(path: Path | None, max_chars: int = 24000) -> tuple[str, str]:
     if path is None or not path.exists():
         return "", ""
@@ -1801,44 +1906,70 @@ def load_mqm_prompt(path: Path | None, style_guide_path: Path | None = DEFAULT_S
 
 
 def parse_json_object(text: str) -> dict[str, object]:
-    stripped = text.strip()
-    fence = re.match(r"^```(?:json)?\s*(.*?)\s*```$", stripped, re.DOTALL)
-    if fence:
-        stripped = fence.group(1).strip()
-    try:
-        loaded = json.loads(stripped)
-    except json.JSONDecodeError:
-        start = stripped.find("{")
-        end = stripped.rfind("}")
-        if start == -1 or end == -1 or end <= start:
-            raise
-        loaded = json.loads(stripped[start : end + 1])
+    loaded = json.loads(text.strip())
     if not isinstance(loaded, dict):
         raise ValueError("MQM judge response must be a JSON object.")
     return loaded
 
 
-def normalize_mqm_error(raw: object, warnings: list[str], segment_id: str) -> dict[str, str] | None:
+def normalize_mqm_error(
+    raw: object,
+    warnings: list[str],
+    segment_id: str,
+    *,
+    source_text: str = "",
+    target_text: str = "",
+) -> dict[str, str] | None:
     if not isinstance(raw, dict):
         warnings.append(f"Skipped non-object MQM error for segment {segment_id}.")
         return None
-    category = str(raw.get("category") or "accuracy").strip()
+    unexpected_fields = sorted(set(raw) - MQM_ERROR_FIELDS)
+    if unexpected_fields:
+        warnings.append(f"Skipped MQM error for segment {segment_id}: unexpected fields {unexpected_fields}.")
+        return None
+    required_text_fields = [
+        "guide_rule",
+        "guide_section",
+        "source_span",
+        "target_span",
+        "explanation",
+        "suggested_fix",
+    ]
+    for field in required_text_fields:
+        if not isinstance(raw.get(field), str) or not str(raw.get(field)).strip():
+            warnings.append(f"Skipped MQM error for segment {segment_id}: {field} must be a non-empty string.")
+            return None
+    if len(str(raw["explanation"]).strip()) < 8:
+        warnings.append(f"Skipped MQM error for segment {segment_id}: explanation must be substantive.")
+        return None
+    if len(str(raw["suggested_fix"]).strip()) < 2:
+        warnings.append(f"Skipped MQM error for segment {segment_id}: suggested_fix must be substantive.")
+        return None
+    category = str(raw.get("category") or "").strip()
     if category not in MQM_CATEGORIES:
-        warnings.append(f"MQM error for segment {segment_id} used unknown category `{category}`; normalized to accuracy.")
-        category = "accuracy"
-    severity = str(raw.get("severity") or "major").strip()
+        warnings.append(f"Skipped MQM error for segment {segment_id}: unknown category `{category}`.")
+        return None
+    severity = str(raw.get("severity") or "").strip()
     if severity not in SEVERITIES:
-        warnings.append(f"MQM error for segment {segment_id} used unknown severity `{severity}`; normalized to major.")
-        severity = "major"
+        warnings.append(f"Skipped MQM error for segment {segment_id}: unknown severity `{severity}`.")
+        return None
+    source_span = str(raw["source_span"]).strip()
+    target_span = str(raw["target_span"]).strip()
+    if source_text and source_span not in source_text:
+        warnings.append(f"Skipped MQM error for segment {segment_id}: source_span is not verbatim source text.")
+        return None
+    if target_text and target_span not in target_text:
+        warnings.append(f"Skipped MQM error for segment {segment_id}: target_span is not verbatim target text.")
+        return None
     return {
-        "guide_rule": str(raw.get("guide_rule") or "mqm_judge").strip(),
-        "guide_section": str(raw.get("guide_section") or "MQM judge").strip(),
+        "guide_rule": str(raw["guide_rule"]).strip(),
+        "guide_section": str(raw["guide_section"]).strip(),
         "category": category,
         "severity": severity,
-        "source_span": str(raw.get("source_span") or "").strip(),
-        "target_span": str(raw.get("target_span") or "").strip(),
-        "explanation": str(raw.get("explanation") or "").strip(),
-        "suggested_fix": str(raw.get("suggested_fix") or "").strip(),
+        "source_span": source_span,
+        "target_span": target_span,
+        "explanation": str(raw["explanation"]).strip(),
+        "suggested_fix": str(raw["suggested_fix"]).strip(),
     }
 
 
@@ -1850,7 +1981,7 @@ def calibrate_mqm_error(
     segment_id: str,
     warnings: list[str],
 ) -> dict[str, str]:
-    if error["category"] != "accuracy" or error["severity"] not in {"major", "critical"}:
+    if error["category"] != "accuracy" or error["severity"] != "major":
         return error
     guide_rule = normalize_lookup_text(error.get("guide_rule", ""))
     guide_section = normalize_lookup_text(error.get("guide_section", ""))
@@ -1913,25 +2044,57 @@ def calibrate_mqm_error(
     return error
 
 
-def normalize_mqm_result(raw: object, expected_segment_id: str, warnings: list[str]) -> dict[str, object] | None:
+def normalize_mqm_result(
+    raw: object,
+    expected_segment_id: str,
+    warnings: list[str],
+    *,
+    source_text: str = "",
+    target_text: str = "",
+) -> dict[str, object] | None:
     if not isinstance(raw, dict):
         warnings.append(f"Skipped non-object MQM result for segment {expected_segment_id}.")
         return None
-    segment_id = str(raw.get("segment_id") or expected_segment_id).strip() or expected_segment_id
-    raw_errors = raw.get("errors", [])
-    if raw_errors is None:
-        raw_errors = []
+    unexpected_fields = sorted(set(raw) - MQM_RESULT_FIELDS)
+    if unexpected_fields:
+        warnings.append(f"Skipped MQM result for segment {expected_segment_id}: unexpected fields {unexpected_fields}.")
+        return None
+    segment_id = str(raw.get("segment_id") or "").strip()
+    if not segment_id:
+        warnings.append(f"Skipped MQM result for expected segment {expected_segment_id}: missing segment_id.")
+        return None
+    if segment_id != expected_segment_id:
+        warnings.append(
+            f"Skipped MQM result for expected segment {expected_segment_id}: response segment_id was {segment_id}."
+        )
+        return None
+    required_fields = {"adequacy_score", "fluency_score", "technical_score", "errors"}
+    missing_fields = sorted(required_fields - raw.keys())
+    if missing_fields:
+        warnings.append(f"Skipped MQM result for segment {segment_id}: missing fields {missing_fields}.")
+        return None
+    raw_errors = raw.get("errors")
     if not isinstance(raw_errors, list):
-        warnings.append(f"MQM result for segment {segment_id} has non-list errors; ignored.")
-        raw_errors = []
-    errors = [
-        normalized
-        for item in raw_errors
-        if (normalized := normalize_mqm_error(item, warnings, segment_id)) is not None
-    ]
-    adequacy_score = clamp_score(raw.get("adequacy_score"), default=1.0)
-    fluency_score = clamp_score(raw.get("fluency_score"), default=1.0)
-    technical_score = clamp_score(raw.get("technical_score"), default=1.0)
+        warnings.append(f"Skipped MQM result for segment {segment_id}: errors must be an array.")
+        return None
+    adequacy_score = strict_mqm_score(raw.get("adequacy_score"), "adequacy_score", segment_id, warnings)
+    fluency_score = strict_mqm_score(raw.get("fluency_score"), "fluency_score", segment_id, warnings)
+    technical_score = strict_mqm_score(raw.get("technical_score"), "technical_score", segment_id, warnings)
+    if adequacy_score is None or fluency_score is None or technical_score is None:
+        return None
+    errors: list[dict[str, str]] = []
+    for item in raw_errors:
+        normalized = normalize_mqm_error(
+            item,
+            warnings,
+            segment_id,
+            source_text=source_text,
+            target_text=target_text,
+        )
+        if normalized is None:
+            warnings.append(f"Skipped MQM result for segment {segment_id}: at least one error was invalid.")
+            return None
+        errors.append(normalized)
     errors = [
         calibrate_mqm_error(
             error,
@@ -2007,7 +2170,13 @@ def run_fixture_mqm_judge(
         raw = next((fixture[key] for key in candidates if key in fixture), None)
         if raw is None:
             continue
-        normalized = normalize_mqm_result(raw, target_id, warnings)
+        normalized = normalize_mqm_result(
+            raw,
+            target_id,
+            warnings,
+            source_text=str(item.get("source_text") or ""),
+            target_text=str(item.get("target_text") or ""),
+        )
         if normalized is not None:
             results.append(normalized)
     return results
@@ -2032,6 +2201,10 @@ def openai_mqm_task(item: dict[str, str]) -> str:
     return json.dumps(payload, ensure_ascii=False, indent=2)
 
 
+def llm_judge_model_from_env() -> str:
+    return os.environ.get("LLM_JUDGE_MODEL") or "gpt-5.6-luna"
+
+
 def run_openai_mqm_judge(
     alignment: list[dict[str, str]],
     config: MetricConfig,
@@ -2039,6 +2212,8 @@ def run_openai_mqm_judge(
 ) -> tuple[list[dict[str, object]], int, int]:
     prompt = load_mqm_prompt(config.llm_judge_prompt_path, config.style_guide_path)
     prompt_hash = hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+    schema_hash = hashlib.sha256(DEFAULT_MQM_SCHEMA_PATH.read_bytes()).hexdigest()
+    cache_namespace = mqm_cache_namespace(config, prompt_hash, schema_hash)
     cache = load_metric_cache(config.metric_cache_path)
     cache_hits = 0
     cache_misses = 0
@@ -2047,13 +2222,19 @@ def run_openai_mqm_judge(
     for item in selected_judge_alignments(alignment, config.llm_judge_max_segments):
         target_id = str(item.get("target_id") or item.get("source_id") or item.get("alignment_id") or "")
         cache_key = metric_cache_key(
-            f"mqm:{config.llm_judge_model}:{prompt_hash}",
+            cache_namespace,
             str(item.get("source_hash") or ""),
             str(item.get("target_hash") or ""),
         )
         cached = cache.get(cache_key)
         if isinstance(cached, dict):
-            normalized = normalize_mqm_result(cached, target_id, warnings)
+            normalized = normalize_mqm_result(
+                cached,
+                target_id,
+                warnings,
+                source_text=str(item.get("source_text") or ""),
+                target_text=str(item.get("target_text") or ""),
+            )
             if normalized is not None:
                 results.append(normalized)
                 cache_hits += 1
@@ -2086,7 +2267,7 @@ def run_openai_mqm_judge(
                 "instructions": prompt,
                 "input": openai_mqm_task(item),
                 "max_output_tokens": config.llm_judge_max_output_tokens,
-                "text": {"format": {"type": "json_object"}},
+                "text": {"format": mqm_response_format()},
                 "timeout": config.llm_judge_timeout_seconds,
             }
             if config.llm_judge_reasoning_effort and config.llm_judge_model.startswith(("gpt-5", "o1", "o3", "o4")):
@@ -2105,7 +2286,13 @@ def run_openai_mqm_judge(
         except Exception as exc:
             warnings.append(f"OpenAI MQM judge failed for segment {target_id}: {exc}")
             continue
-        normalized = normalize_mqm_result(raw, target_id, warnings)
+        normalized = normalize_mqm_result(
+            raw,
+            target_id,
+            warnings,
+            source_text=str(item.get("source_text") or ""),
+            target_text=str(item.get("target_text") or ""),
+        )
         if normalized is not None:
             results.append(normalized)
             cache[cache_key] = normalized
@@ -2280,6 +2467,22 @@ def english_ratio(text: str) -> float:
     return len(english_words) / len(tokens)
 
 
+def configured_todo_markers(target: MarkdownDoc, policy: EvaluationPolicy) -> list[str]:
+    markers = policy.list_option("todo_markers", "markers", ["TODO", "FIXME", "TBD", "{{", "}}"])
+    _, body_without_code, _ = parse_code_blocks(target.body)
+    found: list[str] = []
+    for marker in markers:
+        if not marker:
+            continue
+        if re.fullmatch(r"[A-Za-z0-9_]+", marker):
+            present = re.search(rf"\b{re.escape(marker)}\b", body_without_code) is not None
+        else:
+            present = marker in body_without_code
+        if present:
+            found.append(marker)
+    return found
+
+
 def validate_documents(
     target: MarkdownDoc,
     source: MarkdownDoc | None = None,
@@ -2288,6 +2491,7 @@ def validate_documents(
     source_path: str = "",
     source_format: str = "",
     expected_source_hash: str = "",
+    target_commit_sha: str = "",
     glossary: list[GlossaryEntry] | None = None,
     translation_memory: dict[str, str] | None = None,
     metric_config: MetricConfig | None = None,
@@ -2327,22 +2531,25 @@ def validate_documents(
             reason="Target Markdown parse failed.",
         )
 
-    if "title" not in target.frontmatter:
-        issue(
-            issues,
-            "formatting",
-            gate_policy.severity("front_matter", "critical"),
-            "Target front matter is missing required key: title.",
-            suggested_fix="Add a translated title to front matter.",
-        )
+    required_target_keys = gate_policy.list_option("front_matter", "required_target_keys", ["title"])
+    for key in required_target_keys:
+        if key not in target.frontmatter:
+            issue(
+                issues,
+                "formatting",
+                gate_policy.severity("front_matter", "critical"),
+                f"Target front matter is missing required key: {key}.",
+                suggested_fix=f"Add `{key}` to target front matter.",
+            )
 
-    if target.todo_markers:
+    todo_markers = configured_todo_markers(target, gate_policy)
+    if todo_markers:
         issue(
             issues,
             "formatting",
             gate_policy.severity("todo_markers", "critical"),
             "TODO/FIXME/TBD or unresolved placeholder marker remains.",
-            target_span=", ".join(sorted(set(target.todo_markers))),
+            target_span=", ".join(sorted(set(todo_markers))),
             suggested_fix="Remove unresolved markers before publishing.",
         )
 
@@ -2370,117 +2577,62 @@ def validate_documents(
             )
 
         for error in source.parse_errors:
-            issue(issues, "formatting", "critical", error, reason="Source Markdown parse failed.")
+            issue(
+                issues,
+                "formatting",
+                gate_policy.severity("markdown_parse", "critical"),
+                error,
+                reason="Source Markdown parse failed.",
+            )
 
         if source_is_structural:
             segment_alignment = align_segments(source, target)
-            for key in ["authors", "thumbnail", "tags", "blog"]:
+            preserved_source_keys = gate_policy.list_option(
+                "front_matter",
+                "preserved_source_keys",
+                ["authors", "thumbnail", "tags", "blog"],
+            )
+            for key in preserved_source_keys:
                 source_value = source.frontmatter.get(key)
                 if source_value is None:
                     continue
                 target_value = target.frontmatter.get(key)
                 if source_value != target_value:
-                    severity = "major" if key == "authors" else "critical"
                     issue(
                         issues,
                         "formatting",
-                        severity,
+                        gate_policy.severity("front_matter", "critical"),
                         f"Front matter key `{key}` changed or is missing.",
                         source_span=source_value,
                         target_span=target_value or "",
                         suggested_fix=f"Preserve front matter `{key}` exactly.",
                     )
 
-            compare_counter(
-                issues,
-                "formatting",
-                "code block hash",
-                code_hashes(source.code_blocks),
-                code_hashes(target.code_blocks),
-                severity=gate_policy.severity("code_blocks", "critical"),
-            )
-            compare_counter(
-                issues,
-                "technical",
-                "inline code",
-                source.inline_code,
-                target.inline_code,
-                severity=gate_policy.severity("inline_code", "critical"),
-            )
-            compare_counter(
-                issues,
-                "formatting",
-                "link target",
-                source.link_targets,
-                target.link_targets,
-                severity=gate_policy.severity("links", "critical"),
-            )
-            compare_counter(
-                issues,
-                "formatting",
-                "image target",
-                source.image_targets,
-                target.image_targets,
-                severity=gate_policy.severity("images", "critical"),
-            )
-            compare_counter(
-                issues,
-                "formatting",
-                "bare URL",
-                source.urls,
-                target.urls,
-                severity=gate_policy.severity("bare_urls", "major"),
-            )
-            compare_counter(
-                issues,
-                "technical",
-                "model or dataset id",
-                source.model_ids,
-                target.model_ids,
-                severity=gate_policy.severity("protected_tokens", "major"),
-            )
-            compare_counter(
-                issues,
-                "technical",
-                "Python/API identifier",
-                source.python_identifiers,
-                target.python_identifiers,
-                severity=gate_policy.severity("protected_tokens", "major"),
-            )
-            compare_counter(
-                issues,
-                "technical",
-                "environment variable",
-                source.env_vars,
-                target.env_vars,
-                severity=gate_policy.severity("environment_variables", "critical"),
-            )
-            compare_counter(
-                issues,
-                "technical",
-                "CLI flag",
-                source.cli_flags,
-                target.cli_flags,
-                severity=gate_policy.severity("cli_flags", "critical"),
-            )
-            compare_counter(
-                issues,
-                "technical",
-                "number/unit token",
-                source.numbers,
-                target.numbers,
-                severity=gate_policy.severity("numbers", "major"),
-            )
-            compare_counter(
-                issues,
-                "technical",
-                "LaTeX token",
-                source.latex_inline,
-                target.latex_inline,
-                severity=gate_policy.severity("latex", "critical"),
-            )
+            exact_match_checks = [
+                ("code_blocks", "compare_hashes", "formatting", "code block hash", code_hashes(source.code_blocks), code_hashes(target.code_blocks), "critical"),
+                ("inline_code", "exact_match", "technical", "inline code", source.inline_code, target.inline_code, "critical"),
+                ("links", "exact_target_match", "formatting", "link target", source.link_targets, target.link_targets, "critical"),
+                ("images", "exact_target_match", "formatting", "image target", source.image_targets, target.image_targets, "critical"),
+                ("bare_urls", "exact_match", "formatting", "bare URL", source.urls, target.urls, "major"),
+                ("protected_tokens", "exact_match", "technical", "model or dataset id", source.model_ids, target.model_ids, "major"),
+                ("protected_tokens", "exact_match", "technical", "Python/API identifier", source.python_identifiers, target.python_identifiers, "major"),
+                ("environment_variables", "exact_match", "technical", "environment variable", source.env_vars, target.env_vars, "critical"),
+                ("cli_flags", "exact_match", "technical", "CLI flag", source.cli_flags, target.cli_flags, "critical"),
+                ("numbers", "exact_match", "technical", "number/unit token", source.numbers, target.numbers, "major"),
+                ("latex", "exact_match", "technical", "LaTeX token", source.latex_inline, target.latex_inline, "critical"),
+            ]
+            for gate, option, category, label, source_values, target_values, fallback_severity in exact_match_checks:
+                if gate_policy.enabled(gate, option):
+                    compare_counter(
+                        issues,
+                        category,
+                        label,
+                        source_values,
+                        target_values,
+                        severity=gate_policy.severity(gate, fallback_severity),
+                    )
 
-            if source.table_shapes != target.table_shapes:
+            if gate_policy.enabled("tables", "compare_shape") and source.table_shapes != target.table_shapes:
                 issue(
                     issues,
                     "formatting",
@@ -2514,7 +2666,7 @@ def validate_documents(
         issue(
             issues,
             "fluency",
-            "major",
+            gate_policy.severity("korean_ratio", "major"),
             "Korean letter ratio is low.",
             target_span=f"{kr_ratio:.2%}",
             suggested_fix="Translate remaining general prose into Korean.",
@@ -2525,17 +2677,37 @@ def validate_documents(
         issue(
             issues,
             "fluency",
-            "major",
+            gate_policy.severity("untranslated_english", "major"),
             "English prose ratio is high.",
             target_span=f"{en_ratio:.2%}",
             suggested_fix="Verify that non-code English prose is intentionally preserved.",
         )
+
+    expected_mqm_segment_ids = {str(item.get("target_id") or "") for item in segment_alignment}
+    actual_mqm_segment_ids = [
+        str(item.get("segment_id") or "")
+        for item in mqm_judge.get("segments", [])
+        if isinstance(item, dict)
+    ]
+    mqm_segment_ids_complete = bool(
+        expected_mqm_segment_ids
+        and len(actual_mqm_segment_ids) == len(expected_mqm_segment_ids)
+        and len(set(actual_mqm_segment_ids)) == len(actual_mqm_segment_ids)
+        and set(actual_mqm_segment_ids) == expected_mqm_segment_ids
+    )
+    if mqm_judge.get("enabled") and segment_alignment and not mqm_segment_ids_complete:
+        warnings = list(mqm_judge.get("warnings", []))
+        warning = "MQM segment coverage is invalid: expected exactly one result for every aligned target segment."
+        if warning not in warnings:
+            warnings.append(warning)
+        mqm_judge["warnings"] = warnings
 
     semantic_evaluation_complete = bool(
         segment_alignment
         and mqm_judge.get("enabled")
         and int(mqm_judge.get("segment_count", 0)) == len(segment_alignment)
         and int(mqm_judge.get("skipped_segment_count", 0)) == 0
+        and mqm_segment_ids_complete
     )
     if source is not None and not semantic_evaluation_complete:
         issue(
@@ -2547,10 +2719,11 @@ def validate_documents(
             reason="Heuristic QE only checks surface signals and cannot establish semantic equivalence.",
         )
 
-    critical = [item for item in issues if item.severity == "critical"]
-    major = [item for item in issues if item.severity == "major"]
-    minor = [item for item in issues if item.severity == "minor"]
-    style_issues = [item for item in issues if is_style_guide_issue(item)]
+    effective_issues = deduplicate_detector_issues(issues)
+    critical = [item for item in effective_issues if item.severity == "critical"]
+    major = [item for item in effective_issues if item.severity == "major"]
+    minor = [item for item in effective_issues if item.severity == "minor"]
+    style_issues = [item for item in effective_issues if is_style_guide_issue(item)]
     non_style_major = [item for item in major if not is_style_guide_issue(item)]
     style_major = [item for item in major if is_style_guide_issue(item)]
     quality_score = max(
@@ -2574,10 +2747,12 @@ def validate_documents(
     else:
         status = "reject"
 
-    non_style_accuracy_issues = [item for item in issues if item.category == "accuracy" and not is_style_guide_issue(item)]
+    non_style_accuracy_issues = [
+        item for item in effective_issues if item.category == "accuracy" and not is_style_guide_issue(item)
+    ]
     style_accuracy_major = [
         item
-        for item in issues
+        for item in effective_issues
         if item.category == "accuracy" and is_style_guide_issue(item) and item.severity == "major"
     ]
     dimension_scores = {
@@ -2590,12 +2765,18 @@ def validate_documents(
                 - 5.0 * len(style_accuracy_major),
             ),
         ),
-        "technical_accuracy": max(0.0, 100.0 - 20.0 * sum(1 for item in issues if item.category == "technical")),
+        "technical_accuracy": max(
+            0.0, 100.0 - 20.0 * sum(1 for item in effective_issues if item.category == "technical")
+        ),
         "completeness": max(0.0, 100.0 - 20.0 * len(non_style_accuracy_issues)),
-        "terminology": max(0.0, 100.0 - 20.0 * sum(1 for item in issues if item.category == "terminology")),
-        "fluency": max(0.0, 100.0 - 15.0 * sum(1 for item in issues if item.category == "fluency")),
-        "publishing_integrity": max(0.0, 100.0 - 20.0 * sum(1 for item in issues if item.category == "formatting")),
-        "style_locale": max(0.0, 100.0 - style_penalty(issues)),
+        "terminology": max(
+            0.0, 100.0 - 20.0 * sum(1 for item in effective_issues if item.category == "terminology")
+        ),
+        "fluency": max(0.0, 100.0 - 15.0 * sum(1 for item in effective_issues if item.category == "fluency")),
+        "publishing_integrity": max(
+            0.0, 100.0 - 20.0 * sum(1 for item in effective_issues if item.category == "formatting")
+        ),
+        "style_locale": max(0.0, 100.0 - style_penalty(effective_issues)),
     }
     if mqm_judge.get("segment_count"):
         if "adequacy_average" in mqm_judge:
@@ -2635,6 +2816,7 @@ def validate_documents(
             "source_hash": source.source_hash if source else "",
             "expected_source_hash": expected_source_hash,
             "target_hash": target.source_hash,
+            "target_commit_sha": target_commit_sha,
             "source_available": source is not None,
             "semantic_evaluation_complete": semantic_evaluation_complete,
             "source_changed": source_changed,
@@ -2893,6 +3075,7 @@ def build_report(
         source_path=source_path_label or str(source_path or ""),
         source_format=source_format,
         expected_source_hash=manifest.get("source.hash", ""),
+        target_commit_sha=manifest.get("translation.commit_sha", ""),
         glossary=load_glossary(glossary_paths),
         translation_memory=load_translation_memory(translation_memory_path),
         metric_config=metric_config or MetricConfig(),
@@ -2942,7 +3125,10 @@ def main(argv: list[str] | None = None) -> int:
         default="off",
         help="Optional MQM LLM judge provider. `fixture` reads precomputed JSON/JSONL judge results for deterministic tests.",
     )
-    parser.add_argument("--llm-judge-model", default=os.environ.get("LLM_JUDGE_MODEL") or os.environ.get("OPENAI_MODEL") or "gpt-5-nano")
+    parser.add_argument(
+        "--llm-judge-model",
+        default=llm_judge_model_from_env(),
+    )
     parser.add_argument("--llm-judge-prompt", help="Optional MQM judge prompt path.")
     parser.add_argument("--llm-judge-fixture", help="Optional JSON/JSONL MQM judge fixture path.")
     parser.add_argument("--llm-judge-max-segments", type=int, default=0, help="Maximum aligned segments to send to the MQM judge. 0 means all.")
@@ -2950,10 +3136,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--llm-judge-api-key-env", default="OPENAI_API_KEY", help="Environment variable that holds the OpenAI API key.")
     parser.add_argument("--llm-judge-base-url", default=os.environ.get("OPENAI_BASE_URL", ""), help="Optional OpenAI-compatible base URL.")
     parser.add_argument("--llm-judge-timeout", type=float, default=60.0, help="Timeout in seconds for each MQM judge API call.")
-    parser.add_argument("--llm-judge-max-output-tokens", type=int, default=1200, help="Maximum output tokens for each MQM judge response.")
-    parser.add_argument("--llm-judge-reasoning-effort", default="minimal", help="Reasoning effort for GPT-5/o-series MQM judge calls.")
+    parser.add_argument("--llm-judge-max-output-tokens", type=int, default=2400, help="Maximum output tokens for each MQM judge response.")
+    parser.add_argument("--llm-judge-reasoning-effort", default="none", help="Reasoning effort for GPT-5/o-series MQM judge calls.")
     parser.add_argument("--no-fetch-source-url", action="store_true", help="Do not fetch source.url when no source Markdown file is available.")
-    parser.add_argument("--fail-on-reject", action="store_true", help="Exit non-zero when status is reject.")
+    parser.add_argument(
+        "--fail-on-reject",
+        action="store_true",
+        help="Exit non-zero when status is reject or source_changed.",
+    )
     args = parser.parse_args(argv)
 
     manifest_path = Path(args.manifest).resolve()
@@ -3026,7 +3216,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Wrote quality JSON report: {output_json}")
     print(f"Wrote quality Markdown report: {output_md}")
     print(f"Status: {report['status']}")
-    if args.fail_on_reject and report["status"] == "reject":
+    if args.fail_on_reject and report["status"] in {"reject", "source_changed"}:
         return 1
     return 0
 

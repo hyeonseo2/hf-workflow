@@ -18,6 +18,7 @@ source:
 translation:
   target_repo: your-org/hf-blog-ko
   branch: translate/example-post
+  commit_sha: example-translation-commit-sha
   file_path: posts/ko/example-post.md
   pr_url: https://github.com/your-org/hf-blog-ko/pull/123
   locale: ko

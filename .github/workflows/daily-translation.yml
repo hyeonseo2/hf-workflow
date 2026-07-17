@@ -28,6 +28,7 @@ jobs:
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       OPENAI_MODEL: gpt-5-nano
+      LLM_JUDGE_MODEL: gpt-5.6-luna
       BOT_TOKEN: ${{ secrets.KREW_BOT_TOKEN }}
       GH_TOKEN: ${{ secrets.KREW_BOT_TOKEN }}
       KREW_REPO: Hugging-Face-KREW/hugging-face-krew.github.io
@@ -135,34 +136,7 @@ jobs:
 
       - name: Generate SEO and quality reports
         if: ${{ inputs.dry_run != true }}
-        run: |
-          python - <<'PY'
-          import json
-          import subprocess
-          from pathlib import Path
-
-          summary_path = Path("run-summary.json")
-          if not summary_path.exists():
-              print("No run summary found; skipping reports.")
-              raise SystemExit(0)
-
-          summary = json.loads(summary_path.read_text())
-          for result in summary["results"]:
-              if result["status"] != "created":
-                  continue
-              manifest = Path("translation-flow") / result["manifest_path"]
-              subprocess.run(
-                  [
-                      "python",
-                      "scripts/run_local_review.py",
-                      "--manifest",
-                      str(manifest),
-                      "--target-root",
-                      "target-repo",
-                  ],
-                  check=True,
-              )
-          PY
+        run: python scripts/generate_review_reports.py --summary run-summary.json --target-root target-repo
 
       - name: Post quality report PR comments
         if: ${{ inputs.dry_run != true && env.GH_TOKEN != '' }}
@@ -261,41 +235,6 @@ jobs:
             translation-flow/source-snapshots/*.md
             reports/**
 
-      - name: Enforce quality gate
+      - name: Enforce quality gate on target PR
         if: ${{ inputs.dry_run != true }}
-        run: |
-          python - <<'PY'
-          import json
-          import re
-          from pathlib import Path
-
-          summary_path = Path("run-summary.json")
-          if not summary_path.exists():
-              print("No run summary found; no quality reports to enforce.")
-              raise SystemExit(0)
-
-          failures = []
-          summary = json.loads(summary_path.read_text(encoding="utf-8"))
-          for result in summary["results"]:
-              if result.get("status") != "created":
-                  continue
-              pr_url = result.get("pr_url") or ""
-              match = re.search(r"/pull/(\d+)", pr_url)
-              if not match:
-                  failures.append(f"{result.get('slug')}: missing PR number")
-                  continue
-              report_path = Path("reports") / f"pr-{match.group(1)}" / "quality-report.json"
-              if not report_path.exists():
-                  failures.append(f"{result.get('slug')}: missing {report_path}")
-                  continue
-              report = json.loads(report_path.read_text(encoding="utf-8"))
-              if report.get("status") == "reject":
-                  failures.append(f"{result.get('slug')}: quality status=reject")
-
-          if failures:
-              print("Quality gate rejected the workflow:")
-              for failure in failures:
-                  print(f"- {failure}")
-              raise SystemExit(1)
-          print("Quality gate found no rejected reports.")
-          PY
+        run: python scripts/enforce_quality_gate.py --summary run-summary.json --reports-root reports --target-root target-repo

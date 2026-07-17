@@ -2,9 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "MQM Judge Segment Result",
   "type": "object",
+  "additionalProperties": false,
   "required": ["segment_id", "adequacy_score", "fluency_score", "technical_score", "errors"],
   "properties": {
-    "segment_id": { "type": "string" },
+    "segment_id": { "type": "string", "minLength": 1 },
     "adequacy_score": { "type": "number", "minimum": 0, "maximum": 1 },
     "fluency_score": { "type": "number", "minimum": 0, "maximum": 1 },
     "technical_score": { "type": "number", "minimum": 0, "maximum": 1 },
@@ -12,10 +13,11 @@
       "type": "array",
       "items": {
         "type": "object",
+        "additionalProperties": false,
         "required": ["guide_rule", "guide_section", "category", "severity", "source_span", "target_span", "explanation", "suggested_fix"],
         "properties": {
-          "guide_rule": { "type": "string" },
-          "guide_section": { "type": "string" },
+          "guide_rule": { "type": "string", "minLength": 1 },
+          "guide_section": { "type": "string", "minLength": 1 },
           "category": {
             "type": "string",
             "enum": ["accuracy", "terminology", "technical", "fluency", "style_locale", "formatting"]
@@ -24,10 +26,10 @@
             "type": "string",
             "enum": ["neutral", "minor", "major", "critical"]
           },
-          "source_span": { "type": "string" },
-          "target_span": { "type": "string" },
-          "explanation": { "type": "string" },
-          "suggested_fix": { "type": "string" }
+          "source_span": { "type": "string", "minLength": 1 },
+          "target_span": { "type": "string", "minLength": 1 },
+          "explanation": { "type": "string", "minLength": 8 },
+          "suggested_fix": { "type": "string", "minLength": 2 }
         }
       }
     }

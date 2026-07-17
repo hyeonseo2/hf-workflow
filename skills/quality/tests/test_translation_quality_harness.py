@@ -4,19 +4,28 @@ import json
 import hashlib
 from pathlib import Path
 
+import pytest
+
 from tools.translation_quality_harness import (
     DEFAULT_MQM_PROMPT_PATH,
+    DEFAULT_MQM_SCHEMA_PATH,
     DEFAULT_STYLE_GUIDE_PATH,
+    Issue,
     MetricConfig,
     align_segments,
     build_report,
+    deduplicate_detector_issues,
+    llm_judge_model_from_env,
     load_mqm_prompt,
     main,
     markdown_doc,
     metric_cache_key,
+    mqm_cache_namespace,
+    mqm_response_format,
     normalized_numbers,
     normalize_mqm_result,
     openai_mqm_task,
+    parse_json_object,
     style_guide_digest,
 )
 
@@ -180,6 +189,144 @@ def test_harness_loads_number_gate_from_config(tmp_path: Path) -> None:
     assert report["metadata"]["gates_config_path"] == str(gates)
 
 
+def test_harness_applies_configured_korean_ratio_gate_severity(tmp_path: Path) -> None:
+    source = tmp_path / "source.md"
+    target = tmp_path / "target.md"
+    manifest = tmp_path / "manifest.yaml"
+    gates = tmp_path / "gates.yml"
+    source.write_text("---\ntitle: English\n---\n\nA short source paragraph.\n", encoding="utf-8")
+    target.write_text("---\ntitle: English\n---\n\nAn untranslated target paragraph.\n", encoding="utf-8")
+    manifest.write_text(
+        "version: 1\nsource:\n  file_path: source.md\ntranslation:\n  file_path: target.md\n",
+        encoding="utf-8",
+    )
+    gates.write_text(
+        "version: 1\nhard_gates:\n  korean_ratio:\n    status: reject\n",
+        encoding="utf-8",
+    )
+
+    report = build_report(manifest, tmp_path, gates_config_path=gates)
+
+    assert any("Korean letter ratio is low" in issue["message"] for issue in report["hard_failures"])
+
+
+def test_harness_loads_frontmatter_key_lists_from_gate_policy(tmp_path: Path) -> None:
+    source = tmp_path / "source.md"
+    target = tmp_path / "target.md"
+    manifest = tmp_path / "manifest.yaml"
+    gates = tmp_path / "gates.yml"
+    source.write_text(
+        "---\ntitle: Source\nauthors: alice\nthumbnail: original.png\n---\n\nSource text.\n",
+        encoding="utf-8",
+    )
+    target.write_text(
+        "---\ntitle: 번역\nauthors: alice\n---\n\n번역문입니다.\n",
+        encoding="utf-8",
+    )
+    manifest.write_text(
+        "version: 1\nsource:\n  file_path: source.md\ntranslation:\n  file_path: target.md\n",
+        encoding="utf-8",
+    )
+    gates.write_text(
+        """version: 1
+hard_gates:
+  front_matter:
+    status: reject
+    required_target_keys:
+      - title
+      - description
+    preserved_source_keys:
+      - authors
+""",
+        encoding="utf-8",
+    )
+
+    report = build_report(manifest, tmp_path, gates_config_path=gates)
+    messages = [issue["message"] for issue in report["issues"]]
+
+    assert "Target front matter is missing required key: description." in messages
+    assert not any("thumbnail" in message for message in messages)
+
+
+def test_harness_respects_disabled_exact_match_gate_option(tmp_path: Path) -> None:
+    source = tmp_path / "source.md"
+    target = tmp_path / "target.md"
+    manifest = tmp_path / "manifest.yaml"
+    gates = tmp_path / "gates.yml"
+    source.write_text("---\ntitle: S\n---\n\n[docs](https://example.com/a)\n", encoding="utf-8")
+    target.write_text("---\ntitle: T\n---\n\n[문서](https://example.com/b)\n", encoding="utf-8")
+    manifest.write_text(
+        "version: 1\nsource:\n  file_path: source.md\ntranslation:\n  file_path: target.md\n",
+        encoding="utf-8",
+    )
+    gates.write_text(
+        "version: 1\nhard_gates:\n  links:\n    status: reject\n    exact_target_match: false\n",
+        encoding="utf-8",
+    )
+
+    report = build_report(manifest, tmp_path, gates_config_path=gates)
+
+    assert not any("link target mismatch" in issue["message"] for issue in report["issues"])
+
+
+def test_harness_loads_todo_markers_from_gate_policy(tmp_path: Path) -> None:
+    source = tmp_path / "source.md"
+    target = tmp_path / "target.md"
+    manifest = tmp_path / "manifest.yaml"
+    gates = tmp_path / "gates.yml"
+    source.write_text("---\ntitle: S\n---\n\nComplete source.\n", encoding="utf-8")
+    target.write_text("---\ntitle: T\n---\n\nREPLACE_ME before publishing.\n", encoding="utf-8")
+    manifest.write_text(
+        "version: 1\nsource:\n  file_path: source.md\ntranslation:\n  file_path: target.md\n",
+        encoding="utf-8",
+    )
+    gates.write_text(
+        """version: 1
+hard_gates:
+  todo_markers:
+    status: reject
+    markers:
+      - REPLACE_ME
+""",
+        encoding="utf-8",
+    )
+
+    report = build_report(manifest, tmp_path, gates_config_path=gates)
+
+    assert any("unresolved placeholder" in issue["message"] for issue in report["hard_failures"])
+
+
+def test_harness_applies_markdown_parse_policy_to_source_errors(tmp_path: Path) -> None:
+    source = tmp_path / "source.md"
+    target = tmp_path / "target.md"
+    manifest = tmp_path / "manifest.yaml"
+    gates = tmp_path / "gates.yml"
+    source.write_text("---\ntitle: S\n---\n\n```python\nprint('open')\n", encoding="utf-8")
+    target.write_text("---\ntitle: T\n---\n\n번역문입니다.\n", encoding="utf-8")
+    manifest.write_text(
+        "version: 1\nsource:\n  file_path: source.md\ntranslation:\n  file_path: target.md\n",
+        encoding="utf-8",
+    )
+    gates.write_text(
+        """version: 1
+review_gates:
+  markdown_parse:
+    status: review_required
+hard_gates:
+  code_blocks:
+    status: reject
+    compare_hashes: false
+""",
+        encoding="utf-8",
+    )
+
+    report = build_report(manifest, tmp_path, gates_config_path=gates)
+    parse_issues = [issue for issue in report["issues"] if "Unclosed fenced code block" in issue["message"]]
+
+    assert parse_issues
+    assert all(issue["severity"] == "major" for issue in parse_issues)
+
+
 def test_harness_rejects_code_mutation(tmp_path: Path) -> None:
     manifest = manifest_for(tmp_path, "target_bad_code.md")
 
@@ -285,8 +432,7 @@ def test_harness_rejects_frontmatter_mutation(tmp_path: Path) -> None:
     report = build_report(manifest, FIXTURES, source_path=FIXTURES / "source.md")
 
     assert report["status"] == "reject"
-    assert any("Front matter key `authors`" in issue["message"] for issue in report["issues"])
-    assert not any("Front matter key `authors`" in issue["message"] for issue in report["hard_failures"])
+    assert any("Front matter key `authors`" in issue["message"] for issue in report["hard_failures"])
     assert any("Front matter key `thumbnail`" in issue["message"] for issue in report["hard_failures"])
 
 
@@ -330,6 +476,28 @@ def test_cli_writes_markdown_and_json_reports(tmp_path: Path) -> None:
 
 def test_cli_fail_on_reject_returns_nonzero(tmp_path: Path) -> None:
     manifest = manifest_for(tmp_path, "target_bad_code.md")
+
+    exit_code = main(
+        [
+            "--manifest",
+            str(manifest),
+            "--target-root",
+            str(FIXTURES),
+            "--source",
+            str(FIXTURES / "source.md"),
+            "--output-md",
+            str(tmp_path / "quality-report.md"),
+            "--output-json",
+            str(tmp_path / "quality-report.json"),
+            "--fail-on-reject",
+        ]
+    )
+
+    assert exit_code == 1
+
+
+def test_cli_fail_on_reject_also_blocks_source_changed(tmp_path: Path) -> None:
+    manifest = manifest_with_source_hash(tmp_path, "target_good.md", "stale-source-hash")
 
     exit_code = main(
         [
@@ -585,7 +753,7 @@ def write_mqm_fixture(tmp_path: Path) -> Path:
                         "category": "accuracy",
                         "severity": "major",
                         "source_span": "can be used",
-                        "target_span": "사용됩니다",
+                        "target_span": "사용할 수 있습니다",
                         "explanation": "가능성을 단정으로 바꾸었습니다.",
                         "suggested_fix": "사용할 수 있습니다",
                     }
@@ -659,6 +827,44 @@ def test_complete_clean_mqm_evaluation_allows_auto_pass(tmp_path: Path) -> None:
     assert not any("Semantic adequacy evaluation is incomplete" in issue["message"] for issue in report["issues"])
 
 
+def test_duplicate_or_unknown_mqm_segment_ids_cannot_auto_pass(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    manifest = manifest_for(tmp_path, "target_good.md")
+    source = markdown_doc((FIXTURES / "source.md").read_text(encoding="utf-8"))
+    target = markdown_doc((FIXTURES / "target_good.md").read_text(encoding="utf-8"))
+    alignment_count = len(align_segments(source, target))
+    invalid_summary = {
+        "enabled": True,
+        "provider": "openai",
+        "requested_segment_count": alignment_count,
+        "segment_count": alignment_count,
+        "skipped_segment_count": 0,
+        "error_count": 0,
+        "warnings": [],
+        "segments": [
+            {
+                "segment_id": "wrong-id",
+                "adequacy_score": 1.0,
+                "fluency_score": 1.0,
+                "technical_score": 1.0,
+                "errors": [],
+            }
+            for _ in range(alignment_count)
+        ],
+    }
+    monkeypatch.setattr("tools.translation_quality_harness.evaluate_mqm_judge", lambda *_: invalid_summary)
+
+    report = build_report(
+        manifest,
+        FIXTURES,
+        source_path=FIXTURES / "source.md",
+        metric_config=MetricConfig(qe_metric="off", enable_embedding_similarity=False, llm_judge_provider="openai"),
+    )
+
+    assert report["metadata"]["semantic_evaluation_complete"] is False
+    assert report["status"] == "review_required"
+    assert any("MQM segment coverage is invalid" in warning for warning in report["mqm_judge"]["warnings"])
+
+
 def test_mqm_judge_downgrades_wording_only_accuracy_major(tmp_path: Path) -> None:
     manifest = manifest_for(tmp_path, "target_good.md")
     fixture = tmp_path / "mqm-wording-fixture.jsonl"
@@ -675,8 +881,8 @@ def test_mqm_judge_downgrades_wording_only_accuracy_major(tmp_path: Path) -> Non
                         "guide_section": "MQM judge",
                         "category": "accuracy",
                         "severity": "major",
-                        "source_span": "What you cannot profile",
-                        "target_span": "프로파일링할 수 없는 것은",
+                        "source_span": "can be used",
+                        "target_span": "사용할 수 있습니다",
                         "explanation": "의미는 유지되지만 직역이라 다소 어색한 표현입니다.",
                         "suggested_fix": "더 자연스럽게 다듬습니다.",
                     }
@@ -738,6 +944,319 @@ def test_mqm_judge_keeps_modal_strength_accuracy_major() -> None:
     assert not warnings
 
 
+def test_mqm_judge_never_downgrades_critical_accuracy_error() -> None:
+    warnings: list[str] = []
+
+    result = normalize_mqm_result(
+        {
+            "segment_id": "p_002",
+            "adequacy_score": 0.99,
+            "fluency_score": 0.99,
+            "technical_score": 0.99,
+            "errors": [
+                {
+                    "guide_rule": "preserve_meaning",
+                    "guide_section": "MQM judge",
+                    "category": "accuracy",
+                    "severity": "critical",
+                    "source_span": "The model does not support this format.",
+                    "target_span": "이 모델은 이 형식을 지원합니다.",
+                    "explanation": "표현의 의미가 반대로 바뀌었습니다.",
+                    "suggested_fix": "이 모델은 이 형식을 지원하지 않습니다.",
+                }
+            ],
+        },
+        "p_002",
+        warnings,
+    )
+
+    assert result is not None
+    assert result["errors"][0]["severity"] == "critical"
+    assert result["errors"][0]["category"] == "accuracy"
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"segment_id": "p_001", "errors": []},
+        {
+            "segment_id": "p_001",
+            "adequacy_score": 9,
+            "fluency_score": 1,
+            "technical_score": 1,
+            "errors": [],
+        },
+        {
+            "segment_id": "p_001",
+            "adequacy_score": 1,
+            "fluency_score": 1,
+            "technical_score": 1,
+            "errors": "not-an-array",
+        },
+    ],
+)
+def test_mqm_judge_rejects_malformed_result_instead_of_defaulting_to_perfect(payload: dict[str, object]) -> None:
+    warnings: list[str] = []
+
+    assert normalize_mqm_result(payload, "p_001", warnings) is None
+    assert warnings
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {
+            "segment_id": "p_001",
+            "adequacy_score": 1,
+            "fluency_score": 1,
+            "technical_score": 1,
+            "errors": [],
+            "unexpected": True,
+        },
+        {
+            "segment_id": "p_001",
+            "adequacy_score": 0.8,
+            "fluency_score": 0.9,
+            "technical_score": 1.0,
+            "errors": [
+                {
+                    "guide_rule": "modal_strength",
+                    "guide_section": "의미 강도",
+                    "category": "accuracy",
+                    "severity": "major",
+                    "source_span": "must",
+                    "target_span": "좋습니다",
+                    "explanation": "의무 표현이 권장 표현으로 약해졌습니다.",
+                    "suggested_fix": "반드시 해야 합니다.",
+                    "unexpected": True,
+                }
+            ],
+        },
+    ],
+)
+def test_mqm_judge_rejects_additional_properties(payload: dict[str, object]) -> None:
+    warnings: list[str] = []
+
+    assert normalize_mqm_result(payload, "p_001", warnings) is None
+    assert any("unexpected fields" in warning for warning in warnings)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        '```json\n{"segment_id":"p_001"}\n```',
+        'Here is the result: {"segment_id":"p_001"}',
+    ],
+)
+def test_parse_json_object_rejects_non_strict_wrappers(text: str) -> None:
+    with pytest.raises(json.JSONDecodeError):
+        parse_json_object(text)
+
+
+def test_mqm_judge_rejects_error_with_hallucinated_span() -> None:
+    warnings: list[str] = []
+    source = "You must set the HF_TOKEN environment variable."
+    target = "HF_TOKEN 환경 변수를 반드시 설정해야 합니다."
+
+    result = normalize_mqm_result(
+        {
+            "segment_id": "p_001",
+            "adequacy_score": 0.8,
+            "fluency_score": 0.9,
+            "technical_score": 1.0,
+            "errors": [
+                {
+                    "guide_rule": "modal_strength",
+                    "guide_section": "의미 강도",
+                    "category": "accuracy",
+                    "severity": "major",
+                    "source_span": "You must set the HF_TOKEN environment variable.",
+                    "target_span": "HF_TOKEN 환경 변수를 설정하는 것이 좋습니다.",
+                    "explanation": "의무 강도가 약해졌습니다.",
+                    "suggested_fix": "반드시 설정해야 합니다.",
+                }
+            ],
+        },
+        "p_001",
+        warnings,
+        source_text=source,
+        target_text=target,
+    )
+
+    assert result is None
+    assert any("target_span" in warning for warning in warnings)
+
+
+def test_mqm_judge_rejects_error_without_substantive_explanation() -> None:
+    warnings: list[str] = []
+
+    result = normalize_mqm_result(
+        {
+            "segment_id": "p_001",
+            "adequacy_score": 0.8,
+            "fluency_score": 0.9,
+            "technical_score": 1.0,
+            "errors": [
+                {
+                    "guide_rule": "modal_strength",
+                    "guide_section": "의미 강도",
+                    "category": "accuracy",
+                    "severity": "major",
+                    "source_span": "must",
+                    "target_span": "좋습니다",
+                    "explanation": "원문은",
+                    "suggested_fix": "반드시 해야 합니다.",
+                }
+            ],
+        },
+        "p_001",
+        warnings,
+    )
+
+    assert result is None
+    assert any("explanation" in warning for warning in warnings)
+
+
+def test_mqm_response_format_uses_strict_json_schema() -> None:
+    response_format = mqm_response_format()
+
+    assert response_format["type"] == "json_schema"
+    assert response_format["strict"] is True
+    assert response_format["schema"]["additionalProperties"] is False
+    assert set(response_format["schema"]["required"]) == {
+        "segment_id",
+        "adequacy_score",
+        "fluency_score",
+        "technical_score",
+        "errors",
+    }
+
+
+def test_mqm_cache_namespace_changes_with_judge_configuration() -> None:
+    prompt_hash = "prompt"
+    schema_hash = "schema"
+    base = MetricConfig(llm_judge_model="gpt-5-nano-2025-08-07", llm_judge_reasoning_effort="minimal")
+    stronger = MetricConfig(llm_judge_model="gpt-5-nano-2025-08-07", llm_judge_reasoning_effort="medium")
+    larger_output = MetricConfig(
+        llm_judge_model="gpt-5-nano-2025-08-07",
+        llm_judge_reasoning_effort="minimal",
+        llm_judge_max_output_tokens=4800,
+    )
+
+    assert mqm_cache_namespace(base, prompt_hash, schema_hash) != mqm_cache_namespace(
+        stronger, prompt_hash, schema_hash
+    )
+    assert mqm_cache_namespace(base, prompt_hash, schema_hash) != mqm_cache_namespace(
+        larger_output, prompt_hash, schema_hash
+    )
+
+
+def test_mqm_default_model_is_calibrated_model() -> None:
+    config = MetricConfig()
+
+    assert config.llm_judge_model == "gpt-5.6-luna"
+    assert config.llm_judge_reasoning_effort == "none"
+    assert config.llm_judge_max_output_tokens == 2400
+
+
+def test_llm_judge_model_does_not_fall_back_to_translation_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("LLM_JUDGE_MODEL", raising=False)
+    monkeypatch.setenv("OPENAI_MODEL", "translation-only-model")
+
+    assert llm_judge_model_from_env() == "gpt-5.6-luna"
+
+    monkeypatch.setenv("LLM_JUDGE_MODEL", "explicit-judge-model")
+    assert llm_judge_model_from_env() == "explicit-judge-model"
+
+
+def test_scoring_deduplicates_deterministic_issue_already_supported_by_mqm_span() -> None:
+    mqm = Issue(
+        id="QL-001",
+        category="accuracy",
+        severity="major",
+        message="MQM judge reported accuracy issue.",
+        segment_id="p_002",
+        source_span="This approach may improve throughput by up to 30%.",
+        guide_rule="modal_strength",
+    )
+    deterministic_duplicate = Issue(
+        id="QL-002",
+        category="accuracy",
+        severity="major",
+        message="Modal or certainty strength may have changed.",
+        segment_id="p_002",
+        source_span="may",
+        guide_rule="modal_strength",
+    )
+    independent = Issue(
+        id="QL-003",
+        category="style_locale",
+        severity="major",
+        message="Translation appears stronger or more promotional than the source.",
+        segment_id="p_002",
+        source_span="may improve",
+        guide_rule="overstatement",
+    )
+
+    effective = deduplicate_detector_issues([mqm, deterministic_duplicate, independent])
+
+    assert effective == [mqm, independent]
+
+
+def test_scoring_keeps_higher_severity_deterministic_duplicate() -> None:
+    mqm_minor = Issue(
+        id="QL-001",
+        category="accuracy",
+        severity="minor",
+        message="MQM judge reported accuracy issue.",
+        segment_id="p_002",
+        source_span="This approach may improve throughput.",
+        guide_rule="modal_strength",
+    )
+    deterministic_major = Issue(
+        id="QL-002",
+        category="accuracy",
+        severity="major",
+        message="Modal or certainty strength may have changed.",
+        segment_id="p_002",
+        source_span="may",
+        guide_rule="modal_strength",
+    )
+
+    assert deduplicate_detector_issues([mqm_minor, deterministic_major]) == [deterministic_major]
+
+
+def test_mqm_judge_rejects_result_without_segment_id() -> None:
+    warnings: list[str] = []
+
+    result = normalize_mqm_result(
+        {
+            "adequacy_score": 1.0,
+            "fluency_score": 1.0,
+            "technical_score": 1.0,
+            "errors": [],
+        },
+        "p_001",
+        warnings,
+    )
+
+    assert result is None
+    assert any("missing segment_id" in warning for warning in warnings)
+
+
+def test_report_records_manifest_target_commit_sha(tmp_path: Path) -> None:
+    manifest = manifest_for(tmp_path, "target_good.md")
+    text = manifest.read_text(encoding="utf-8").replace(
+        "translation:\n",
+        "translation:\n  commit_sha: evaluated123\n",
+    )
+    manifest.write_text(text, encoding="utf-8")
+
+    report = build_report(manifest, FIXTURES, source_path=FIXTURES / "source.md")
+
+    assert report["metadata"]["target_commit_sha"] == "evaluated123"
+
+
 def test_openai_mqm_judge_skips_without_api_key(tmp_path: Path) -> None:
     manifest = manifest_for(tmp_path, "target_good.md")
     config = MetricConfig(
@@ -753,7 +1272,7 @@ def test_openai_mqm_judge_skips_without_api_key(tmp_path: Path) -> None:
     assert report["status"] == "review_required"
     assert report["mqm_judge"]["enabled"] is True
     assert report["mqm_judge"]["provider"] == "openai"
-    assert report["mqm_judge"]["reasoning_effort"] == "minimal"
+    assert report["mqm_judge"]["reasoning_effort"] == "none"
     assert report["mqm_judge"]["segment_count"] == 0
     assert any("HF_WORKFLOW_TEST_MISSING_OPENAI_KEY" in warning for warning in report["mqm_judge"]["warnings"])
 
@@ -791,8 +1310,17 @@ def test_openai_mqm_judge_reuses_cached_segments_without_api_key(tmp_path: Path)
     target = markdown_doc((FIXTURES / "target_good.md").read_text(encoding="utf-8"))
     first_alignment = align_segments(source, target)[0]
     prompt_hash = hashlib.sha256(load_mqm_prompt(DEFAULT_MQM_PROMPT_PATH, DEFAULT_STYLE_GUIDE_PATH).encode("utf-8")).hexdigest()
+    config = MetricConfig(
+        qe_metric="off",
+        enable_embedding_similarity=False,
+        metric_cache_path=cache_path,
+        llm_judge_provider="openai",
+        llm_judge_api_key_env="HF_WORKFLOW_TEST_MISSING_OPENAI_KEY",
+        llm_judge_max_segments=1,
+    )
+    schema_hash = hashlib.sha256(DEFAULT_MQM_SCHEMA_PATH.read_bytes()).hexdigest()
     cache_key = metric_cache_key(
-        f"mqm:gpt-5-nano:{prompt_hash}",
+        mqm_cache_namespace(config, prompt_hash, schema_hash),
         str(first_alignment["source_hash"]),
         str(first_alignment["target_hash"]),
     )
@@ -811,15 +1339,6 @@ def test_openai_mqm_judge_reuses_cached_segments_without_api_key(tmp_path: Path)
         ),
         encoding="utf-8",
     )
-    config = MetricConfig(
-        qe_metric="off",
-        enable_embedding_similarity=False,
-        metric_cache_path=cache_path,
-        llm_judge_provider="openai",
-        llm_judge_api_key_env="HF_WORKFLOW_TEST_MISSING_OPENAI_KEY",
-        llm_judge_max_segments=1,
-    )
-
     report = build_report(manifest, FIXTURES, source_path=FIXTURES / "source.md", metric_config=config)
 
     assert report["status"] == "review_required"
@@ -827,7 +1346,7 @@ def test_openai_mqm_judge_reuses_cached_segments_without_api_key(tmp_path: Path)
     assert report["mqm_judge"]["cache_hits"] == 1
     assert report["mqm_judge"]["cache_misses"] == 0
     assert report["mqm_judge"]["style_guide_hash"] == style_guide_digest(DEFAULT_STYLE_GUIDE_PATH)[1]
-    assert not report["mqm_judge"]["warnings"]
+    assert any("MQM segment coverage is invalid" in warning for warning in report["mqm_judge"]["warnings"])
 
 
 def test_cli_writes_mqm_judge_outputs(tmp_path: Path) -> None:
