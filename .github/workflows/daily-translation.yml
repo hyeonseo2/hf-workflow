@@ -29,6 +29,7 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       OPENAI_MODEL: gpt-5-nano
       LLM_JUDGE_MODEL: gpt-5.6-luna
+      SEO_OPENAI_REQUIRED: "1"
       BOT_TOKEN: ${{ secrets.KREW_BOT_TOKEN }}
       GH_TOKEN: ${{ secrets.KREW_BOT_TOKEN }}
       KREW_REPO: Hugging-Face-KREW/hugging-face-krew.github.io
@@ -46,7 +47,7 @@ jobs:
           if [ -n "${{ inputs.date }}" ]; then
             echo "value=${{ inputs.date }}" >> "$GITHUB_OUTPUT"
           else
-            echo "value=$(TZ=Asia/Seoul date +%F)" >> "$GITHUB_OUTPUT"
+            echo "value=$(TZ=Asia/Seoul date -d 'yesterday' +%F)" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set up Python
@@ -66,6 +67,24 @@ jobs:
           git clone "https://x-access-token:${BOT_TOKEN}@github.com/${KREW_REPO}.git" target-repo
           git -C target-repo config user.email "github-actions[bot]@users.noreply.github.com"
           git -C target-repo config user.name "github-actions[bot]"
+
+      - name: Ensure HF agent labels exist
+        run: |
+          gh label create "hf-agent:managed" \
+            --repo "${KREW_REPO}" \
+            --description "Opt PR into HF Agent review automation" \
+            --color "0E8A16" \
+            --force
+          gh label create "hf-agent:paused" \
+            --repo "${KREW_REPO}" \
+            --description "Pause HF Agent mutations for this PR" \
+            --color "B60205" \
+            --force
+          gh label create "hf-agent:needs-human" \
+            --repo "${KREW_REPO}" \
+            --description "HF Agent needs human follow-up" \
+            --color "D93F0B" \
+            --force
 
       - name: Create translation PR
         working-directory: translation-flow
@@ -90,49 +109,7 @@ jobs:
 
       - name: Notify Discord about translation PR
         if: ${{ inputs.dry_run != true && env.DISCORD_WEBHOOK_URL != '' }}
-        run: |
-          python - <<'PY'
-          import json
-          import os
-          import urllib.request
-          from pathlib import Path
-
-          webhook_url = os.environ["DISCORD_WEBHOOK_URL"]
-          summary_path = Path("run-summary.json")
-          if not summary_path.exists():
-              print("No run summary found; skipping Discord notification.")
-              raise SystemExit(0)
-
-          summary = json.loads(summary_path.read_text())
-          created = [
-              result for result in summary["results"]
-              if result.get("status") == "created" and result.get("pr_url")
-          ]
-          if not created:
-              print("No created PR URL found; skipping Discord notification.")
-              raise SystemExit(0)
-
-          lines = [
-              f"- [{result['slug']}]({result['pr_url']})"
-              for result in created
-          ]
-          payload = {
-              "content": "\n".join(
-                  [
-                      "HF Blog Korean translation PR created.",
-                      *lines,
-                  ]
-              )
-          }
-          request = urllib.request.Request(
-              webhook_url,
-              data=json.dumps(payload).encode("utf-8"),
-              headers={"Content-Type": "application/json"},
-              method="POST",
-          )
-          with urllib.request.urlopen(request, timeout=15) as response:
-              print(f"Discord notification sent: HTTP {response.status}")
-          PY
+        run: python scripts/notify_discord.py --summary run-summary.json
 
       - name: Generate SEO and quality reports
         if: ${{ inputs.dry_run != true }}
@@ -217,7 +194,7 @@ jobs:
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-          git add translation-flow/manifests translation-flow/source-snapshots reports
+          git add reports
           if git diff --cached --quiet; then
             echo "No manifest or report changes to commit."
           else
@@ -231,8 +208,6 @@ jobs:
           name: hf-workflow-${{ steps.date.outputs.value }}
           path: |
             run-summary.json
-            translation-flow/manifests/*.yaml
-            translation-flow/source-snapshots/*.md
             reports/**
 
       - name: Enforce quality gate on target PR

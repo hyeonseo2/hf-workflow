@@ -8,9 +8,9 @@
 __pycache__/
 *.pyc
 run-summary.json
-target-repo/
-hugging-face-krew.github.io/
+# root-level target-repo clones only — not the test fixture under skills/seo/tests/
+/target-repo/
+/hugging-face-krew.github.io/
 
-# Generated quality-harness PR samples live in CI artifacts. Keep only the
-# hand-written summary README under each sample-results directory.
-skills/quality/reports/workflow-harness-sample-results-*/pr-*/
+# macOS Finder metadata
+.DS_Store

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import csv
 import json
 import os
 import re
@@ -60,6 +61,8 @@ CODE_BLOCK_PLACEHOLDER_RE = re.compile(r"^\{\{CODE_BLOCK_\d+\}\}$")
 DEFAULT_TERMS_BASE_URL = "https://poc.terms.kr/data/"
 DEFAULT_TERMS_CACHE_PATH = Path(".cache/ecl_translation/terms_kr_glossary.json")
 DEFAULT_TERMS_TIMEOUT_SECONDS = 10.0
+DEFAULT_LOCAL_GLOSSARY_DIR = Path(__file__).resolve().parents[2] / "skills" / "quality" / "glossary"
+DEFAULT_LOCAL_GLOSSARY_FILES = ("ko.tsv", "ml_terms.tsv", "product_terms.tsv")
 _EXTERNAL_GLOSSARY_CACHE: Optional[dict[str, str]] = None
 _EXTERNAL_GLOSSARY_LOAD_FAILED = False
 
@@ -91,7 +94,11 @@ class Block:
 def normalize_term_key(text: str) -> str:
     text = text.lower().strip()
     text = TOKEN_NORMALIZE_RE.sub(" ", text)
-    return re.sub(r"\s+", " ", text).strip()
+    tokens = [
+        token.strip(".,;:!?()[]{}\"'“”‘’")
+        for token in text.split()
+    ]
+    return " ".join(token for token in tokens if token)
 
 
 def parse_env_bool(name: str, default: bool) -> bool:
@@ -129,6 +136,14 @@ def terms_timeout_seconds() -> float:
     except ValueError:
         return DEFAULT_TERMS_TIMEOUT_SECONDS
     return max(1.0, value)
+
+
+def local_glossary_dir() -> Path:
+    raw = os.getenv("ECL_LOCAL_GLOSSARY_DIR")
+    if not raw:
+        return DEFAULT_LOCAL_GLOSSARY_DIR
+    path = Path(raw).expanduser()
+    return path if path.is_absolute() else Path.cwd() / path
 
 
 def fetch_json(url: str, timeout: float) -> Any:
@@ -241,6 +256,34 @@ def load_termskr_glossary() -> dict[str, str]:
     _EXTERNAL_GLOSSARY_CACHE = downloaded
     ecl_log(f"Loaded terms.kr glossary from network entries={len(downloaded)}")
     return downloaded.copy()
+
+
+def load_quality_glossary_tsv(path: Path) -> dict[str, str]:
+    try:
+        with path.open("r", encoding="utf-8", newline="") as handle:
+            reader = csv.DictReader(handle, delimiter="\t")
+            if not reader.fieldnames:
+                return {}
+            glossary: dict[str, str] = {}
+            for row in reader:
+                source_term = (row.get("source_term") or "").strip()
+                ko_term = (row.get("ko_term") or "").strip()
+                if source_term and ko_term:
+                    glossary[source_term] = ko_term
+            return glossary
+    except OSError:
+        return {}
+
+
+def load_quality_glossaries(glossary_dir: Optional[Path] = None) -> dict[str, str]:
+    root = glossary_dir or local_glossary_dir()
+    if not root.exists():
+        return {}
+
+    glossary: dict[str, str] = {}
+    for filename in DEFAULT_LOCAL_GLOSSARY_FILES:
+        glossary.update(load_quality_glossary_tsv(root / filename))
+    return glossary
 
 
 def build_glossary_lookup(custom: dict[str, str]) -> tuple[dict[str, dict[str, str]], int]:
@@ -475,6 +518,7 @@ def build_context(
     plural_index: dict[str, str],
     max_n: int,
     max_glossary_terms: int,
+    compressed_guide: Optional[str] = None,
 ) -> str:
     full_text = "\n".join(block.raw for block in blocks if block.translatable)
     headings = [block.raw.strip().lstrip("#").strip() for block in blocks if block.kind == "heading"]
@@ -495,6 +539,9 @@ def build_context(
                 lines.append(f"- {term} -> {korean} | {definition}")
             else:
                 lines.append(f"- {term} -> {korean}")
+    if compressed_guide:
+        lines.append("Compressed translation guide:")
+        lines.append(compressed_guide.strip())
     lines.append("Use block labels as role hints for tone and sentence style.")
     return "\n".join(lines)
 
@@ -509,6 +556,7 @@ def _translation_prompt(
     plural_index: dict[str, str],
     max_n: int,
     max_glossary_terms: int,
+    compressed_guide: Optional[str] = None,
 ) -> str:
     context_text = build_context(
         blocks=blocks,
@@ -517,6 +565,7 @@ def _translation_prompt(
         plural_index=plural_index,
         max_n=max_n,
         max_glossary_terms=max_glossary_terms,
+        compressed_guide=compressed_guide,
     )
     return f"""
 Translate the following Markdown blocks into {target_language}.
@@ -549,6 +598,7 @@ def translate_markdown_with_ecl(
     max_glossary_terms: int = 15,
     glossary: Optional[dict[str, str]] = None,
     use_external_glossary: Optional[bool] = None,
+    compressed_guide: Optional[str] = None,
 ) -> str:
     protected_markdown, code_blocks = protect_fenced_code_blocks(source_markdown)
     if code_blocks:
@@ -584,6 +634,10 @@ def translate_markdown_with_ecl(
         ecl_log("External glossary disabled via ECL_USE_EXTERNAL_GLOSSARY.")
 
     merged_glossary.update(DEFAULT_GLOSSARY)
+    local_glossary = load_quality_glossaries()
+    if local_glossary:
+        merged_glossary.update(local_glossary)
+        ecl_log(f"Using local TSV glossary entries={len(local_glossary)} path={local_glossary_dir()}")
     if glossary:
         merged_glossary.update(glossary)
     lookup, max_n = build_glossary_lookup(merged_glossary)
@@ -621,6 +675,7 @@ def translate_markdown_with_ecl(
         plural_index=plural_index,
         max_n=max_n,
         max_glossary_terms=max_glossary_terms,
+        compressed_guide=compressed_guide,
     )
     ecl_log(f"Sending single model request. prompt_chars={len(prompt)}")
 

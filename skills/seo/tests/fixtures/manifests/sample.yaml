@@ -1,0 +1,23 @@
+version: 1
+
+run:
+  id: 2026-01-01-sample
+  target_date: 2026-01-01
+
+source:
+  url: https://huggingface.co/blog/rteb
+  title: "Sample Source Post"
+  language: en
+
+translation:
+  target_repo: Hugging-Face-KREW/hugging-face-krew.github.io
+  branch: translate/sample
+  file_path: _posts/2026-01-01-sample.md
+  pr_url: https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/999
+  locale: ko
+
+handoff:
+  seo:
+    enabled: true
+    primary_keyword: ""
+    secondary_keywords: []

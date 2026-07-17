@@ -1,0 +1,367 @@
+{
+  "blockers": {
+    "checks": [
+      {
+        "message": "Body is not empty",
+        "name": "body_not_empty",
+        "passed": true,
+        "severity": "blocker",
+        "value": 1832
+      },
+      {
+        "message": "Robots is indexable",
+        "name": "robots_indexable",
+        "passed": true,
+        "severity": "blocker",
+        "value": ""
+      }
+    ],
+    "passed": true,
+    "score": 1.0,
+    "summary": {
+      "blocker": "2/2"
+    }
+  },
+  "deterministic": {
+    "advisory": {
+      "checks": [
+        {
+          "default_severity": "review",
+          "message": "Opening 3 paragraphs: 765 chars (recommend ≥150 for KO/GEO)",
+          "name": "opening_summary",
+          "passed": true,
+          "severity": "review",
+          "value": "Hugging Face 문서 번역 PR을 SEO 관점에서 검토할 때는 검색엔진을 위한 키워드 반복보다 독자가 글의 목적을 빠르게 이해할 수 있는지가 먼저입니다. 제목과 첫 문단은 번역 대상, 독자, 검토 기준을 같은 방향으로 설명해야 하며, 본문은 게시 전에 확인할 수 있는 구조적 문제를 구체적으로 드러내야 합니다. 이 글은 HFKREW 블로그에 올라오는 ..."
+        },
+        {
+          "default_severity": "review",
+          "message": "Markdown H1 count: 1 (review against rendered layout)",
+          "name": "h1_count",
+          "passed": true,
+          "severity": "review",
+          "value": 1
+        },
+        {
+          "default_severity": "review",
+          "message": "Citations/statistics: 3 (recommend ≥1 for GEO)",
+          "name": "citations",
+          "passed": true,
+          "severity": "review",
+          "value": 3
+        },
+        {
+          "default_severity": "recommended",
+          "message": "Scannable H2/H3 (question or keyword): 3 (3 question, 0 keyword)",
+          "name": "question_headings",
+          "passed": true,
+          "severity": "recommended",
+          "value": [
+            "번역 PR의 제목과 도입부는 어떻게 맞추나?",
+            "본문 구조와 링크는 무엇을 확인하나?",
+            "이미지 alt와 메타데이터는 언제 보완하나?"
+          ]
+        },
+        {
+          "default_severity": "recommended",
+          "message": "Internal links: 0 (recommend 2-3)",
+          "name": "internal_links",
+          "passed": false,
+          "severity": "recommended",
+          "value": []
+        },
+        {
+          "default_severity": "optional",
+          "message": "Body length: 1832 chars (recommend ≥800 for KO)",
+          "name": "word_count",
+          "passed": true,
+          "severity": "optional",
+          "value": 1832
+        },
+        {
+          "message": "No primary_keyword in manifest — keyword check skipped",
+          "name": "primary_keyword",
+          "passed": true,
+          "severity": "info",
+          "value": null
+        },
+        {
+          "default_severity": "optional",
+          "message": "WebP format: 0/1 images (≥50% recommend)",
+          "name": "webp_format",
+          "passed": false,
+          "severity": "optional",
+          "value": []
+        },
+        {
+          "default_severity": "optional",
+          "message": "Lazy loading: 0 images (optional)",
+          "name": "lazy_loading",
+          "passed": false,
+          "severity": "optional",
+          "value": 0
+        }
+      ]
+    },
+    "checkers": {
+      "content": {
+        "passed": true,
+        "score": 0.875,
+        "summary": {
+          "optional": "1/1",
+          "recommended": "1/2",
+          "required": "1/1"
+        }
+      },
+      "images": {
+        "passed": true,
+        "score": 0.85,
+        "summary": {
+          "optional": "0/2",
+          "required": "2/2"
+        }
+      },
+      "keywords": {
+        "passed": true,
+        "score": 1.0,
+        "summary": {
+          "recommended": "0/0",
+          "required": "0/0"
+        }
+      }
+    },
+    "required": {
+      "checks": [
+        {
+          "default_severity": "required",
+          "message": "Heading hierarchy: Valid",
+          "name": "heading_hierarchy",
+          "passed": true,
+          "severity": "required",
+          "value": [
+            [
+              1,
+              "Hugging Face 문서 번역 PR을 SEO 관점에서 검토하는 방법"
+            ],
+            [
+              2,
+              "번역 PR의 제목과 도입부는 어떻게 맞추나?"
+            ],
+            [
+              2,
+              "본문 구조와 링크는 무엇을 확인하나?"
+            ],
+            [
+              2,
+              "이미지 alt와 메타데이터는 언제 보완하나?"
+            ]
+          ]
+        },
+        {
+          "default_severity": "required",
+          "message": "Alt text coverage: 1/1 images",
+          "name": "alt_text_coverage",
+          "passed": true,
+          "severity": "required",
+          "value": [
+            {
+              "alt": "번역 PR SEO 검토 체크리스트",
+              "src": "/assets/images/seo-review/translation-pr-checklist.png"
+            }
+          ]
+        },
+        {
+          "default_severity": "required",
+          "message": "Descriptive alt text: 1/1 (≥80% recommend)",
+          "name": "descriptive_alt_text",
+          "passed": true,
+          "severity": "required",
+          "value": {
+            "descriptive": [
+              {
+                "alt": "번역 PR SEO 검토 체크리스트",
+                "src": "/assets/images/seo-review/translation-pr-checklist.png"
+              }
+            ],
+            "non_descriptive": []
+          }
+        }
+      ],
+      "passed": true
+    }
+  },
+  "frontmatter_advisory": {
+    "checks": [
+      {
+        "message": "Title: 39 chars (recommend ≤60)",
+        "name": "title",
+        "passed": true,
+        "severity": "required",
+        "value": "Hugging Face 문서 번역 PR을 SEO 관점에서 검토하는 방법"
+      },
+      {
+        "message": "Description: 80 chars (semantic quality reviewed separately)",
+        "name": "description",
+        "passed": true,
+        "severity": "required",
+        "value": "Hugging Face 문서 번역 PR을 게시 전에 점검할 때 확인해야 할 제목, 도입부, 링크, 이미지 alt, 메타데이터 기준을 정리합니다."
+      },
+      {
+        "message": "OG image: /assets/images/seo-review/translation-pr-checklist.png",
+        "name": "image",
+        "passed": true,
+        "severity": "required",
+        "value": "/assets/images/seo-review/translation-pr-checklist.png"
+      },
+      {
+        "message": "Categories: 3 (recommend 2-3)",
+        "name": "categories",
+        "passed": true,
+        "severity": "recommended",
+        "value": [
+          "SEO",
+          "Translation",
+          "Community"
+        ]
+      },
+      {
+        "message": "Author: test_author",
+        "name": "author",
+        "passed": true,
+        "severity": "recommended",
+        "value": "test_author"
+      }
+    ],
+    "passed": true,
+    "score": 1.0,
+    "summary": {
+      "recommended": "2/2",
+      "required": "3/3"
+    }
+  },
+  "gate": {
+    "blockers_passed": true,
+    "deterministic_passed": true,
+    "passed": true,
+    "reason": "deterministic gate only (rubric judge not configured)",
+    "rubric_passed": null,
+    "status": "PASS"
+  },
+  "input": {
+    "file_path": "excellent-post.md",
+    "mode": "file",
+    "primary_keyword": "",
+    "source_url": ""
+  },
+  "policy": {
+    "name": "default",
+    "rubric_required": false,
+    "severities": {
+      "alt_text_coverage": "required",
+      "citations": "review",
+      "descriptive_alt_text": "required",
+      "h1_count": "review",
+      "heading_hierarchy": "required",
+      "image_files_exist": "required",
+      "internal_links": "recommended",
+      "lazy_loading": "optional",
+      "no_images": "info",
+      "opening_summary": "review",
+      "primary_keyword": "required",
+      "question_headings": "recommended",
+      "secondary_keywords": "recommended",
+      "webp_format": "optional",
+      "word_count": "optional"
+    }
+  },
+  "rubric": {
+    "available": false,
+    "checks": [],
+    "mean": null,
+    "min": null,
+    "notes": {},
+    "passed": null,
+    "reason": "rubric not run (schema-bound policy judge not configured)",
+    "required": false,
+    "scores": {}
+  },
+  "signals": {
+    "frontmatter": {
+      "author_present": true,
+      "canonical_present": false,
+      "categories_count": 3,
+      "description_chars": 80,
+      "description_present": true,
+      "description_text": "Hugging Face 문서 번역 PR을 게시 전에 점검할 때 확인해야 할 제목, 도입부, 링크, 이미지 alt, 메타데이터 기준을 정리합니다.",
+      "robots": "",
+      "title_chars": 39,
+      "title_present": true,
+      "title_text": "Hugging Face 문서 번역 PR을 SEO 관점에서 검토하는 방법"
+    },
+    "headings": {
+      "layout_title_used_as_h1": true,
+      "markdown_h1_count": 1,
+      "markdown_heading_count": 4,
+      "markdown_headings": [
+        {
+          "level": 1,
+          "text": "Hugging Face 문서 번역 PR을 SEO 관점에서 검토하는 방법"
+        },
+        {
+          "level": 2,
+          "text": "번역 PR의 제목과 도입부는 어떻게 맞추나?"
+        },
+        {
+          "level": 2,
+          "text": "본문 구조와 링크는 무엇을 확인하나?"
+        },
+        {
+          "level": 2,
+          "text": "이미지 alt와 메타데이터는 언제 보완하나?"
+        }
+      ],
+      "rendered_effective_h1": [
+        "Hugging Face 문서 번역 PR을 SEO 관점에서 검토하는 방법",
+        "Hugging Face 문서 번역 PR을 SEO 관점에서 검토하는 방법"
+      ],
+      "rendered_effective_h1_count": 2
+    },
+    "images": {
+      "empty_alt_count": 0,
+      "empty_alt_sources": [],
+      "filename_like_alt_count": 0,
+      "filename_like_alt_values": [],
+      "image_details": [
+        {
+          "alt": "번역 PR SEO 검토 체크리스트",
+          "src": "/assets/images/seo-review/translation-pr-checklist.png"
+        }
+      ],
+      "missing_local_file_count": 0,
+      "missing_local_file_sources": [],
+      "total_count": 1
+    },
+    "links": {
+      "citation_signal_count": 3,
+      "external_count": 3,
+      "internal_count": 0,
+      "total_count": 3
+    },
+    "opening": {
+      "first_real_paragraph": "Hugging Face 문서 번역 PR을 SEO 관점에서 검토할 때는 검색엔진을 위한 키워드 반복보다 독자가 글의 목적을 빠르게 이해할 수 있는지가 먼저입니다. 제목과 첫 문단은 번역 대상, 독자, 검토 기준을 같은 방향으로 설명해야 하며, 본문은 게시 전에 확인할 수 있는 구조적 문제를 구체적으로 드러내야 합니다. 이 글은 HFKREW 블로그에 올라오는 번역·가이드 글을 기준으로, 게시 전 PR 리뷰에서 바로 확인할 수 있는",
+      "first_real_paragraph_chars": 251,
+      "first_three_paragraph_chars": 765
+    },
+    "semantic_review": {
+      "canonical": "",
+      "description_text": "Hugging Face 문서 번역 PR을 게시 전에 점검할 때 확인해야 할 제목, 도입부, 링크, 이미지 alt, 메타데이터 기준을 정리합니다.",
+      "opening_text": "Hugging Face 문서 번역 PR을 SEO 관점에서 검토할 때는 검색엔진을 위한 키워드 반복보다 독자가 글의 목적을 빠르게 이해할 수 있는지가 먼저입니다. 제목과 첫 문단은 번역 대상, 독자, 검토 기준을 같은 방향으로 설명해야 하며, 본문은 게시 전에 확인할 수 있는 구조적 문제를 구체적으로 드러내야 합니다. 이 글은 HFKREW 블로그에 올라오는 번역·가이드 글을 기준으로, 게시 전 PR 리뷰에서 바로 확인할 수 있는 항목을 정리합니다.",
+      "rendered_h1_texts": [
+        "Hugging Face 문서 번역 PR을 SEO 관점에서 검토하는 방법",
+        "Hugging Face 문서 번역 PR을 SEO 관점에서 검토하는 방법"
+      ],
+      "review_instruction": "Compare title, description, rendered H1, and opening text for meaning consistency. This packet is evidence only; it does not decide pass/fail.",
+      "source_url_hint": "",
+      "title_text": "Hugging Face 문서 번역 PR을 SEO 관점에서 검토하는 방법"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+---
+title: "검색 임베딩 벤치마크 입문"
+description: "검색 임베딩 벤치마크의 평가 기준과 모델 비교 방법을 설명하고, 한국어 검색 품질을 검증할 때 확인해야 할 핵심 지표를 정리합니다."
+image: /assets/images/rteb/thumbnail.png
+categories: [AI, Benchmark]
+author: test_author
+---
+
+# 검색 임베딩 벤치마크 입문
+
+검색 임베딩을 소개합니다.
+
+## 검색 임베딩 벤치마크는 무엇을 측정하나?
+
+검색 품질은 단순 정확도만으로 판단하기 어렵습니다. 검색 질의와 문서의 의미적 관련성, 도메인 이동성, 한국어 처리 안정성을 함께 봐야 합니다. 자세한 배경은 [Hugging Face 블로그](https://huggingface.co/blog/rteb)에서 확인할 수 있습니다.
+
+## 검색 모델은 어떻게 비교하나?
+
+동일한 질의 집합과 문서 후보를 사용하고, MRR이나 nDCG 같은 지표로 순위 품질을 비교합니다. 내부 운영에서는 공개 벤치마크와 자체 데이터셋을 함께 사용하는 것이 좋습니다.
+
+![검색 임베딩 벤치마크 구조](/assets/images/rteb/thumbnail.png)

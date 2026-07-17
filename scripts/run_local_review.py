@@ -36,9 +36,19 @@ def report_id_for_manifest(manifest: dict[str, str], fallback: str) -> str:
     return Path(fallback).stem
 
 
-def run(cmd: list[str], cwd: Path) -> None:
+def run(cmd: list[str], cwd: Path, check: bool = True) -> int:
     print("+", " ".join(cmd))
-    subprocess.run(cmd, cwd=cwd, check=True)
+    proc = subprocess.run(cmd, cwd=cwd, check=check)
+    return proc.returncode
+
+
+def openai_required_enabled() -> bool:
+    return os.getenv("SEO_OPENAI_REQUIRED", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
 
 
 def resolve_manifest_path(raw_path: str, base: Path) -> Path | None:
@@ -100,17 +110,48 @@ def main() -> int:
     )
     (report_dir / "request.md").write_text(request)
 
+    # The SEO eval gate exits non-zero when the post fails; we still want the
+    # report written, so don't raise — surface the gate result instead.
+    seo_command = [
+        "python3",
+        "skills/seo/tools/seo_eval.py",
+        "--manifest",
+        str(manifest_copy),
+        "--target-root",
+        str(target_root),
+        "--output",
+        str(report_dir / "seo-report.md"),
+        "--json",
+        str(report_dir / "seo-eval.json"),
+    ]
+    if openai_required_enabled():
+        seo_command.extend(["--openai-required", "--openai-model", os.getenv("OPENAI_MODEL", "")])
+    seo_code = run(
+        seo_command,
+        cwd=repo_root,
+        check=False,
+    )
+    print(f"SEO gate: {'PASS' if seo_code == 0 else 'FAIL'} (exit {seo_code})")
+    metadata_command = [
+        "python3",
+        "skills/seo/tools/metadata_suggestion.py",
+        "--file",
+        manifest.get("translation.file_path", ""),
+        "--target-root",
+        str(target_root),
+        "--eval-json",
+        str(report_dir / "seo-eval.json"),
+        "--output",
+        str(report_dir / "metadata-suggestion.json"),
+        "--manifest",
+        str(manifest_copy),
+        "--report-path",
+        str(report_dir / "seo-report.md"),
+    ]
+    if openai_required_enabled():
+        metadata_command.extend(["--openai-required", "--openai-model", os.getenv("OPENAI_MODEL", "")])
     run(
-        [
-            "python3",
-            "skills/seo/tools/simple_seo_report.py",
-            "--manifest",
-            str(manifest_copy),
-            "--target-root",
-            str(target_root),
-            "--output",
-            str(report_dir / "seo-report.md"),
-        ],
+        metadata_command,
         cwd=repo_root,
     )
     quality_cmd = [
