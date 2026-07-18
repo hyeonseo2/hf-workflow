@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node dashboard/scripts/build_sites_static.mjs"
+  }
+}
