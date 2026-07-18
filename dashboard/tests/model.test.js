@@ -9,7 +9,7 @@ const reportWithoutSeo = {
   quality: { enabled: true, available: true, status: 'pass' },
   seo: { enabled: true, available: false, status: 'missing' },
 };
-const openPull = { number: 168, state: 'open', title: 'Open translation PR' };
+const openPull = { number: 168, state: 'open', title: 'Translate Hugging Face blog post: Profiling in PyTorch' };
 
 test('gives warnings and failures review attention before missing reports', () => {
   const items = joinReports([
@@ -44,7 +44,7 @@ test('keeps absent GitHub data unknown rather than closed', () => {
 
 test('adds open pull requests that are missing from the report snapshot', () => {
   const items = joinReports([reportWithoutSeo], new Map([
-    [168, { number: 168, state: 'open', title: 'Tracked report PR' }],
+    [168, { number: 168, state: 'open', title: 'Translate Hugging Face blog post: Profiling in PyTorch' }],
     [173, {
       number: 173,
       state: 'open',
@@ -52,6 +52,13 @@ test('adds open pull requests that are missing from the report snapshot', () => 
       htmlUrl: 'https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/173',
       sourceUrl: 'https://huggingface.co/blog/security-incident-july-2026',
       createdAt: '2026-07-17T03:34:38Z',
+    }],
+    [170, {
+      number: 170,
+      state: 'open',
+      title: 'Workflow security boundary update',
+      htmlUrl: 'https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/170',
+      createdAt: '2026-07-13T13:55:34Z',
     }],
   ]));
 
@@ -64,6 +71,22 @@ test('adds open pull requests that are missing from the report snapshot', () => 
   assert.equal(items[1].quality.status, 'missing');
   assert.equal(items[1].seo.status, 'missing');
   assert.equal(items[1].reviewState, 'pending');
+});
+
+test('excludes tracked reports when the GitHub pull title is not a blog translation PR', () => {
+  const items = joinReports([
+    reportWithoutSeo,
+    {
+      ...reportWithoutSeo,
+      prNumber: 170,
+      source: { slug: 'workflow-security-boundary', title: 'Workflow security boundary update' },
+    },
+  ], new Map([
+    [168, openPull],
+    [170, { number: 170, state: 'open', title: 'Workflow security boundary update' }],
+  ]));
+
+  assert.deepEqual(items.map((item) => item.prNumber), [168]);
 });
 
 test('counts missing reports as review attention', () => {
@@ -107,7 +130,7 @@ test('filters by query, pull request state, and review state', () => {
 test('computes blog progress from merged and open tracked slugs', () => {
   const posts = [
     { slug: 'torch-attention-profile', date: '2026-07-10', tags: [] },
-    { slug: 'open-post', date: '2026-07-11', tags: [] },
+    { slug: 'open-post', date: '2026-07-10', tags: [] },
     { slug: 'untranslated-post', date: '2026-07-12', tags: [] },
     { slug: 'closed-post', date: '2026-07-13', tags: [] },
   ];
@@ -131,6 +154,40 @@ test('computes blog progress from merged and open tracked slugs', () => {
     percent: 25,
     mergedSlugs: ['torch-attention-profile'],
     openSlugs: ['open-post'],
+    days: [
+      {
+        date: '2026-07-10',
+        total: 2,
+        merged: 1,
+        open: 1,
+        remaining: 0,
+        slugs: ['torch-attention-profile', 'open-post'],
+      },
+      {
+        date: '2026-07-11',
+        total: 0,
+        merged: 0,
+        open: 0,
+        remaining: 0,
+        slugs: [],
+      },
+      {
+        date: '2026-07-12',
+        total: 1,
+        merged: 0,
+        open: 0,
+        remaining: 1,
+        slugs: ['untranslated-post'],
+      },
+      {
+        date: '2026-07-13',
+        total: 1,
+        merged: 0,
+        open: 0,
+        remaining: 1,
+        slugs: ['closed-post'],
+      },
+    ],
   });
   assert.deepEqual(computeProgress([], items), {
     total: 0,
@@ -140,6 +197,7 @@ test('computes blog progress from merged and open tracked slugs', () => {
     percent: 0,
     mergedSlugs: [],
     openSlugs: [],
+    days: [],
   });
 });
 

@@ -2,6 +2,7 @@ const API_VERSION = '2022-11-28';
 const CACHE_SCHEMA_VERSION = 2;
 const CACHE_STALE_AFTER_MS = 300_000;
 const PULL_STATES = new Set(['open', 'merged', 'closed', 'unknown']);
+const BLOG_TRANSLATION_PREFIX = 'Translate Hugging Face blog post:';
 
 export class GitHubApiError extends Error {
   constructor(status, rateLimit) {
@@ -31,6 +32,10 @@ function optionalString(value) {
 function sourceUrlFromBody(value) {
   const match = typeof value === 'string' ? value.match(/^Source:\s*(https:\/\/\S+)/m) : null;
   return match ? match[1] : null;
+}
+
+function isTranslationPull(pull) {
+  return typeof pull?.title === 'string' && pull.title.startsWith(BLOG_TRANSLATION_PREFIX);
 }
 
 function validPullNumber(value) {
@@ -228,7 +233,7 @@ export async function fetchOpenPulls({ repository, fetchImpl = globalThis.fetch,
     }
     for (const rawPull of pagePulls) {
       const normalized = normalizePull(rawPull);
-      if (normalized.state === 'open') {
+      if (normalized.state === 'open' && isTranslationPull(normalized)) {
         pulls.set(normalized.number, normalized);
       }
     }

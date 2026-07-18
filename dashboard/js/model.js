@@ -39,6 +39,18 @@ function titleFromPull(pull) {
     : title;
 }
 
+function isTranslationPull(pull) {
+  return typeof pull?.title === 'string' && pull.title.startsWith(BLOG_TRANSLATION_PREFIX);
+}
+
+function shouldIncludeReport(report, pulls) {
+  if (!(pulls instanceof Map)) {
+    return true;
+  }
+  const pull = pulls.get(report?.prNumber);
+  return typeof pull?.title !== 'string' || isTranslationPull(pull);
+}
+
 function slugFromSourceUrl(value, fallback) {
   try {
     const url = new URL(String(value));
@@ -93,7 +105,8 @@ export function joinReports(reports, pulls = new Map()) {
     return [];
   }
   const reportNumbers = new Set();
-  const items = reports.map((report) => {
+  const trackedReports = reports.filter((report) => shouldIncludeReport(report, pulls));
+  const items = trackedReports.map((report) => {
     const prNumber = report?.prNumber;
     reportNumbers.add(prNumber);
     const source = report?.source ?? {};
@@ -108,7 +121,10 @@ export function joinReports(reports, pulls = new Map()) {
   });
   if (pulls instanceof Map) {
     for (const pull of pulls.values()) {
-      if (pull?.state === 'open' && Number.isInteger(pull.number) && !reportNumbers.has(pull.number)) {
+      if (pull?.state === 'open'
+        && Number.isInteger(pull.number)
+        && !reportNumbers.has(pull.number)
+        && isTranslationPull(pull)) {
         const report = reportFromOpenPull(pull);
         items.push({
           ...report,
@@ -158,6 +174,47 @@ export function computeProgress(posts = [], items = []) {
   const total = posts.length;
   const merged = mergedSlugs.length;
   const open = openSlugs.length;
+  const datedPosts = posts.filter((post) => typeof post?.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(post.date));
+  const postsByDate = new Map();
+  for (const post of datedPosts) {
+    const state = states.get(post.slug);
+    const entry = postsByDate.get(post.date) ?? {
+      date: post.date,
+      total: 0,
+      merged: 0,
+      open: 0,
+      remaining: 0,
+      slugs: [],
+    };
+    entry.total += 1;
+    entry.slugs.push(post.slug);
+    if (state === 'merged') {
+      entry.merged += 1;
+    } else if (state === 'open') {
+      entry.open += 1;
+    } else {
+      entry.remaining += 1;
+    }
+    postsByDate.set(post.date, entry);
+  }
+  const sortedDates = [...postsByDate.keys()].sort();
+  const days = [];
+  if (sortedDates.length > 0) {
+    const cursor = new Date(`${sortedDates[0]}T00:00:00Z`);
+    const last = new Date(`${sortedDates[sortedDates.length - 1]}T00:00:00Z`);
+    while (cursor <= last) {
+      const date = cursor.toISOString().slice(0, 10);
+      days.push(postsByDate.get(date) ?? {
+        date,
+        total: 0,
+        merged: 0,
+        open: 0,
+        remaining: 0,
+        slugs: [],
+      });
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+  }
   return {
     total,
     merged,
@@ -166,6 +223,7 @@ export function computeProgress(posts = [], items = []) {
     percent: total > 0 ? Math.round((merged / total) * 1000) / 10 : 0,
     mergedSlugs,
     openSlugs,
+    days,
   };
 }
 

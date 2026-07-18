@@ -138,6 +138,26 @@ function safePercent(value) {
   return Number.isFinite(value) && value > 0 ? Math.min(value, 100) : 0;
 }
 
+function heatCellClass(day) {
+  if (!day?.total) {
+    return 'heat-cell-empty';
+  }
+  const states = [
+    day.merged > 0 ? 'merged' : '',
+    day.open > 0 ? 'open' : '',
+    day.remaining > 0 ? 'remaining' : '',
+  ].filter(Boolean);
+  return states.length === 1 ? `heat-cell-${states[0]}` : 'heat-cell-mixed';
+}
+
+function heatCellTip(day) {
+  if (!day?.total) {
+    return `${day?.date ?? ''} · 글 없음`;
+  }
+  const slugs = Array.isArray(day.slugs) && day.slugs.length > 0 ? ` · ${day.slugs.join(', ')}` : '';
+  return `${day.date} · ${day.total}편 · 병합 ${day.merged} · 진행 ${day.open} · 미번역 ${day.remaining}${slugs}`;
+}
+
 export function renderProgress(progress = null) {
   if (!progress || !Number.isFinite(progress.total)) {
     return '<p class="progress-empty">huggingface.co/blog 글 목록을 불러오는 중입니다.</p>';
@@ -148,27 +168,18 @@ export function renderProgress(progress = null) {
   const remaining = Math.max(Number(progress.remaining) || 0, 0);
   const percent = safePercent(progress.percent);
   const baselineDate = escapeHtml(progress.baselineDate ?? '');
-  const mergedSlugs = Array.isArray(progress.mergedSlugs) ? progress.mergedSlugs : [];
-  const openSlugs = Array.isArray(progress.openSlugs) ? progress.openSlugs : [];
-
-  let cells = '';
-  for (let index = 0; index < total; index += 1) {
-    if (index < merged) {
-      const slug = stringValue(mergedSlugs[index]);
-      cells += `<i class="cell cell-merged" data-tip="${escapeHtml(slug ? `병합 · ${slug}` : '병합')}"></i>`;
-    } else if (index < merged + open) {
-      const slug = stringValue(openSlugs[index - merged]);
-      cells += `<i class="cell cell-open" data-tip="${escapeHtml(slug ? `번역 진행 중 · ${slug}` : '번역 진행 중')}"></i>`;
-    } else {
-      cells += '<i class="cell" data-tip="남은 글"></i>';
-    }
-  }
+  const days = Array.isArray(progress.days) ? progress.days : [];
+  const cells = days.map((day) => {
+    const density = Math.min(Math.max(Number(day?.total) || 0, 0), 4);
+    const densityClass = density > 0 ? ` heat-cell-density-${density}` : '';
+    return `<i class="heat-cell ${heatCellClass(day)}${densityClass}" data-tip="${escapeHtml(heatCellTip(day))}"></i>`;
+  }).join('');
 
   return `<div class="waffle-head">
     <strong class="waffle-percent">${Math.round(percent)}<small>%</small></strong>
     <span class="waffle-count">대상 ${total}편 중 ${merged}편 병합 (${percent}%)</span>
   </div>
-  <div class="waffle" role="img" aria-label="대상 ${total}편 중 병합 ${merged}편, 번역 진행 중 ${open}편, 남은 글 ${remaining}편">${cells}</div>
+  <div class="heatmap" role="img" aria-label="날짜별 번역 진행률: 대상 ${total}편 중 병합 ${merged}편, 번역 진행 중 ${open}편, 남은 글 ${remaining}편">${cells}</div>
   <p class="progress-legend">
     <span class="legend-item"><span class="legend-chip chip-merged" aria-hidden="true"></span>병합 ${merged}편</span>
     <span class="legend-item"><span class="legend-chip chip-open" aria-hidden="true"></span>번역 진행 중 ${open}편</span>

@@ -150,10 +150,10 @@ main { max-width: 1240px; margin: 24px auto 56px; padding: 0 24px; }
 
 .progress-panel { margin-bottom: 12px; }
 .check-panel { margin-bottom: 18px; }
-.panel h2 { margin-bottom: 4px; font-size: 15px; font-weight: 800; letter-spacing: -0.01em; }
+.panel h2 { margin-bottom: 4px; font-size: 15px; font-weight: 800; letter-spacing: 0; }
 .panel-sub { margin: 0 0 12px; color: var(--ink-3); font-size: 12.5px; }
 
-/* ============ waffle progress ============ */
+/* ============ date heatmap progress ============ */
 .progress-empty { margin: 0; color: var(--ink-2); font-size: 14px; }
 
 .waffle-head {
@@ -165,13 +165,18 @@ main { max-width: 1240px; margin: 24px auto 56px; padding: 0 24px; }
   margin-bottom: 12px;
 }
 
-.waffle-percent { font-size: 42px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; font-variant-numeric: tabular-nums; }
+.waffle-percent { font-size: 42px; font-weight: 800; letter-spacing: 0; line-height: 1; font-variant-numeric: tabular-nums; }
 .waffle-percent small { margin-left: 2px; color: var(--ink-2); font-size: 16px; font-weight: 700; }
 .waffle-count { color: var(--ink-2); font-size: 13px; font-variant-numeric: tabular-nums; }
 
-.waffle { display: grid; grid-template-columns: repeat(18, 1fr); gap: 5px; }
+.heatmap {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12px, 1fr));
+  gap: 5px;
+  align-items: stretch;
+}
 
-.cell {
+.heat-cell {
   position: relative;
   aspect-ratio: 1;
   border: 1px solid var(--line-strong);
@@ -179,10 +184,17 @@ main { max-width: 1240px; margin: 24px auto 56px; padding: 0 24px; }
   background: var(--paper);
 }
 
-.cell-merged { background: var(--orange); border-color: var(--orange-deep); }
-.cell-open { background: var(--yellow); border-color: var(--yellow-line); }
+.heat-cell-empty { border-color: var(--line); background: var(--paper); }
+.heat-cell-merged { border-color: var(--orange-deep); background: var(--orange); }
+.heat-cell-open { border-color: var(--yellow-line); background: var(--yellow); }
+.heat-cell-remaining { border-color: var(--neutral-line); background: var(--neutral-bg); }
+.heat-cell-mixed { border-color: var(--orange-deep); background: var(--yellow); box-shadow: inset 0 0 0 4px var(--orange); }
+.heat-cell-density-1 { opacity: 0.68; }
+.heat-cell-density-2 { opacity: 0.78; }
+.heat-cell-density-3 { opacity: 0.9; }
+.heat-cell-density-4 { opacity: 1; }
 
-.cell:hover::after {
+.heat-cell:hover::after {
   content: attr(data-tip);
   position: absolute;
   left: 50%;
@@ -203,6 +215,7 @@ main { max-width: 1240px; margin: 24px auto 56px; padding: 0 24px; }
 .legend-chip { display: inline-block; width: 11px; height: 11px; border: 1px solid var(--line-strong); border-radius: 3px; background: var(--paper); }
 .chip-merged { background: var(--orange); border-color: var(--orange-deep); }
 .chip-open { background: var(--yellow); border-color: var(--yellow-line); }
+.chip-remaining { background: var(--neutral-bg); border-color: var(--neutral-line); }
 
 .progress-note { margin: 10px 0 0; color: var(--ink-3); font-size: 12px; }
 
@@ -500,7 +513,7 @@ dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
 @media (max-width: 1024px) {
   .summary-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
   .summary-tile strong { font-size: 24px; }
-  .waffle { grid-template-columns: repeat(12, 1fr); }
+  .heatmap { grid-template-columns: repeat(auto-fill, minmax(10px, 1fr)); }
 }
 
 @media (max-width: 760px) {

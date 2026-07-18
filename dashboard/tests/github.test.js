@@ -90,7 +90,7 @@ test('fetches requested pull requests across pages and records rate-limit metada
   assert.deepEqual(result.rateLimit, { remaining: 59, resetAt: '2026-07-01T00:00:00.000Z' });
 });
 
-test('fetches all open pull requests across pages', async () => {
+test('fetches only open translation pull requests across pages', async () => {
   const requests = [];
   const result = await fetchOpenPulls({
     repository: REPOSITORY,
@@ -100,6 +100,7 @@ test('fetches all open pull requests across pages', async () => {
       return page === '1'
         ? response({ body: [
           pull(3, 'open', { title: 'Translate Hugging Face blog post: Third' }),
+          pull(4, 'open', { title: 'Maintenance PR' }),
           ...Array.from({ length: 99 }, (_, index) => pull(index + 100)),
         ] })
         : response({
@@ -109,7 +110,7 @@ test('fetches all open pull requests across pages', async () => {
     },
   });
 
-  assert.deepEqual([...result.pulls.keys()].sort((a, b) => a - b), [2, 3, ...Array.from({ length: 99 }, (_, index) => index + 100)]);
+  assert.deepEqual([...result.pulls.keys()].sort((a, b) => a - b), [2, 3]);
   assert.equal(requests.length, 2);
   assert.equal(requests[0].url, 'https://api.github.com/repos/owner/repo/pulls?state=open&sort=created&direction=desc&per_page=100&page=1');
   assert.deepEqual(requests[0].options.headers, {

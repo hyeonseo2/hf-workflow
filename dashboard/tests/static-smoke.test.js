@@ -39,6 +39,8 @@ test('styles include responsive records, focus, and reduced motion support', asy
 
   assert.match(css, /@media\s*\(max-width:\s*760px\)/);
   assert.match(css, /data-label/);
+  assert.match(css, /\.heatmap/);
+  assert.match(css, /\.heat-cell-mixed/);
   assert.match(css, /td:nth-child\(n\)[^{]*\{[^}]*width\s*:\s*auto/i);
   assert.doesNotMatch(tableHeader, /display\s*:\s*none/i);
   assert.match(tableHeader, /position\s*:\s*absolute/i);

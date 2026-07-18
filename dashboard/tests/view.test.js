@@ -99,28 +99,38 @@ test('renders summary tiles as filter buttons with a pressed active tile', () =>
   );
 });
 
-test('renders blog progress as a waffle with per-post cells and Blog Agent baseline note', () => {
+test('renders blog progress as a date heatmap with per-day cells and Blog Agent baseline note', () => {
   const html = renderProgress({
-    total: 6, merged: 2, open: 1, remaining: 3, percent: 33.3, baselineDate: '2026-04-28',
-    mergedSlugs: ['torch-profiler', 'olmoearth-v1-1'], openSlugs: ['torch-attention-profile'],
+    total: 4,
+    merged: 1,
+    open: 1,
+    remaining: 2,
+    percent: 25,
+    baselineDate: '2026-04-28',
+    days: [
+      { date: '2026-07-10', total: 2, merged: 1, open: 1, remaining: 0, slugs: ['torch-profiler', 'torch-attention-profile'] },
+      { date: '2026-07-11', total: 0, merged: 0, open: 0, remaining: 0, slugs: [] },
+      { date: '2026-07-12', total: 1, merged: 0, open: 0, remaining: 1, slugs: ['untranslated-post'] },
+      { date: '2026-07-13', total: 1, merged: 0, open: 0, remaining: 1, slugs: ['closed-post'] },
+    ],
   });
 
-  assert.match(html, />33<small>%<\/small>/);
-  assert.match(html, /대상 6편 중 2편 병합 \(33\.3%\)/);
-  assert.match(html, /aria-label="대상 6편 중 병합 2편, 번역 진행 중 1편, 남은 글 3편"/);
-  assert.equal((html.match(/class="cell/g) ?? []).length, 6);
-  assert.match(html, /class="cell cell-merged" data-tip="병합 · torch-profiler"/);
-  assert.match(html, /class="cell cell-open" data-tip="번역 진행 중 · torch-attention-profile"/);
-  assert.match(html, /class="cell" data-tip="남은 글"/);
-  assert.match(html, /병합 2편/);
+  assert.match(html, />25<small>%<\/small>/);
+  assert.match(html, /대상 4편 중 1편 병합 \(25%\)/);
+  assert.match(html, /aria-label="날짜별 번역 진행률: 대상 4편 중 병합 1편, 번역 진행 중 1편, 남은 글 2편"/);
+  assert.equal((html.match(/class="heat-cell/g) ?? []).length, 4);
+  assert.match(html, /class="heat-cell heat-cell-mixed heat-cell-density-2" data-tip="2026-07-10 · 2편 · 병합 1 · 진행 1 · 미번역 0 · torch-profiler, torch-attention-profile"/);
+  assert.match(html, /class="heat-cell heat-cell-empty" data-tip="2026-07-11 · 글 없음"/);
+  assert.match(html, /class="heat-cell heat-cell-remaining heat-cell-density-1" data-tip="2026-07-12 · 1편 · 병합 0 · 진행 0 · 미번역 1 · untranslated-post"/);
+  assert.match(html, /병합 1편/);
   assert.match(html, /번역 진행 중 1편/);
-  assert.match(html, /남은 글 3편/);
+  assert.match(html, /남은 글 2편/);
   assert.match(html, /2026-04-28/);
   assert.match(html, /HuggingFace Blog Agent 적용일/);
   assert.match(html, /community\/enterprise 글 제외/);
   assert.doesNotMatch(
-    renderProgress({ total: 2, merged: 0, open: 0, remaining: 2, percent: 0, baselineDate: '2026-04-28' }),
-    /cell-merged|cell-open/,
+    renderProgress({ total: 0, merged: 0, open: 0, remaining: 0, percent: 0, baselineDate: '2026-04-28', days: [] }),
+    /heat-cell-/,
   );
   assert.match(renderProgress(null), /불러오는 중/);
   assert.match(renderProgress({ percent: 50 }), /불러오는 중/);
