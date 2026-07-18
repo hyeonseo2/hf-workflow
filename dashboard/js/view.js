@@ -196,13 +196,13 @@ export function renderCheckStats(stats = {}) {
     ['SEO', stats.seo],
   ];
   return groups.map(([label, entries]) => {
-    const heading = `<p class="group-heading">${label}</p>`;
+    const heading = `<section class="check-column" aria-label="${label} 통과율"><h3>${label}</h3>`;
     if (!Array.isArray(entries) || entries.length === 0) {
-      return `${heading}<p class="check-empty">현재 열린 PR에 ${label} 보고서가 없습니다. 워크플로가 보고서를 생성하면 여기에 집계됩니다.</p>`;
+      return `${heading}<p class="check-empty">현재 열린 PR에 ${label} 보고서가 없습니다. 워크플로가 보고서를 생성하면 여기에 집계됩니다.</p></section>`;
     }
     return heading + entries.map((entry, index) => (
       renderCheckRow(entry, index === 0 && entry.pass < entry.total)
-    )).join('');
+    )).join('') + '</section>';
   }).join('');
 }
 

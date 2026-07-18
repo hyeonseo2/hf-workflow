@@ -137,8 +137,10 @@ test('renders per-check pass rates for open PRs with a priority marker on the wo
     openCount: 3,
   });
 
-  assert.match(html, />품질<\/p>/);
-  assert.match(html, />SEO<\/p>/);
+  assert.match(html, /<section class="check-column" aria-label="품질 통과율">/);
+  assert.match(html, /<section class="check-column" aria-label="SEO 통과율">/);
+  assert.match(html, /<h3>품질<\/h3>/);
+  assert.match(html, /<h3>SEO<\/h3>/);
   assert.match(html, /check-worst">코드 펜스 균형/);
   assert.doesNotMatch(html, /check-worst">한국어 본문 포함/);
   assert.match(html, /unmapped custom check/);

@@ -7,6 +7,7 @@ import {
 } from './blog.js';
 import {
   createSingleFlight,
+  fetchOpenPulls,
   fetchPullStatuses,
   readCachedSnapshot,
   writeCachedSnapshot,
@@ -193,20 +194,23 @@ const refresh = createSingleFlight(async () => {
   await refreshBlogStats();
 
   try {
-    const snapshot = await fetchPullStatuses({
-      repository: REPOSITORY,
-      numbers: reports.map((report) => report.prNumber),
-    });
-    pulls = snapshot.pulls;
-    setSyncedAt(snapshot.syncedAt);
+    const [trackedSnapshot, openSnapshot] = await Promise.all([
+      fetchPullStatuses({
+        repository: REPOSITORY,
+        numbers: reports.map((report) => report.prNumber),
+      }),
+      fetchOpenPulls({ repository: REPOSITORY }),
+    ]);
+    pulls = new Map([...trackedSnapshot.pulls, ...openSnapshot.pulls]);
+    setSyncedAt(openSnapshot.syncedAt);
     writeCachedSnapshot({
       key: CACHE_KEY,
       repository: REPOSITORY,
-      syncedAt: snapshot.syncedAt,
-      rateLimit: snapshot.rateLimit,
-      pulls: snapshot.pulls,
+      syncedAt: openSnapshot.syncedAt,
+      rateLimit: openSnapshot.rateLimit,
+      pulls,
     });
-    setApiStatus(statusWithRateLimit('GitHub 상태가 동기화되었습니다', snapshot.rateLimit));
+    setApiStatus(statusWithRateLimit('GitHub 상태가 동기화되었습니다', openSnapshot.rateLimit));
     render();
   } catch (error) {
     const preservedTime = lastSyncedAt ? ` 마지막 동기화: ${formatTime(lastSyncedAt)}.` : '';

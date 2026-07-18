@@ -26,19 +26,17 @@
   </header>
 
   <main>
-    <div class="panel-grid">
-      <section class="panel progress-panel" aria-label="HF 블로그 대비 번역 진행률">
-        <h2>번역 진행률</h2>
-        <p class="panel-sub">huggingface.co/blog 공식 글 대비 · 한 칸이 글 한 편입니다</p>
-        <div id="progress"><p class="progress-empty">huggingface.co/blog 글 목록을 불러오는 중입니다.</p></div>
-      </section>
+    <section class="panel progress-panel" aria-label="HF 블로그 대비 번역 진행률">
+      <h2>번역 진행률</h2>
+      <p class="panel-sub">huggingface.co/blog 공식 글 대비 · 한 칸이 글 한 편입니다</p>
+      <div id="progress"><p class="progress-empty">huggingface.co/blog 글 목록을 불러오는 중입니다.</p></div>
+    </section>
 
-      <section class="panel check-panel" aria-label="품질 및 SEO 평가 기준별 통과율">
-        <h2>평가 기준별 통과율</h2>
-        <p class="panel-sub">현재 열려 있는 PR 기준 · 가장 낮은 항목에 "우선" 표시</p>
-        <div id="check-stats"></div>
-      </section>
-    </div>
+    <section class="panel check-panel" aria-label="품질 및 SEO 평가 기준별 통과율">
+      <h2>평가 기준별 통과율</h2>
+      <p class="panel-sub">현재 열려 있는 PR 기준 · 가장 낮은 항목에 "우선" 표시</p>
+      <div id="check-stats" class="check-columns"></div>
+    </section>
 
     <section class="summary-grid" id="summary" aria-label="번역 보고서 요약 및 필터"></section>
 

@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   GitHubApiError,
   createSingleFlight,
+  fetchOpenPulls,
   fetchPullStatuses,
   normalizePull,
   readCachedSnapshot,
@@ -49,6 +50,16 @@ test('normalizes open, merged, and closed pull request states', () => {
   assert.equal(normalizePull(pull(3, 'closed')).state, 'closed');
 });
 
+test('normalizes pull request title and source URL metadata', () => {
+  const normalized = normalizePull(pull(10, 'open', {
+    title: 'Translate Hugging Face blog post: New model',
+    body: 'Source: https://huggingface.co/blog/new-model\n\nDraft translation.',
+  }));
+
+  assert.equal(normalized.title, 'Translate Hugging Face blog post: New model');
+  assert.equal(normalized.sourceUrl, 'https://huggingface.co/blog/new-model');
+});
+
 test('normalizes malformed pull request data as unknown', () => {
   assert.equal(normalizePull({ number: 7, state: 'closed', merged_at: 'invalid' }).state, 'closed');
   assert.equal(normalizePull({ number: 7, state: 'unexpected' }).state, 'unknown');
@@ -77,6 +88,35 @@ test('fetches requested pull requests across pages and records rate-limit metada
     'X-GitHub-Api-Version': '2022-11-28',
   });
   assert.deepEqual(result.rateLimit, { remaining: 59, resetAt: '2026-07-01T00:00:00.000Z' });
+});
+
+test('fetches all open pull requests across pages', async () => {
+  const requests = [];
+  const result = await fetchOpenPulls({
+    repository: REPOSITORY,
+    fetchImpl: async (url, options) => {
+      requests.push({ url, options });
+      const page = new URL(url).searchParams.get('page');
+      return page === '1'
+        ? response({ body: [
+          pull(3, 'open', { title: 'Translate Hugging Face blog post: Third' }),
+          ...Array.from({ length: 99 }, (_, index) => pull(index + 100)),
+        ] })
+        : response({
+          body: [pull(2, 'open', { title: 'Translate Hugging Face blog post: Second' })],
+          headers: { 'x-ratelimit-remaining': '57' },
+        });
+    },
+  });
+
+  assert.deepEqual([...result.pulls.keys()].sort((a, b) => a - b), [2, 3, ...Array.from({ length: 99 }, (_, index) => index + 100)]);
+  assert.equal(requests.length, 2);
+  assert.equal(requests[0].url, 'https://api.github.com/repos/owner/repo/pulls?state=open&sort=created&direction=desc&per_page=100&page=1');
+  assert.deepEqual(requests[0].options.headers, {
+    Accept: 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28',
+  });
+  assert.deepEqual(result.rateLimit, { remaining: 57, resetAt: null });
 });
 
 test('continues beyond five full pages to find requested pull requests', async () => {
@@ -149,7 +189,7 @@ test('fails rather than returning a partial result when a later page fails', asy
 test('reads only valid cache envelopes and marks snapshots older than five minutes stale', () => {
   const now = Date.parse('2026-07-12T12:00:00Z');
   const valid = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     repository: REPOSITORY,
     syncedAt: '2026-07-12T11:55:01Z',
     rateLimit: { remaining: 42, resetAt: '2026-07-12T13:00:00Z' },
@@ -168,9 +208,9 @@ test('reads only valid cache envelopes and marks snapshots older than five minut
 test('rejects malformed cache values and tolerates storage read errors', () => {
   const now = Date.parse('2026-07-12T12:00:00Z');
   const invalidEntries = [
-    { schemaVersion: 2, repository: REPOSITORY, syncedAt: '2026-07-12T11:59:00Z', pulls: [] },
-    { schemaVersion: 1, repository: REPOSITORY, syncedAt: 'invalid', pulls: [] },
-    { schemaVersion: 1, repository: REPOSITORY, syncedAt: '2026-07-12T11:59:00Z', pulls: [{ number: '168', state: 'open' }] },
+    { schemaVersion: 3, repository: REPOSITORY, syncedAt: '2026-07-12T11:59:00Z', pulls: [] },
+    { schemaVersion: 2, repository: REPOSITORY, syncedAt: 'invalid', pulls: [] },
+    { schemaVersion: 2, repository: REPOSITORY, syncedAt: '2026-07-12T11:59:00Z', pulls: [{ number: '168', state: 'open' }] },
   ];
   for (const value of invalidEntries) {
     assert.equal(readCachedSnapshot({ storage: storage({ snapshot: JSON.stringify(value) }), key: 'snapshot', repository: REPOSITORY, now }), null);
@@ -180,7 +220,7 @@ test('rejects malformed cache values and tolerates storage read errors', () => {
 
 test('rejects cache envelopes without an owned rate-limit field', () => {
   const snapshot = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     repository: REPOSITORY,
     syncedAt: '2026-07-12T11:59:00Z',
     pulls: [normalizePull(pull(168))],

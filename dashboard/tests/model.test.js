@@ -42,6 +42,30 @@ test('keeps absent GitHub data unknown rather than closed', () => {
   assert.equal(item.prNumber, 168);
 });
 
+test('adds open pull requests that are missing from the report snapshot', () => {
+  const items = joinReports([reportWithoutSeo], new Map([
+    [168, { number: 168, state: 'open', title: 'Tracked report PR' }],
+    [173, {
+      number: 173,
+      state: 'open',
+      title: 'Translate Hugging Face blog post: Security incident disclosure — July 2026',
+      htmlUrl: 'https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/173',
+      sourceUrl: 'https://huggingface.co/blog/security-incident-july-2026',
+      createdAt: '2026-07-17T03:34:38Z',
+    }],
+  ]));
+
+  assert.deepEqual(items.map((item) => item.prNumber), [168, 173]);
+  assert.equal(items[1].title, 'Security incident disclosure — July 2026');
+  assert.equal(items[1].slug, 'security-incident-july-2026');
+  assert.equal(items[1].source.url, 'https://huggingface.co/blog/security-incident-july-2026');
+  assert.equal(items[1].source.published_date, '2026-07-17');
+  assert.equal(items[1].translation.pr_url, 'https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/173');
+  assert.equal(items[1].quality.status, 'missing');
+  assert.equal(items[1].seo.status, 'missing');
+  assert.equal(items[1].reviewState, 'pending');
+});
+
 test('counts missing reports as review attention', () => {
   const items = joinReports([reportWithoutSeo], new Map([[168, openPull]]));
   assert.deepEqual(summarizeReports(items), {

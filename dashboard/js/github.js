@@ -1,5 +1,5 @@
 const API_VERSION = '2022-11-28';
-const CACHE_SCHEMA_VERSION = 1;
+const CACHE_SCHEMA_VERSION = 2;
 const CACHE_STALE_AFTER_MS = 300_000;
 const PULL_STATES = new Set(['open', 'merged', 'closed', 'unknown']);
 
@@ -26,6 +26,11 @@ function optionalTimestamp(value) {
 
 function optionalString(value) {
   return typeof value === 'string' && value.length > 0 ? value : null;
+}
+
+function sourceUrlFromBody(value) {
+  const match = typeof value === 'string' ? value.match(/^Source:\s*(https:\/\/\S+)/m) : null;
+  return match ? match[1] : null;
 }
 
 function validPullNumber(value) {
@@ -58,6 +63,8 @@ function isValidPullSnapshot(value) {
     && validPullNumber(value.number)
     && PULL_STATES.has(value.state)
     && typeof value.draft === 'boolean'
+    && (value.title === null || typeof value.title === 'string')
+    && (value.sourceUrl === null || typeof value.sourceUrl === 'string')
     && (value.htmlUrl === null || typeof value.htmlUrl === 'string')
     && (value.author === null || typeof value.author === 'string')
     && (value.createdAt === null || isTimestamp(value.createdAt))
@@ -71,6 +78,8 @@ function unknownPull(number) {
     number,
     state: 'unknown',
     draft: false,
+    title: null,
+    sourceUrl: null,
     htmlUrl: null,
     author: null,
     createdAt: null,
@@ -97,6 +106,8 @@ export function normalizePull(pull) {
     number: pull.number,
     state,
     draft: Boolean(pull.draft),
+    title: optionalString(pull.title),
+    sourceUrl: optionalString(pull.sourceUrl ?? sourceUrlFromBody(pull.body)),
     htmlUrl: optionalString(pull.html_url ?? pull.htmlUrl),
     author: optionalString(pull.user?.login ?? pull.author),
     createdAt: optionalTimestamp(pull.created_at ?? pull.createdAt),
@@ -172,6 +183,59 @@ export async function fetchPullStatuses({ repository, numbers, fetchImpl = globa
 
   for (const number of requested) {
     pulls.set(number, unknownPull(number));
+  }
+
+  return {
+    pulls,
+    syncedAt: new Date(now()).toISOString(),
+    rateLimit,
+  };
+}
+
+export async function fetchOpenPulls({ repository, fetchImpl = globalThis.fetch, now = Date.now } = {}) {
+  const [owner, repo] = parseRepository(repository);
+  if (typeof fetchImpl !== 'function') {
+    throw new TypeError('fetchImpl must be a function');
+  }
+
+  const pulls = new Map();
+  let rateLimit = { remaining: null, resetAt: null };
+  let page = 1;
+
+  while (true) {
+    const query = new URLSearchParams({
+      state: 'open',
+      sort: 'created',
+      direction: 'desc',
+      per_page: '100',
+      page: String(page),
+    });
+    const url = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pulls?${query}`;
+    const response = await fetchImpl(url, {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': API_VERSION,
+      },
+    });
+    rateLimit = parseRateLimit(response?.headers);
+    if (!response?.ok) {
+      throw new GitHubApiError(response?.status ?? 0, rateLimit);
+    }
+
+    const pagePulls = await response.json();
+    if (!Array.isArray(pagePulls)) {
+      throw new TypeError('GitHub pull response must be an array');
+    }
+    for (const rawPull of pagePulls) {
+      const normalized = normalizePull(rawPull);
+      if (normalized.state === 'open') {
+        pulls.set(normalized.number, normalized);
+      }
+    }
+    if (pagePulls.length < 100) {
+      break;
+    }
+    page += 1;
   }
 
   return {

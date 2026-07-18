@@ -141,14 +141,6 @@ h1 { margin-bottom: 2px; font-size: 24px; font-weight: 800; letter-spacing: -0.0
 /* ============ layout ============ */
 main { max-width: 1240px; margin: 24px auto 56px; padding: 0 24px; }
 
-.panel-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-  gap: 18px;
-  align-items: stretch;
-  margin-bottom: 18px;
-}
-
 .panel {
   padding: 20px 22px;
   border: 1px solid var(--line);
@@ -156,8 +148,10 @@ main { max-width: 1240px; margin: 24px auto 56px; padding: 0 24px; }
   background: var(--surface);
 }
 
+.progress-panel { margin-bottom: 12px; }
+.check-panel { margin-bottom: 18px; }
 .panel h2 { margin-bottom: 4px; font-size: 15px; font-weight: 800; letter-spacing: -0.01em; }
-.panel-sub { margin: 0 0 16px; color: var(--ink-3); font-size: 12.5px; }
+.panel-sub { margin: 0 0 12px; color: var(--ink-3); font-size: 12.5px; }
 
 /* ============ waffle progress ============ */
 .progress-empty { margin: 0; color: var(--ink-2); font-size: 14px; }
@@ -213,6 +207,23 @@ main { max-width: 1240px; margin: 24px auto 56px; padding: 0 24px; }
 .progress-note { margin: 10px 0 0; color: var(--ink-3); font-size: 12px; }
 
 /* ============ per-check breakdown ============ */
+.check-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.check-column {
+  min-width: 0;
+  padding-top: 4px;
+}
+
+.check-column h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .group-heading {
   margin: 18px 0 6px;
   color: var(--ink-3);
@@ -487,7 +498,6 @@ dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
 
 /* ============ responsive ============ */
 @media (max-width: 1024px) {
-  .panel-grid { grid-template-columns: 1fr; }
   .summary-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
   .summary-tile strong { font-size: 24px; }
   .waffle { grid-template-columns: repeat(12, 1fr); }
@@ -500,6 +510,7 @@ dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
   .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .summary-tile:first-child { grid-column: 1 / -1; }
   .panel { padding: 14px; }
+  .check-columns { grid-template-columns: 1fr; }
   .tablebar input { max-width: none; }
   table, tbody, tr, td { display: block; width: 100%; }
   td:nth-child(n) { width: auto; }

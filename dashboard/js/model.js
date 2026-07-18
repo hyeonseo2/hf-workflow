@@ -1,5 +1,6 @@
 const PULL_STATES = new Set(['open', 'merged', 'closed', 'unknown']);
 const REPORT_STATUSES = new Set(['pass', 'warning', 'fail']);
+const BLOG_TRANSLATION_PREFIX = 'Translate Hugging Face blog post:';
 
 function reportNeedsAttention(report) {
   return report?.status === 'warning' || report?.status === 'fail';
@@ -31,12 +32,70 @@ function pullFor(pulls, prNumber) {
   return { ...pull, number: prNumber };
 }
 
+function titleFromPull(pull) {
+  const title = typeof pull?.title === 'string' ? pull.title.trim() : '';
+  return title.startsWith(BLOG_TRANSLATION_PREFIX)
+    ? title.slice(BLOG_TRANSLATION_PREFIX.length).trim()
+    : title;
+}
+
+function slugFromSourceUrl(value, fallback) {
+  try {
+    const url = new URL(String(value));
+    const slug = url.pathname.split('/').filter(Boolean).pop();
+    return slug || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function missingReport(fileName) {
+  return {
+    enabled: true,
+    available: false,
+    status: 'missing',
+    checks: [],
+    fileName,
+    content: '',
+  };
+}
+
+function reportFromOpenPull(pull) {
+  const fallbackSlug = `pr-${pull.number}`;
+  const slug = slugFromSourceUrl(pull.sourceUrl, fallbackSlug);
+  const title = titleFromPull(pull) || `PR #${pull.number}`;
+  return {
+    prNumber: pull.number,
+    title,
+    slug,
+    source: {
+      title,
+      slug,
+      url: pull.sourceUrl ?? pull.htmlUrl ?? '',
+      published_date: typeof pull.createdAt === 'string' ? pull.createdAt.slice(0, 10) : '',
+    },
+    translation: {
+      target_repo: '',
+      branch: '',
+      file_path: '',
+      pr_url: pull.htmlUrl ?? '',
+      locale: 'ko',
+    },
+    quality: missingReport('quality-report.md'),
+    seo: missingReport('seo-report.md'),
+    requestAvailable: false,
+    githubOnly: true,
+  };
+}
+
 export function joinReports(reports, pulls = new Map()) {
   if (!Array.isArray(reports)) {
     return [];
   }
-  return reports.map((report) => {
+  const reportNumbers = new Set();
+  const items = reports.map((report) => {
     const prNumber = report?.prNumber;
+    reportNumbers.add(prNumber);
     const source = report?.source ?? {};
     return {
       ...report,
@@ -47,6 +106,19 @@ export function joinReports(reports, pulls = new Map()) {
       reviewState: reviewStateFor(report ?? {}),
     };
   });
+  if (pulls instanceof Map) {
+    for (const pull of pulls.values()) {
+      if (pull?.state === 'open' && Number.isInteger(pull.number) && !reportNumbers.has(pull.number)) {
+        const report = reportFromOpenPull(pull);
+        items.push({
+          ...report,
+          pr: pullFor(pulls, pull.number),
+          reviewState: reviewStateFor(report),
+        });
+      }
+    }
+  }
+  return items;
 }
 
 export function filterReports(items, { query = '', prState = 'all', reviewState = 'all' } = {}) {

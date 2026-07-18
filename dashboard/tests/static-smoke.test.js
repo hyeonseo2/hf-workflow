@@ -24,6 +24,8 @@ test('index contains the monitor landmarks and module entrypoint', async () => {
   assert.match(html, /id="sort-date"/);
   assert.match(html, /평가 기준별 통과율/);
   assert.match(html, /현재 열려 있는 PR 기준/);
+  assert.ok(html.indexOf('class="panel progress-panel"') < html.indexOf('class="panel check-panel"'));
+  assert.match(html, /id="check-stats" class="check-columns"/);
 });
 
 test('bundled organization image is a PNG', async () => {
@@ -65,6 +67,7 @@ test('app lifecycle loads cached reports, safely refreshes GitHub state, and wir
   assert.match(app, /readCachedSnapshot\(/);
   assert.match(app, /writeCachedSnapshot\(/);
   assert.match(app, /createSingleFlight\(/);
+  assert.match(app, /fetchOpenPulls\(/);
   assert.match(app, /fetchPullStatuses\(/);
   assert.match(app, /renderRows\(/);
   assert.match(app, /renderSummary\(/);
@@ -105,7 +108,8 @@ test('app refresh waits for a valid report snapshot before touching GitHub state
 
   assert.match(app, /let reportsReady = false;/);
   assert.match(app, /const refresh = createSingleFlight\(async \(\) => \{\s*if \(!reportsReady\) \{\s*return;\s*\}/);
-  assert.ok(readinessGuard < app.indexOf('await fetchPullStatuses'));
+  assert.ok(readinessGuard < app.indexOf('fetchPullStatuses({'));
+  assert.ok(readinessGuard < app.indexOf('fetchOpenPulls({'));
   assert.ok(readinessGuard < app.indexOf('writeCachedSnapshot({'));
   assert.match(app, /reports = await loadReports\(\);[\s\S]*?render\(\);\s*reportsReady = true;\s*void refresh\(\);/);
   assert.match(app, /function renderFatalLoadError\(\) \{\s*reportsReady = false;/);
