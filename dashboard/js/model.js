@@ -13,11 +13,10 @@ const SEO_ADVISORY_CHECKS = new Set([
 const SEO_TIER_ORDER = { required: 0, advisory: 1, legacy: 2 };
 
 function seoTierFor(name) {
-  const token = String(name).split(':', 1)[0].trim();
-  if (SEO_REQUIRED_CHECKS.has(token)) {
+  if (SEO_REQUIRED_CHECKS.has(name)) {
     return 'required';
   }
-  return SEO_ADVISORY_CHECKS.has(token) ? 'advisory' : 'legacy';
+  return SEO_ADVISORY_CHECKS.has(name) ? 'advisory' : 'legacy';
 }
 
 function reportNeedsAttention(report) {
@@ -256,7 +255,10 @@ export function summarizeChecks(items) {
         continue;
       }
       for (const check of report.checks) {
-        const name = String(check?.text ?? '').split(' — ')[0].trim();
+        const text = String(check?.text ?? '');
+        const name = kind === 'seo'
+          ? text.split(':')[0].trim()
+          : text.split(' — ')[0].trim();
         if (!name) {
           continue;
         }

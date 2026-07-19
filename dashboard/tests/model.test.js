@@ -242,7 +242,7 @@ test('aggregates per-check pass rates over open PRs with the worst check first',
   assert.deepEqual(summarizeChecks([]), { quality: [], seo: [], openCount: 0 });
 });
 
-test('tiers every SEO check by its colon-prefix token without changing aggregate counts', () => {
+test('aggregates SEO checks by first-colon prefix and tiers them without changing counts', () => {
   const items = [
     {
       pr: { state: 'open' },
@@ -270,10 +270,9 @@ test('tiers every SEO check by its colon-prefix token without changing aggregate
     { name: 'contains Korean prose', pass: 1, fail: 1, missing: 0, total: 2 },
   ]);
   assert.deepEqual(result.seo, [
-    { name: 'heading_hierarchy: Heading levels are ordered', pass: 1, fail: 1, missing: 0, total: 2, tier: 'required' },
-    { name: 'semantic_metadata: Metadata is complete', pass: 1, fail: 0, missing: 1, total: 2, tier: 'required' },
-    { name: 'internal_links: Internal links: 0', pass: 0, fail: 1, missing: 1, total: 2, tier: 'advisory' },
-    { name: 'internal_links: Internal links: 3', pass: 1, fail: 0, missing: 1, total: 2, tier: 'advisory' },
+    { name: 'heading_hierarchy', pass: 1, fail: 1, missing: 0, total: 2, tier: 'required' },
+    { name: 'semantic_metadata', pass: 1, fail: 0, missing: 1, total: 2, tier: 'required' },
+    { name: 'internal_links', pass: 1, fail: 1, missing: 0, total: 2, tier: 'advisory' },
     { name: 'frontmatter title exists', pass: 0, fail: 1, missing: 1, total: 2, tier: 'legacy' },
   ]);
 });

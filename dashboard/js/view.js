@@ -31,6 +31,22 @@ const CHECK_NAME_LABELS = {
   'has H1': 'H1 헤딩 존재',
   'has at least three section headings': '섹션 헤딩 3개 이상',
   'has source attribution sentence': '출처 문장 포함',
+  heading_hierarchy: '헤딩 구조',
+  semantic_metadata: '제목·메타 의미 정합',
+  alt_semantics: '대체텍스트 의미',
+  opening_summary: '도입부 요약 길이',
+  h1_count: 'H1 개수',
+  citations: '인용·통계 포함',
+  question_headings: '질문형·키워드형 헤딩',
+  internal_links: '내부 링크',
+  word_count: '본문 길이',
+  alt_text_coverage: '대체텍스트 커버리지',
+  descriptive_alt_text: '서술형 대체텍스트',
+  image_files_exist: '이미지 파일 존재',
+  lazy_loading: '이미지 지연 로딩',
+  webp_format: 'WebP 형식',
+  primary_keyword: '주 키워드',
+  no_images: '이미지 없음',
 };
 
 export function checkNameLabel(name) {
@@ -209,14 +225,14 @@ function renderCheckRow(entry, isWorst) {
 }
 
 function renderCheckGroup(entries, {
-  label, className = '', legacy = false, showPass = false,
+  label, legacy = false, showPass = false,
 }) {
   if (entries.length === 0) {
     return '';
   }
   const pass = entries.reduce((sum, entry) => sum + Math.max(Number(entry?.pass) || 0, 0), 0);
   const total = entries.reduce((sum, entry) => sum + Math.max(Number(entry?.total) || 0, 0), 0);
-  const groupClass = `check-group${className ? ` ${className}` : ''}${legacy ? ' check-group-legacy' : ''}`;
+  const groupClass = `check-group${legacy ? ' check-group-legacy' : ''}`;
   const count = showPass ? `<span class="check-counts">${pass}/${total}</span>` : '';
   const summary = showPass ? `${label} ${entries.length}개 · 통과` : `${label} ${entries.length}개`;
   return `<details class="${groupClass}">
@@ -226,27 +242,26 @@ function renderCheckGroup(entries, {
 }
 
 function renderSeoChecks(entries) {
-  const required = entries.filter((entry) => entry?.tier === 'required');
+  const required = entries.filter((entry) => entry?.tier === 'required').slice(0, 4);
   const advisory = entries.filter((entry) => entry?.tier === 'advisory');
   const legacy = entries.filter((entry) => entry?.tier !== 'required' && entry?.tier !== 'advisory');
-  const visibleRequired = [];
-  const requiredOverflow = [];
-  const visibleTokens = new Set();
-  for (const entry of required) {
-    const token = stringValue(entry?.name).split(':', 1)[0].trim();
-    if (visibleRequired.length < 4 && !visibleTokens.has(token)) {
-      visibleRequired.push(entry);
-      visibleTokens.add(token);
-    } else {
-      requiredOverflow.push(entry);
+  let worstRequiredIndex = -1;
+  let worstRequiredRate = Infinity;
+  required.forEach((entry, index) => {
+    const total = Math.max(Number(entry?.total) || 0, 0);
+    const pass = Math.max(Number(entry?.pass) || 0, 0);
+    if (pass < total) {
+      const rate = total > 0 ? pass / total : 0;
+      if (rate < worstRequiredRate) {
+        worstRequiredIndex = index;
+        worstRequiredRate = rate;
+      }
     }
-  }
-  return visibleRequired.map((entry, index) => (
-    renderCheckRow(entry, index === 0 && entry.pass < entry.total)
-  )).join('')
-    + renderCheckGroup(requiredOverflow, {
-      label: '필수 항목 세부 결과', className: 'check-group-required-overflow',
-    })
+  });
+  const requiredRows = required.length > 0
+    ? required.map((entry, index) => renderCheckRow(entry, index === worstRequiredIndex)).join('')
+    : '<p class="check-empty">현재 열린 PR에 SEO 보고서가 없습니다. 워크플로가 보고서를 생성하면 여기에 집계됩니다.</p>';
+  return requiredRows
     + renderCheckGroup(advisory, { label: '권고 항목', showPass: true })
     + renderCheckGroup(legacy, { label: '이전 스키마 항목', legacy: true });
 }

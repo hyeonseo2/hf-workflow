@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  checkNameLabel,
   escapeHtml,
   renderCheckStats,
   renderDetails,
@@ -179,41 +180,75 @@ test('shows required SEO checks and keeps advisory and legacy checks collapsed',
     ],
     openCount: 3,
   });
+  const seo = html.match(/<section class="check-column" aria-label="SEO 통과율">[\s\S]*?<\/section>/)?.[0] ?? '';
+  const advisory = seo.match(/<details class="check-group">[\s\S]*?<\/details>/)?.[0] ?? '';
+  const legacy = seo.match(/<details class="check-group check-group-legacy">[\s\S]*?<\/details>/)?.[0] ?? '';
 
-  assert.match(html, /<section class="check-column" aria-label="SEO 통과율">[\s\S]*?heading_hierarchy/);
-  assert.match(html, /<details class="check-group">\s*<summary>[\s\S]*?권고 항목 2개 · 통과[\s\S]*?3\/6[\s\S]*?<\/summary>/);
-  assert.match(html, /<details class="check-group check-group-legacy">\s*<summary>[\s\S]*?이전 스키마 항목 1개[\s\S]*?<\/summary>/);
-  assert.doesNotMatch(html, /<details[^>]*\sopen(?:\s|>)/);
-  assert.match(html, /<details class="check-group">[\s\S]*?opening_summary[\s\S]*?check-seg-missing/);
-  assert.match(html, /<details class="check-group check-group-legacy">[\s\S]*?제목\(frontmatter\) 존재[\s\S]*?check-seg-missing/);
+  assert.match(seo, /헤딩 구조/);
+  assert.match(seo, /제목·메타 의미 정합/);
+  assert.match(seo, /<details class="check-group">\s*<summary>[\s\S]*?권고 항목 2개 · 통과[\s\S]*?3\/6[\s\S]*?<\/summary>/);
+  assert.match(seo, /<details class="check-group check-group-legacy">\s*<summary>[\s\S]*?이전 스키마 항목 1개[\s\S]*?<\/summary>/);
+  assert.doesNotMatch(seo, /<details[^>]*\sopen(?:\s|>)/);
+  assert.match(advisory, /도입부 요약 길이[\s\S]*?check-seg-missing/);
+  assert.match(advisory, /내부 링크[\s\S]*?check-seg-missing/);
+  assert.match(legacy, /제목\(frontmatter\) 존재[\s\S]*?check-seg-missing/);
   assert.equal((html.match(/check-worst/g) ?? []).length, 2);
   assert.match(html, /check-worst">한국어 본문 포함/);
-  assert.match(html, /check-worst">heading_hierarchy/);
-  assert.doesNotMatch(html.match(/<details class="check-group">[\s\S]*?<\/details>/)?.[0] ?? '', /check-worst/);
-  assert.doesNotMatch(html.match(/<details class="check-group check-group-legacy">[\s\S]*?<\/details>/)?.[0] ?? '', /check-worst/);
+  assert.match(seo, /check-worst">헤딩 구조/);
+  assert.equal((seo.match(/check-worst/g) ?? []).length, 1);
+  assert.doesNotMatch(advisory, /check-worst/);
+  assert.doesNotMatch(legacy, /check-worst/);
 });
 
-test('caps default required SEO rows at four and preserves duplicate-token rows in a disclosure', () => {
+test('shows at most the four defined required SEO rows by default', () => {
   const html = renderCheckStats({
     quality: [],
     seo: [
-      { name: 'heading_hierarchy: Invalid', pass: 0, fail: 1, missing: 22, total: 23, tier: 'required' },
-      { name: 'semantic_metadata: PASS', pass: 2, fail: 0, missing: 21, total: 23, tier: 'required' },
-      { name: 'alt_semantics: PASS', pass: 2, fail: 0, missing: 21, total: 23, tier: 'required' },
-      { name: 'heading_hierarchy: Valid', pass: 5, fail: 0, missing: 18, total: 23, tier: 'required' },
-      { name: 'image_files_exist: PASS', pass: 5, fail: 0, missing: 18, total: 23, tier: 'required' },
+      { name: 'heading_hierarchy', pass: 0, fail: 1, missing: 22, total: 23, tier: 'required' },
+      { name: 'semantic_metadata', pass: 2, fail: 0, missing: 21, total: 23, tier: 'required' },
+      { name: 'alt_semantics', pass: 2, fail: 0, missing: 21, total: 23, tier: 'required' },
+      { name: 'image_files_exist', pass: 5, fail: 0, missing: 18, total: 23, tier: 'required' },
     ],
     openCount: 23,
   });
   const seo = html.match(/<section class="check-column" aria-label="SEO 통과율">[\s\S]*?<\/section>/)?.[0] ?? '';
-  const visible = seo.split('<details', 1)[0];
-  const overflow = seo.match(/<details class="check-group check-group-required-overflow">[\s\S]*?<\/details>/)?.[0] ?? '';
 
-  assert.equal((visible.match(/class="check-row"/g) ?? []).length, 4);
-  assert.match(overflow, /필수 항목 세부 결과 1개/);
-  assert.match(overflow, /heading_hierarchy: Valid/);
-  assert.match(overflow, /통과 5 · 실패 0 · 미생성 18/);
-  assert.doesNotMatch(overflow, /check-worst|\sopen(?:\s|>)/);
+  assert.equal((seo.match(/class="check-row"/g) ?? []).length, 4);
+  assert.match(seo, /헤딩 구조/);
+  assert.match(seo, /제목·메타 의미 정합/);
+  assert.match(seo, /대체텍스트 의미/);
+  assert.match(seo, /이미지 파일 존재/);
+  assert.doesNotMatch(seo, /check-group-required-overflow/);
+});
+
+test('reuses the SEO empty message when no required checks exist and keeps other tiers collapsed', () => {
+  const html = renderCheckStats({
+    quality: [],
+    seo: [
+      { name: 'word_count', pass: 1, fail: 0, missing: 1, total: 2, tier: 'advisory' },
+      { name: 'has H1', pass: 1, fail: 1, missing: 0, total: 2, tier: 'legacy' },
+    ],
+  });
+  const seo = html.match(/<section class="check-column" aria-label="SEO 통과율">[\s\S]*?<\/section>/)?.[0] ?? '';
+
+  assert.match(seo, /<p class="check-empty">현재 열린 PR에 SEO 보고서가 없습니다/);
+  assert.match(seo, /<details class="check-group">/);
+  assert.match(seo, /<details class="check-group check-group-legacy">/);
+  assert.doesNotMatch(seo, /<details[^>]*\sopen(?:\s|>)/);
+});
+
+test('maps every current SEO prefix to its Korean row label and preserves unknown names', () => {
+  assert.deepEqual([
+    'heading_hierarchy', 'semantic_metadata', 'alt_semantics', 'opening_summary',
+    'h1_count', 'citations', 'question_headings', 'internal_links', 'word_count',
+    'alt_text_coverage', 'descriptive_alt_text', 'image_files_exist', 'lazy_loading',
+    'webp_format', 'primary_keyword', 'no_images', 'custom_check',
+  ].map(checkNameLabel), [
+    '헤딩 구조', '제목·메타 의미 정합', '대체텍스트 의미', '도입부 요약 길이',
+    'H1 개수', '인용·통계 포함', '질문형·키워드형 헤딩', '내부 링크', '본문 길이',
+    '대체텍스트 커버리지', '서술형 대체텍스트', '이미지 파일 존재', '이미지 지연 로딩',
+    'WebP 형식', '주 키워드', '이미지 없음', 'custom_check',
+  ]);
 });
 
 test('renders raw quality and SEO report files behind file-view controls', () => {
