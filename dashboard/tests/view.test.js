@@ -165,6 +165,57 @@ test('renders per-check pass rates for open PRs with a priority marker on the wo
   assert.match(empty, /현재 열린 PR에 SEO 보고서가 없습니다/);
 });
 
+test('shows required SEO checks and keeps advisory and legacy checks collapsed', () => {
+  const html = renderCheckStats({
+    quality: [
+      { name: 'contains Korean prose', pass: 1, fail: 1, missing: 1, total: 3 },
+    ],
+    seo: [
+      { name: 'heading_hierarchy', pass: 1, fail: 1, missing: 1, total: 3, tier: 'required' },
+      { name: 'semantic_metadata', pass: 3, fail: 0, missing: 0, total: 3, tier: 'required' },
+      { name: 'opening_summary', pass: 2, fail: 0, missing: 1, total: 3, tier: 'advisory' },
+      { name: 'internal_links', pass: 1, fail: 1, missing: 1, total: 3, tier: 'advisory' },
+      { name: 'frontmatter title exists', pass: 1, fail: 1, missing: 1, total: 3, tier: 'legacy' },
+    ],
+    openCount: 3,
+  });
+
+  assert.match(html, /<section class="check-column" aria-label="SEO 통과율">[\s\S]*?heading_hierarchy/);
+  assert.match(html, /<details class="check-group">\s*<summary>[\s\S]*?권고 항목 2개 · 통과[\s\S]*?3\/6[\s\S]*?<\/summary>/);
+  assert.match(html, /<details class="check-group check-group-legacy">\s*<summary>[\s\S]*?이전 스키마 항목 1개[\s\S]*?<\/summary>/);
+  assert.doesNotMatch(html, /<details[^>]*\sopen(?:\s|>)/);
+  assert.match(html, /<details class="check-group">[\s\S]*?opening_summary[\s\S]*?check-seg-missing/);
+  assert.match(html, /<details class="check-group check-group-legacy">[\s\S]*?제목\(frontmatter\) 존재[\s\S]*?check-seg-missing/);
+  assert.equal((html.match(/check-worst/g) ?? []).length, 2);
+  assert.match(html, /check-worst">한국어 본문 포함/);
+  assert.match(html, /check-worst">heading_hierarchy/);
+  assert.doesNotMatch(html.match(/<details class="check-group">[\s\S]*?<\/details>/)?.[0] ?? '', /check-worst/);
+  assert.doesNotMatch(html.match(/<details class="check-group check-group-legacy">[\s\S]*?<\/details>/)?.[0] ?? '', /check-worst/);
+});
+
+test('caps default required SEO rows at four and preserves duplicate-token rows in a disclosure', () => {
+  const html = renderCheckStats({
+    quality: [],
+    seo: [
+      { name: 'heading_hierarchy: Invalid', pass: 0, fail: 1, missing: 22, total: 23, tier: 'required' },
+      { name: 'semantic_metadata: PASS', pass: 2, fail: 0, missing: 21, total: 23, tier: 'required' },
+      { name: 'alt_semantics: PASS', pass: 2, fail: 0, missing: 21, total: 23, tier: 'required' },
+      { name: 'heading_hierarchy: Valid', pass: 5, fail: 0, missing: 18, total: 23, tier: 'required' },
+      { name: 'image_files_exist: PASS', pass: 5, fail: 0, missing: 18, total: 23, tier: 'required' },
+    ],
+    openCount: 23,
+  });
+  const seo = html.match(/<section class="check-column" aria-label="SEO 통과율">[\s\S]*?<\/section>/)?.[0] ?? '';
+  const visible = seo.split('<details', 1)[0];
+  const overflow = seo.match(/<details class="check-group check-group-required-overflow">[\s\S]*?<\/details>/)?.[0] ?? '';
+
+  assert.equal((visible.match(/class="check-row"/g) ?? []).length, 4);
+  assert.match(overflow, /필수 항목 세부 결과 1개/);
+  assert.match(overflow, /heading_hierarchy: Valid/);
+  assert.match(overflow, /통과 5 · 실패 0 · 미생성 18/);
+  assert.doesNotMatch(overflow, /check-worst|\sopen(?:\s|>)/);
+});
+
 test('renders raw quality and SEO report files behind file-view controls', () => {
   const html = renderDetails({
     ...item,

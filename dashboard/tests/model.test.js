@@ -242,6 +242,42 @@ test('aggregates per-check pass rates over open PRs with the worst check first',
   assert.deepEqual(summarizeChecks([]), { quality: [], seo: [], openCount: 0 });
 });
 
+test('tiers every SEO check by its colon-prefix token without changing aggregate counts', () => {
+  const items = [
+    {
+      pr: { state: 'open' },
+      quality: { enabled: true, checks: [{ status: 'pass', text: 'contains Korean prose' }] },
+      seo: { enabled: true, checks: [
+        { status: 'pass', text: 'internal_links: Internal links: 3' },
+        { status: 'fail', text: 'frontmatter title exists' },
+        { status: 'fail', text: 'heading_hierarchy: Heading levels are ordered' },
+        { status: 'pass', text: 'semantic_metadata: Metadata is complete' },
+      ] },
+    },
+    {
+      pr: { state: 'open' },
+      quality: { enabled: true, checks: [{ status: 'fail', text: 'contains Korean prose' }] },
+      seo: { enabled: true, checks: [
+        { status: 'fail', text: 'internal_links: Internal links: 0' },
+        { status: 'pass', text: 'heading_hierarchy: Heading levels are ordered' },
+      ] },
+    },
+  ];
+
+  const result = summarizeChecks(items);
+
+  assert.deepEqual(result.quality, [
+    { name: 'contains Korean prose', pass: 1, fail: 1, missing: 0, total: 2 },
+  ]);
+  assert.deepEqual(result.seo, [
+    { name: 'heading_hierarchy: Heading levels are ordered', pass: 1, fail: 1, missing: 0, total: 2, tier: 'required' },
+    { name: 'semantic_metadata: Metadata is complete', pass: 1, fail: 0, missing: 1, total: 2, tier: 'required' },
+    { name: 'internal_links: Internal links: 0', pass: 0, fail: 1, missing: 1, total: 2, tier: 'advisory' },
+    { name: 'internal_links: Internal links: 3', pass: 1, fail: 0, missing: 1, total: 2, tier: 'advisory' },
+    { name: 'frontmatter title exists', pass: 0, fail: 1, missing: 1, total: 2, tier: 'legacy' },
+  ]);
+});
+
 test('sorts report items by published date with PR number tiebreak', () => {
   const items = [
     { prNumber: 1, source: { published_date: '2026-06-01' } },

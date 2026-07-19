@@ -2,6 +2,24 @@ const PULL_STATES = new Set(['open', 'merged', 'closed', 'unknown']);
 const REPORT_STATUSES = new Set(['pass', 'warning', 'fail']);
 const BLOG_TRANSLATION_PREFIX = 'Translate Hugging Face blog post:';
 
+const SEO_REQUIRED_CHECKS = new Set([
+  'heading_hierarchy', 'semantic_metadata', 'alt_semantics', 'image_files_exist',
+]);
+const SEO_ADVISORY_CHECKS = new Set([
+  'opening_summary', 'h1_count', 'citations', 'question_headings',
+  'internal_links', 'word_count', 'alt_text_coverage', 'descriptive_alt_text',
+  'lazy_loading', 'webp_format', 'primary_keyword', 'no_images',
+]);
+const SEO_TIER_ORDER = { required: 0, advisory: 1, legacy: 2 };
+
+function seoTierFor(name) {
+  const token = String(name).split(':', 1)[0].trim();
+  if (SEO_REQUIRED_CHECKS.has(token)) {
+    return 'required';
+  }
+  return SEO_ADVISORY_CHECKS.has(token) ? 'advisory' : 'legacy';
+}
+
 function reportNeedsAttention(report) {
   return report?.status === 'warning' || report?.status === 'fail';
 }
@@ -253,8 +271,19 @@ export function summarizeChecks(items) {
     }
     for (const entry of byName.values()) {
       entry.missing = Math.max(entry.total - entry.pass - entry.fail, 0);
+      if (kind === 'seo') {
+        entry.tier = seoTierFor(entry.name);
+      }
     }
-    breakdown[kind] = [...byName.values()].sort((a, b) => (a.pass - b.pass) || (b.fail - a.fail));
+    breakdown[kind] = [...byName.values()].sort((a, b) => {
+      if (kind === 'seo') {
+        const tierOrder = SEO_TIER_ORDER[a.tier] - SEO_TIER_ORDER[b.tier];
+        if (tierOrder !== 0) {
+          return tierOrder;
+        }
+      }
+      return (a.pass - b.pass) || (b.fail - a.fail);
+    });
   }
   return breakdown;
 }

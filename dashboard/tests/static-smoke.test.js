@@ -58,6 +58,17 @@ test('styles include responsive records, focus, and reduced motion support', asy
   assert.doesNotMatch(css, /font-size\s*:[^;{}]*(?:vw|vh|vmin|vmax)/i);
 });
 
+test('styles align collapsible SEO groups with check rows and mute legacy summaries', async () => {
+  const css = await readFile(new URL('../styles.css', import.meta.url), 'utf8');
+  const groupSummary = ruleBody(css, '\\.check-group\\s*>\\s*summary');
+  const legacySummary = ruleBody(css, '\\.check-group-legacy\\s*>\\s*summary');
+
+  assert.match(groupSummary, /cursor\s*:\s*pointer/i);
+  assert.match(groupSummary, /display\s*:\s*grid/i);
+  assert.match(groupSummary, /grid-template-columns\s*:\s*minmax\(0,\s*1fr\)\s+120px\s+64px/i);
+  assert.match(legacySummary, /color\s*:\s*var\(--ink-3\)/i);
+});
+
 test('app lifecycle loads cached reports, safely refreshes GitHub state, and wires controls', async () => {
   const app = await readFile(new URL('../js/app.js', import.meta.url), 'utf8');
 

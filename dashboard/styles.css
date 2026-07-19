@@ -291,6 +291,25 @@ main { max-width: 1240px; margin: 24px auto 56px; padding: 0 24px; }
 .check-seg-missing { background: var(--ink-3); }
 .check-counts { color: var(--ink-2); font-size: 12.5px; text-align: right; font-variant-numeric: tabular-nums; }
 
+.check-group > summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px 64px;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+  cursor: pointer;
+  font-size: 13.5px;
+  list-style: none;
+}
+
+.check-group > summary::-webkit-details-marker { display: none; }
+.check-group-label { grid-column: 1 / 3; overflow-wrap: anywhere; }
+.check-group-label::before { content: "▸"; display: inline-block; width: 1em; margin-right: 6px; color: var(--ink-3); }
+.check-group[open] > summary .check-group-label::before { content: "▾"; }
+.check-group > summary .check-counts { grid-column: 3; }
+.check-group-legacy > summary { color: var(--ink-3); }
+
 /* ============ summary tiles ============ */
 .summary-grid {
   display: grid;

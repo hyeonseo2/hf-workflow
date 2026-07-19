@@ -208,6 +208,49 @@ function renderCheckRow(entry, isWorst) {
   </div>`;
 }
 
+function renderCheckGroup(entries, {
+  label, className = '', legacy = false, showPass = false,
+}) {
+  if (entries.length === 0) {
+    return '';
+  }
+  const pass = entries.reduce((sum, entry) => sum + Math.max(Number(entry?.pass) || 0, 0), 0);
+  const total = entries.reduce((sum, entry) => sum + Math.max(Number(entry?.total) || 0, 0), 0);
+  const groupClass = `check-group${className ? ` ${className}` : ''}${legacy ? ' check-group-legacy' : ''}`;
+  const count = showPass ? `<span class="check-counts">${pass}/${total}</span>` : '';
+  const summary = showPass ? `${label} ${entries.length}개 · 통과` : `${label} ${entries.length}개`;
+  return `<details class="${groupClass}">
+    <summary><span class="check-group-label">${summary}</span>${count}</summary>
+    ${entries.map((entry) => renderCheckRow(entry, false)).join('')}
+  </details>`;
+}
+
+function renderSeoChecks(entries) {
+  const required = entries.filter((entry) => entry?.tier === 'required');
+  const advisory = entries.filter((entry) => entry?.tier === 'advisory');
+  const legacy = entries.filter((entry) => entry?.tier !== 'required' && entry?.tier !== 'advisory');
+  const visibleRequired = [];
+  const requiredOverflow = [];
+  const visibleTokens = new Set();
+  for (const entry of required) {
+    const token = stringValue(entry?.name).split(':', 1)[0].trim();
+    if (visibleRequired.length < 4 && !visibleTokens.has(token)) {
+      visibleRequired.push(entry);
+      visibleTokens.add(token);
+    } else {
+      requiredOverflow.push(entry);
+    }
+  }
+  return visibleRequired.map((entry, index) => (
+    renderCheckRow(entry, index === 0 && entry.pass < entry.total)
+  )).join('')
+    + renderCheckGroup(requiredOverflow, {
+      label: '필수 항목 세부 결과', className: 'check-group-required-overflow',
+    })
+    + renderCheckGroup(advisory, { label: '권고 항목', showPass: true })
+    + renderCheckGroup(legacy, { label: '이전 스키마 항목', legacy: true });
+}
+
 export function renderCheckStats(stats = {}) {
   const groups = [
     ['품질', stats.quality],
@@ -217,6 +260,9 @@ export function renderCheckStats(stats = {}) {
     const heading = `<section class="check-column" aria-label="${label} 통과율"><h3>${label}</h3>`;
     if (!Array.isArray(entries) || entries.length === 0) {
       return `${heading}<p class="check-empty">현재 열린 PR에 ${label} 보고서가 없습니다. 워크플로가 보고서를 생성하면 여기에 집계됩니다.</p></section>`;
+    }
+    if (label === 'SEO') {
+      return heading + renderSeoChecks(entries) + '</section>';
     }
     return heading + entries.map((entry, index) => (
       renderCheckRow(entry, index === 0 && entry.pass < entry.total)
