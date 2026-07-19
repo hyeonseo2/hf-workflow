@@ -23,7 +23,7 @@ test('index contains the monitor landmarks and module entrypoint', async () => {
   assert.match(html, /id="check-stats"/);
   assert.match(html, /id="sort-date"/);
   assert.match(html, /평가 기준별 통과율/);
-  assert.match(html, /현재 열려 있는 PR 기준/);
+  assert.match(html, /현재 열려 있는 PR 전체 기준/);
   assert.ok(html.indexOf('class="panel progress-panel"') < html.indexOf('class="panel check-panel"'));
   assert.match(html, /id="check-stats" class="check-columns"/);
 });

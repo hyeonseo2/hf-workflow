@@ -220,6 +220,11 @@ test('aggregates per-check pass rates over open PRs with the worst check first',
       seo: { enabled: false, checks: [{ status: 'fail', text: 'excluded because seo is disabled' }] },
     },
     {
+      pr: { state: 'open' },
+      quality: { enabled: true, available: false },
+      seo: { enabled: true, available: false },
+    },
+    {
       pr: { state: 'merged' },
       quality: { enabled: true, checks: [{ status: 'fail', text: 'contains Korean prose' }] },
       seo: { enabled: true, checks: [{ status: 'pass', text: 'title length' }] },
@@ -228,11 +233,11 @@ test('aggregates per-check pass rates over open PRs with the worst check first',
 
   assert.deepEqual(summarizeChecks(items), {
     quality: [
-      { name: 'code fences are balanced', pass: 1, total: 2 },
-      { name: 'contains Korean prose', pass: 2, total: 2 },
+      { name: 'code fences are balanced', pass: 1, fail: 1, missing: 1, total: 3 },
+      { name: 'contains Korean prose', pass: 2, fail: 0, missing: 1, total: 3 },
     ],
     seo: [],
-    openCount: 2,
+    openCount: 3,
   });
   assert.deepEqual(summarizeChecks([]), { quality: [], seo: [], openCount: 0 });
 });

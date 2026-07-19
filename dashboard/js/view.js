@@ -191,12 +191,19 @@ export function renderProgress(progress = null) {
 function renderCheckRow(entry, isWorst) {
   const total = Math.max(Number(entry?.total) || 0, 0);
   const pass = Math.max(Number(entry?.pass) || 0, 0);
-  const percent = total > 0 ? (pass / total) * 100 : 0;
-  const tone = percent === 100 ? '' : percent >= 70 ? ' check-bar-mid' : ' check-bar-low';
+  const fail = Math.max(Number(entry?.fail) || 0, 0);
+  const missing = Math.max(Number(entry?.missing) || 0, 0);
+  const width = (count) => (total > 0 ? (count / total) * 100 : 0);
   const name = checkNameLabel(stringValue(entry?.name));
+  const breakdown = `통과 ${pass} · 실패 ${fail} · 미생성 ${missing}`;
+  const segments = [
+    ['check-seg-pass', pass],
+    ['check-seg-fail', fail],
+    ['check-seg-missing', missing],
+  ].map(([segment, count]) => `<b class="${segment}" style="width: ${width(count)}%"></b>`).join('');
   return `<div class="check-row">
     <span class="check-name${isWorst ? ' check-worst' : ''}">${escapeHtml(name)}</span>
-    <span class="check-bar${tone}" role="img" aria-label="${escapeHtml(name)} 통과 ${pass}/${total}"><b style="width: ${percent}%"></b></span>
+    <span class="check-bar" role="img" aria-label="${escapeHtml(name)} ${breakdown}" title="${escapeHtml(breakdown)}">${segments}</span>
     <span class="check-counts">${pass}/${total}</span>
   </div>`;
 }

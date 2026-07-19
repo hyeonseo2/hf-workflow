@@ -139,9 +139,9 @@ test('renders blog progress as a date heatmap with per-day cells and Blog Agent 
 test('renders per-check pass rates for open PRs with a priority marker on the worst check', () => {
   const html = renderCheckStats({
     quality: [
-      { name: 'code fences are balanced', pass: 1, total: 3 },
-      { name: 'contains Korean prose', pass: 3, total: 3 },
-      { name: 'unmapped custom check', pass: 3, total: 3 },
+      { name: 'code fences are balanced', pass: 1, fail: 1, missing: 1, total: 3 },
+      { name: 'contains Korean prose', pass: 3, fail: 0, missing: 0, total: 3 },
+      { name: 'unmapped custom check', pass: 3, fail: 0, missing: 0, total: 3 },
     ],
     seo: [],
     openCount: 3,
@@ -154,8 +154,9 @@ test('renders per-check pass rates for open PRs with a priority marker on the wo
   assert.match(html, /check-worst">코드 펜스 균형/);
   assert.doesNotMatch(html, /check-worst">한국어 본문 포함/);
   assert.match(html, /unmapped custom check/);
-  assert.match(html, /check-bar-low/);
-  assert.match(html, /aria-label="코드 펜스 균형 통과 1\/3"/);
+  assert.match(html, /check-seg-fail" style="width: 33\.33/);
+  assert.match(html, /check-seg-missing" style="width: 33\.33/);
+  assert.match(html, /aria-label="코드 펜스 균형 통과 1 · 실패 1 · 미생성 1"/);
   assert.match(html, /1\/3/);
   assert.match(html, /3\/3/);
   assert.match(html, /현재 열린 PR에 SEO 보고서가 없습니다/);

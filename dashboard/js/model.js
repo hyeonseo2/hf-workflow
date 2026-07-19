@@ -242,15 +242,19 @@ export function summarizeChecks(items) {
         if (!name) {
           continue;
         }
-        const entry = byName.get(name) ?? { name, pass: 0, total: 0 };
-        entry.total += 1;
+        const entry = byName.get(name) ?? { name, pass: 0, fail: 0, missing: 0, total: breakdown.openCount };
         if (check?.status === 'pass') {
           entry.pass += 1;
+        } else {
+          entry.fail += 1;
         }
         byName.set(name, entry);
       }
     }
-    breakdown[kind] = [...byName.values()].sort((a, b) => (a.pass / a.total) - (b.pass / b.total));
+    for (const entry of byName.values()) {
+      entry.missing = Math.max(entry.total - entry.pass - entry.fail, 0);
+    }
+    breakdown[kind] = [...byName.values()].sort((a, b) => (a.pass - b.pass) || (b.fail - a.fail));
   }
   return breakdown;
 }

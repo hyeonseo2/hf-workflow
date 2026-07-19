@@ -285,9 +285,10 @@ main { max-width: 1240px; margin: 24px auto 56px; padding: 0 24px; }
   background: var(--paper);
 }
 
-.check-bar b { min-width: 0; background: var(--ok-text); }
-.check-bar-mid b { background: var(--orange); }
-.check-bar-low b { background: var(--bad-text); }
+.check-bar b { min-width: 0; }
+.check-seg-pass { background: var(--ok-text); }
+.check-seg-fail { background: var(--bad-text); }
+.check-seg-missing { background: var(--ink-3); }
 .check-counts { color: var(--ink-2); font-size: 12.5px; text-align: right; font-variant-numeric: tabular-nums; }
 
 /* ============ summary tiles ============ */
