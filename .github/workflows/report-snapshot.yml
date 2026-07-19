@@ -26,6 +26,8 @@ jobs:
           python-version: "3.11"
 
       - name: Rebuild report snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           # The archive name is part of the JSON output; keep it stable so
           # unchanged reports produce a byte-identical snapshot.

@@ -1,6 +1,355 @@
 {
-  "reportSnapshotAt": "2026-07-11T03:41:07+00:00",
+  "reportSnapshotAt": "2026-07-17T03:35:27+00:00",
   "reports": [
+    {
+      "prNumber": 173,
+      "quality": {
+        "available": true,
+        "checks": [],
+        "content": "# Quality Report\n\n- Status: reject\n- Quality Score: 21.0\n- Hard failures: 1\n- Issues: 18\n- Source available: True\n- Source changed: False\n- Source segments: 25\n- Target segments: 26\n\n## Scorecard\n\n| Dimension | Score |\n| --- | ---: |\n| adequacy | 0.0 |\n| technical_accuracy | 80.0 |\n| completeness | 0.0 |\n| terminology | 40.0 |\n| fluency | 85.0 |\n| publishing_integrity | 60.0 |\n| style_locale | 69.0 |\n\n## Metrics\n\n- qe_metric: heuristic\n- qe_average: 0.7097\n- qe_min: 0.2458\n- embedding_similarity_average: 0.5922\n- embedding_similarity_min: 0.007\n- cache_hits: 0\n- cache_misses: 50\n\n## MQM Judge\n\n- Enabled: False\n- Provider: `off`\n- Requested segments: 0\n- Evaluated segments: 0\n- MQM errors: 0\n- Cache hits: 0\n- Cache misses: 0\n\n## Style Guide\n\n- Enabled: True\n- Guide: `/home/runner/work/hugging-face-krew.github.io/hugging-face-krew.github.io/workflow/skills/quality/style/hf-blog-ko-translation-guide.md`\n- Policy: `/home/runner/work/hugging-face-krew.github.io/hugging-face-krew.github.io/workflow/skills/quality/configs/style_policy.yml`\n- Style score: 69.0\n- Rule hits: {'information_addition': 1, 'modal_strength': 2, 'translationese': 1}\n\n## Style Guide Findings\n\n| Rule | Severity | Segment | Current | Suggested |\n| --- | --- | --- | --- | --- |\n| translationese | minor |  | 에 의해 | Rewrite the sentence in natural Korean. |\n| modal_strength | major | h_022 | 비대칭성 문제 | Preserve the strength of `can` using: 수 있습니다. |\n| modal_strength | major | p_023 | 로그 분석을 시작했을 때, 먼저 상용 API 뒤에 있는 프런티어 모델을 사용했습니다. 이는 작동하지 않았습니다: 이 분석은 실제 공격 명령, 익스플로잇 페이로드, C2 산물을 대량으로 제출해야 하는데, 이러한 요청은 공급자의 안전 가드레일에 의해 차단되었고, 이는 사고 대응자를 공격자와 구분할 수 없었습니다. 대신 GLM 5.2 오픈-가중치 모델을 우리 인프라에서 포렌식 분석으로 실행했습니다. 이는 또 하나의 이점으로, 공격자 데이터나 그것이 참조한 자격 증명이 우리 환경을 벗어나지 않았다는 점입니다. | Preserve the strength of `can` using: 수 있습니다. |\n| information_addition | major | p_020 | 덕분에 | Remove invented causal explanation unless the source explicitly states it. |\n\n## Issues\n\n### QL-001 formatting / critical\n\n- Message: Front matter key `thumbnail` changed or is missing.\n- Source: `/blog/assets/security-incident-july-2026/thumbnail.png`\n- Suggested fix: Preserve front matter `thumbnail` exactly.\n\n### QL-002 formatting / major\n\n- Message: bare URL mismatch.\n- Target: `https://huggingface.co/blog/security-incident-july-2026`\n- Suggested fix: Preserve source bare URL exactly.\n- Reason: Review gate exact-match validator failed: extra=['https://huggingface.co/blog/security-incident-july-2026']\n\n### QL-003 technical / major\n\n- Message: number/unit token mismatch.\n- Target: `1, 24, 7`\n- Suggested fix: Preserve source number/unit token exactly.\n- Reason: Review gate exact-match validator failed: extra=['1', '24', '7']\n\n### QL-004 accuracy / major\n\n- Message: Target has additional text segments.\n- Source: `source_segments=25`\n- Target: `target_segments=26`\n- Suggested fix: Check for duplicated or invented paragraphs.\n- Reason: Segment count validator found more target text segments than source text segments.\n\n### QL-005 accuracy / major\n\n- Message: QE metric score is low.\n- Target: `0.2458`\n- Suggested fix: Review this segment for omission, unrelated translation, or over-compression.\n- Reason: QE score is below threshold 0.55.\n\n### QL-006 accuracy / major\n\n- Message: QE metric score is low.\n- Target: `0.3157`\n- Suggested fix: Review this segment for omission, unrelated translation, or over-compression.\n- Reason: QE score is below threshold 0.55.\n\n### QL-007 accuracy / minor\n\n- Message: Embedding similarity is an outlier.\n- Target: `0.0365`\n- Suggested fix: Review whether the segment still corresponds to the source.\n- Reason: Embedding similarity is below threshold 0.08.\n\n### QL-008 accuracy / major\n\n- Message: QE metric score is low.\n- Target: `0.5162`\n- Suggested fix: Review this segment for omission, unrelated translation, or over-compression.\n- Reason: QE score is below threshold 0.55.\n\n### QL-009 accuracy / major\n\n- Message: QE metric score is low.\n- Target: `0.2626`\n- Suggested fix: Review this segment for omission, unrelated translation, or over-compression.\n- Reason: QE score is below threshold 0.55.\n\n### QL-010 accuracy / minor\n\n- Message: Embedding similarity is an outlier.\n- Target: `0.0070`\n- Suggested fix: Review whether the segment still corresponds to the source.\n- Reason: Embedding similarity is below threshold 0.08.\n\n### QL-011 terminology / major\n\n- Message: Product or library name was not preserved.\n- Source: `Hugging Face`\n- Suggested fix: Preserve `Hugging Face` exactly.\n- Reason: Glossary policy requires preserving this product/library/model term.\n\n### QL-012 terminology / major\n\n- Message: Product or library name was not preserved.\n- Source: `Datasets`\n- Suggested fix: Preserve `Datasets` exactly.\n- Reason: Glossary policy requires preserving this product/library/model term.\n\n### QL-013 terminology / major\n\n- Message: Product or library name was not preserved.\n- Source: `Spaces`\n- Suggested fix: Preserve `Spaces` exactly.\n- Reason: Glossary policy requires preserving this product/library/model term.\n\n### QL-014 fluency / minor\n\n- Message: Translationese expression found.\n- Target: `에 의해`\n- Suggested fix: Rewrite the sentence in natural Korean.\n- Reason: The style guide lists this expression as translationese to avoid.\n\n### QL-015 accuracy / major\n\n- Message: Modal or certainty strength may have changed.\n- Source: `can`\n- Target: `비대칭성 문제`\n- Suggested fix: Preserve the strength of `can` using: 수 있습니다.\n- Reason: The style guide requires preserving may/can/should/must/up to/in some cases/not always strength.\n\n### QL-016 accuracy / major\n\n- Message: Modal or certainty strength may have changed.\n- Source: `can`\n- Target: `로그 분석을 시작했을 때, 먼저 상용 API 뒤에 있는 프런티어 모델을 사용했습니다. 이는 작동하지 않았습니다: 이 분석은 실제 공격 명령, 익스플로잇 페이로드, C2 산물을 대량으로 제출해야 하는데, 이러한 요청은 공급자의 안전 가드레일에 의해 차단되었고, 이는 사고 대응자를 공격자와 구분할 수 없었습니다. 대신 GLM 5.2 오픈-가중치 모델을 우리 인프라에서 포렌식 분석으로 실행했습니다. 이는 또 하나의 이점으로, 공격자 데이터나 그것이 참조한 자격 증명이 우리 환경을 벗어나지 않았다는 점입니다.`\n- Suggested fix: Preserve the strength of `can` using: 수 있습니다.\n- Reason: The style guide requires preserving may/can/should/must/up to/in some cases/not always strength.\n\n### QL-017 accuracy / major\n\n- Message: Translation may add a causal explanation that is not in the source.\n- Target: `덕분에`\n- Suggested fix: Remove invented causal explanation unless the source explicitly states it.\n- Reason: The style guide forbids adding technical explanations, reasons, examples, or conclusions.\n\n### QL-018 accuracy / major\n\n- Message: Semantic adequacy evaluation is incomplete.\n- Suggested fix: Complete MQM evaluation for every aligned segment before auto-passing.\n- Reason: Heuristic QE only checks surface signals and cannot establish semantic equivalence.\n",
+        "enabled": true,
+        "fileName": "PR 리뷰 코멘트 (hf-agent-report)",
+        "metrics": {
+          "cache_hits": "0",
+          "cache_misses": "50",
+          "embedding_similarity_average": "0.5922",
+          "embedding_similarity_min": "0.007",
+          "qe_average": "0.7097",
+          "qe_metric": "heuristic",
+          "qe_min": "0.2458"
+        },
+        "origin": "pr-comment",
+        "status": "fail"
+      },
+      "requestAvailable": false,
+      "run": {
+        "created_at": "2026-07-17T03:35:27+00:00",
+        "id": "pr-173-comment"
+      },
+      "seo": {
+        "available": true,
+        "checks": [
+          {
+            "status": "pass",
+            "text": "heading_hierarchy: Heading hierarchy: Valid"
+          },
+          {
+            "status": "pass",
+            "text": "semantic_metadata: `PASS` (required) — Semantic alignment across title, opening, H1, and headings"
+          },
+          {
+            "status": "pass",
+            "text": "alt_semantics: `PASS` (review) — No non-empty alt text present to evaluate."
+          },
+          {
+            "status": "pass",
+            "text": "opening_summary: Opening 3 paragraphs: 321 chars (recommend ≥150 for KO/GEO)"
+          },
+          {
+            "status": "pass",
+            "text": "h1_count: Markdown H1 count: 1 (review against rendered layout)"
+          },
+          {
+            "status": "pass",
+            "text": "citations: Citations/statistics: 1 (recommend ≥1 for GEO)"
+          },
+          {
+            "status": "warning",
+            "text": "question_headings: Scannable H2/H3 (question or keyword): 0 (0 question, 0 keyword)"
+          },
+          {
+            "status": "warning",
+            "text": "internal_links: Internal links: 0 (recommend 2-3)"
+          },
+          {
+            "status": "pass",
+            "text": "word_count: Body length: 3310 chars (recommend ≥800 for KO)"
+          }
+        ],
+        "content": "# SEO Eval Report\n\n**Gate: ✅ PASS** — deterministic AND rubric\n\n- File: `../target/_posts/2026-07-16-security-incident-july-2026.md`\n- Source: —\n- Primary keyword: (none — D5 skipped)\n- Mode: file\n\n## Gate\n\n- Status: `PASS`\n- Blockers: ✅ pass\n- Deterministic REQUIRED (D1–D7): ✅ pass\n- Rubric (R1–R6): ✅ pass (mean None, min None)\n\n## Blockers\n\n✅ body_not_empty: Body is not empty\n✅ robots_indexable: Robots is indexable\n✅ internal_links_resolve: All internal links resolve\n✅ local_images_resolve: All local images resolve\n\n## Required checks (gated)\n\n✅ heading_hierarchy: Heading hierarchy: Valid\n\n## OpenAI rubric checks\n\n✅ semantic_metadata: `PASS` (required) — Semantic alignment across title, opening, H1, and headings\n✅ alt_semantics: `PASS` (review) — No non-empty alt text present to evaluate.\n\n## Advisory checks (not gated)\n\n✅ opening_summary: Opening 3 paragraphs: 321 chars (recommend ≥150 for KO/GEO)\n✅ h1_count: Markdown H1 count: 1 (review against rendered layout)\n✅ citations: Citations/statistics: 1 (recommend ≥1 for GEO)\n⚠️ question_headings: Scannable H2/H3 (question or keyword): 0 (0 question, 0 keyword)\n⚠️ internal_links: Internal links: 0 (recommend 2-3)\n✅ word_count: Body length: 3310 chars (recommend ≥800 for KO)\nℹ️ primary_keyword: No primary_keyword in manifest — keyword check skipped\nℹ️ no_images: No images found (optional)\n\n## Signals (evidence — not directly gated)\n\n- Frontmatter: title `19` chars, description `0` chars, author present `True`\n- Title text: 보안 사고 공개 — 2026년 7월\n- Description text: —\n- Opening text: * TOC\n{:toc}\n<!--toc-->\n_이 글은 Hugging Face 블로그의 [Security incident disclosure — July 2026](https://huggingface.co/blog/security-incident-july-2026)를 한국어로 번역한 글입니다._\n- Opening: first paragraph `164` chars, first 3 paragraphs `321` chars\n- Headings: markdown H1 `1`, rendered effective H1 `2`, layout title H1 `True`\n- Links: total `1`, external `1`, internal `0`, citation signals `1`\n- Images: total `0`, empty alt `0`, filename-like alt `0`, missing local files `0`\n\n### Semantic review packet\n\n- Title: 보안 사고 공개 — 2026년 7월\n- Description: —\n- Rendered H1 candidates: 보안 사고 공개 — 2026년 7월, 보안 사고 공개 — 2026년 7월\n- Opening: * TOC\n{:toc}\n<!--toc-->\n_이 글은 Hugging Face 블로그의 [Security incident disclosure — July 2026](https://huggingface.co/blog/security-incident-july-2026)를 한국어로 번역한 글입니다._\n- Canonical/permalink: —\n- Instruction: Compare title, description, rendered H1, and opening text for meaning consistency. This packet is evidence only; it does not decide pass/fail.\n\n## Frontmatter (advisory — written by metadata step, not gated)\n\n✅ title: Title: 19 chars (recommend ≤60)\n❌ description: Description is missing\n✅ image: OG image: assets/images/blog/posts/2026-07-16-security-incident-july-2026/thumbnail.png\n✅ categories: Categories: 2 (recommend 2-3)\n✅ author: Author: dailybot\n",
+        "enabled": true,
+        "fileName": "PR 리뷰 코멘트 (hf-agent-report)",
+        "frontmatter": {
+          "author": "Author: dailybot",
+          "categories": "Categories: 2 (recommend 2-3)",
+          "description": "Description is missing",
+          "image": "OG image: assets/images/blog/posts/2026-07-16-security-incident-july-2026/thumbnail.png",
+          "title": "Title: 19 chars (recommend ≤60)"
+        },
+        "headings": [],
+        "origin": "pr-comment",
+        "status": "pass"
+      },
+      "source": {
+        "published_date": "2026-07-16",
+        "slug": "security-incident-july-2026",
+        "title": "Translate Hugging Face blog post: Security incident disclosure — July 2026",
+        "url": ""
+      },
+      "translation": {
+        "branch": "translate/security-incident-july-2026",
+        "file_path": "_posts/2026-07-16-security-incident-july-2026.md",
+        "locale": "ko",
+        "pr_url": "https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/173",
+        "target_repo": "Hugging-Face-KREW/hugging-face-krew.github.io"
+      }
+    },
+    {
+      "prNumber": 172,
+      "quality": {
+        "available": true,
+        "checks": [
+          {
+            "status": "pass",
+            "text": "translation body is not empty"
+          },
+          {
+            "status": "pass",
+            "text": "no TODO marker remains"
+          },
+          {
+            "status": "pass",
+            "text": "code fences are balanced"
+          },
+          {
+            "status": "pass",
+            "text": "contains Korean prose"
+          },
+          {
+            "status": "pass",
+            "text": "source attribution exists"
+          }
+        ],
+        "content": "# Quality Report\n\n- Manifest: `/home/runner/work/hf-workflow/hf-workflow/results/tmpbgbkcdr5.yaml`\n- Translation file: `../target/_posts/2026-07-15-real-world-voiceeq.md`\n- Source: https://huggingface.co/blog/real-world-voiceeq\n\n## Checks\n\n- PASS: translation body is not empty\n- PASS: no TODO marker remains\n- PASS: code fences are balanced\n- PASS: contains Korean prose\n- PASS: source attribution exists\n\n## Metrics\n\n- body characters: 4715\n- Korean letter ratio: 71.01%\n- code fence markers: 0\n- TODO markers: 0\n- fetched source characters: 0\n",
+        "enabled": true,
+        "fileName": "PR 리뷰 코멘트 (hf-agent-report)",
+        "metrics": {
+          "Korean letter ratio": "71.01%",
+          "TODO markers": "0",
+          "body characters": "4715",
+          "code fence markers": "0",
+          "fetched source characters": "0"
+        },
+        "origin": "pr-comment",
+        "status": "pass"
+      },
+      "requestAvailable": false,
+      "run": {
+        "created_at": "2026-07-16T03:36:49+00:00",
+        "id": "pr-172-comment"
+      },
+      "seo": {
+        "available": true,
+        "checks": [
+          {
+            "status": "pass",
+            "text": "heading_hierarchy: Heading hierarchy: Valid"
+          },
+          {
+            "status": "pass",
+            "text": "alt_text_coverage: Alt text coverage: 1/1 images"
+          },
+          {
+            "status": "pass",
+            "text": "descriptive_alt_text: Descriptive alt text: 1/1 (≥80% recommend)"
+          },
+          {
+            "status": "pass",
+            "text": "image_files_exist: All 0 local image file(s) exist"
+          },
+          {
+            "status": "pass",
+            "text": "semantic_metadata: `PASS` (required) — Semantic metadata across title, description, H1, headings, and opening are consistent and align to a Korean translation of a Hugging Face blog post about Real World VoiceEQ."
+          },
+          {
+            "status": "pass",
+            "text": "alt_semantics: `PASS` (review) — https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/real-world-voiceeq/benchmark-overview.png: Clear and descriptive; summarizes the image content including the four components and their evaluation aspects."
+          },
+          {
+            "status": "warning",
+            "text": "opening_summary: Opening 3 paragraphs: 39 words (recommend ≥50 for GEO)"
+          },
+          {
+            "status": "pass",
+            "text": "h1_count: Markdown H1 count: 1 (review against rendered layout)"
+          },
+          {
+            "status": "pass",
+            "text": "citations: Citations/statistics: 6 (recommend ≥1 for GEO)"
+          },
+          {
+            "status": "warning",
+            "text": "question_headings: Scannable H2/H3 (question or keyword): 0 (0 question, 0 keyword)"
+          },
+          {
+            "status": "warning",
+            "text": "internal_links: Internal links: 0 (recommend 2-3)"
+          },
+          {
+            "status": "pass",
+            "text": "word_count: Body length: 4712 chars (recommend ≥800 for KO)"
+          },
+          {
+            "status": "warning",
+            "text": "webp_format: WebP format: 0/1 images (≥50% recommend)"
+          },
+          {
+            "status": "warning",
+            "text": "lazy_loading: Lazy loading: 0 images (optional)"
+          }
+        ],
+        "content": "# SEO Eval Report\n\n**Gate: ✅ PASS** — deterministic AND rubric\n\n- File: `../target/_posts/2026-07-15-real-world-voiceeq.md`\n- Source: —\n- Primary keyword: (none — D5 skipped)\n- Mode: file\n\n## Gate\n\n- Status: `PASS`\n- Blockers: ✅ pass\n- Deterministic REQUIRED (D1–D7): ✅ pass\n- Rubric (R1–R6): ✅ pass (mean None, min None)\n\n## Blockers\n\n✅ body_not_empty: Body is not empty\n✅ robots_indexable: Robots is indexable\n✅ internal_links_resolve: All internal links resolve\n✅ local_images_resolve: All local images resolve\n\n## Required checks (gated)\n\n✅ heading_hierarchy: Heading hierarchy: Valid\n✅ alt_text_coverage: Alt text coverage: 1/1 images\n✅ descriptive_alt_text: Descriptive alt text: 1/1 (≥80% recommend)\n✅ image_files_exist: All 0 local image file(s) exist\n\n## OpenAI rubric checks\n\n✅ semantic_metadata: `PASS` (required) — Semantic metadata across title, description, H1, headings, and opening are consistent and align to a Korean translation of a Hugging Face blog post about Real World VoiceEQ.\n✅ alt_semantics: `PASS` (review) — https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/real-world-voiceeq/benchmark-overview.png: Clear and descriptive; summarizes the image content including the four components and their evaluation aspects.\n\n## Advisory checks (not gated)\n\n🟠 opening_summary: Opening 3 paragraphs: 39 words (recommend ≥50 for GEO)\n✅ h1_count: Markdown H1 count: 1 (review against rendered layout)\n✅ citations: Citations/statistics: 6 (recommend ≥1 for GEO)\n⚠️ question_headings: Scannable H2/H3 (question or keyword): 0 (0 question, 0 keyword)\n⚠️ internal_links: Internal links: 0 (recommend 2-3)\n✅ word_count: Body length: 4712 chars (recommend ≥800 for KO)\nℹ️ primary_keyword: No primary_keyword in manifest — keyword check skipped\n⚠️ webp_format: WebP format: 0/1 images (≥50% recommend)\n⚠️ lazy_loading: Lazy loading: 0 images (optional)\n\n## Signals (evidence — not directly gated)\n\n- Frontmatter: title `38` chars, description `52` chars, author present `True`\n- Title text: Real World VoiceEQ 소개: 음성 AI의 인간 품질 측정\n- Description text: Real World VoiceEQ 소개: 음성 AI의 인간 품질 측정에 대한 한국어 번역 글.\n- Opening text: * TOC\n{:toc}\n<!--toc-->\n_이 글은 Hugging Face 블로그의 [Introducing Real World VoiceEQ: Measuring the human quality of voice AI](https://huggingface.co/blog/real-world-voiceeq)를 한국어로 번역한 글입니다_.\n- Opening: first paragraph `186` chars, first 3 paragraphs `259` chars\n- Headings: markdown H1 `1`, rendered effective H1 `2`, layout title H1 `True`\n- Links: total `6`, external `6`, internal `0`, citation signals `6`\n- Images: total `1`, empty alt `0`, filename-like alt `0`, missing local files `0`\n\n### Semantic review packet\n\n- Title: Real World VoiceEQ 소개: 음성 AI의 인간 품질 측정\n- Description: Real World VoiceEQ 소개: 음성 AI의 인간 품질 측정에 대한 한국어 번역 글.\n- Rendered H1 candidates: Real World VoiceEQ 소개: 음성 AI의 인간 품질 측정, Real World VoiceEQ 소개: 음성 AI의 인간 품질 측정\n- Opening: * TOC\n{:toc}\n<!--toc-->\n_이 글은 Hugging Face 블로그의 [Introducing Real World VoiceEQ: Measuring the human quality of voice AI](https://huggingface.co/blog/real-world-voiceeq)를 한국어로 번역한 글입니다_.\n- Canonical/permalink: —\n- Instruction: Compare title, description, rendered H1, and opening text for meaning consistency. This packet is evidence only; it does not decide pass/fail.\n\n## Frontmatter (advisory — written by metadata step, not gated)\n\n✅ title: Title: 38 chars (recommend ≤60)\n✅ description: Description: 52 chars (semantic quality reviewed separately)\n✅ image: OG image: assets/images/blog/posts/2026-07-15-real-world-voiceeq/thumbnail.png\n✅ categories: Categories: 2 (recommend 2-3)\n✅ author: Author: dailybot\n",
+        "enabled": true,
+        "fileName": "PR 리뷰 코멘트 (hf-agent-report)",
+        "frontmatter": {
+          "author": "Author: dailybot",
+          "categories": "Categories: 2 (recommend 2-3)",
+          "description": "Description: 52 chars (semantic quality reviewed separately)",
+          "image": "OG image: assets/images/blog/posts/2026-07-15-real-world-voiceeq/thumbnail.png",
+          "title": "Title: 38 chars (recommend ≤60)"
+        },
+        "headings": [],
+        "origin": "pr-comment",
+        "status": "pass"
+      },
+      "source": {
+        "published_date": "2026-07-15",
+        "slug": "real-world-voiceeq",
+        "title": "Translate Hugging Face blog post: Introducing Real World VoiceEQ: Measuring the human quality of voice AI",
+        "url": "https://huggingface.co/blog/real-world-voiceeq"
+      },
+      "translation": {
+        "branch": "translate/real-world-voiceeq",
+        "file_path": "_posts/2026-07-15-real-world-voiceeq.md",
+        "locale": "ko",
+        "pr_url": "https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/172",
+        "target_repo": "Hugging-Face-KREW/hugging-face-krew.github.io"
+      }
+    },
+    {
+      "prNumber": 171,
+      "quality": {
+        "available": true,
+        "checks": [
+          {
+            "status": "pass",
+            "text": "translation body is not empty"
+          },
+          {
+            "status": "pass",
+            "text": "no TODO marker remains"
+          },
+          {
+            "status": "pass",
+            "text": "code fences are balanced"
+          },
+          {
+            "status": "pass",
+            "text": "contains Korean prose"
+          },
+          {
+            "status": "pass",
+            "text": "source attribution exists"
+          }
+        ],
+        "content": "# Quality Report\n\n- Manifest: `/home/runner/work/hugging-face-krew.github.io/hugging-face-krew.github.io/results/tmpi8jmp7m3.yaml`\n- Translation file: `../target/_posts/2026-07-15-thinkingmachines-inkling.md`\n- Source: https://huggingface.co/blog/thinkingmachines-inkling\n\n## Checks\n\n- PASS: translation body is not empty\n- PASS: no TODO marker remains\n- PASS: code fences are balanced\n- PASS: contains Korean prose\n- PASS: source attribution exists\n\n## Metrics\n\n- body characters: 23324\n- Korean letter ratio: 40.53%\n- code fence markers: 26\n- TODO markers: 0\n- fetched source characters: 0\n",
+        "enabled": true,
+        "fileName": "PR 리뷰 코멘트 (hf-agent-report)",
+        "metrics": {
+          "Korean letter ratio": "40.53%",
+          "TODO markers": "0",
+          "body characters": "23324",
+          "code fence markers": "26",
+          "fetched source characters": "0"
+        },
+        "origin": "pr-comment",
+        "status": "pass"
+      },
+      "requestAvailable": false,
+      "run": {
+        "created_at": "2026-07-16T03:35:23+00:00",
+        "id": "pr-171-comment"
+      },
+      "seo": {
+        "available": true,
+        "checks": [
+          {
+            "status": "pass",
+            "text": "alt_text_coverage: Alt text coverage: 5/5 images"
+          },
+          {
+            "status": "pass",
+            "text": "descriptive_alt_text: Descriptive alt text: 5/5 (≥80% recommend)"
+          },
+          {
+            "status": "pass",
+            "text": "image_files_exist: All 0 local image file(s) exist"
+          },
+          {
+            "status": "warning",
+            "text": "opening_summary: Opening 3 paragraphs: 40 words (recommend ≥50 for GEO)"
+          },
+          {
+            "status": "warning",
+            "text": "heading_hierarchy: Heading hierarchy: Invalid - Skip from H1 to H3: \"SGLang\"; Skip from H1 to H3: \"멀티모달 비전\""
+          },
+          {
+            "status": "warning",
+            "text": "h1_count: Body H1 count: 4 (0 or 1 OK — layout renders title as H1; never multiple)"
+          },
+          {
+            "status": "pass",
+            "text": "citations: Citations/statistics: 181 (recommend ≥1 for GEO)"
+          },
+          {
+            "status": "pass",
+            "text": "question_headings: Scannable H2/H3 (question or keyword): 1 (1 question, 0 keyword)"
+          },
+          {
+            "status": "warning",
+            "text": "internal_links: Internal links: 1 (recommend 2-3)"
+          },
+          {
+            "status": "pass",
+            "text": "word_count: Word count: 3204 (recommend ≥300)"
+          },
+          {
+            "status": "warning",
+            "text": "webp_format: WebP format: 0/5 images (≥50% recommend)"
+          },
+          {
+            "status": "warning",
+            "text": "lazy_loading: Lazy loading: 0 images (optional)"
+          }
+        ],
+        "content": "# SEO Eval Report\n\n**Gate: ✅ PASS** — deterministic gate only (rubric is stage-1 skeleton)\n\n- File: `../target/_posts/2026-07-15-thinkingmachines-inkling.md`\n- Source: —\n- Primary keyword: (none — D5 skipped)\n- Mode: file\n\n## Gate\n\n- Deterministic REQUIRED (D1–D7): ✅ pass\n- Rubric (R1–R6): skeleton — not run (rubric not run (stage-1 skeleton))\n\n## Required checks (gated)\n\n✅ alt_text_coverage: Alt text coverage: 5/5 images\n✅ descriptive_alt_text: Descriptive alt text: 5/5 (≥80% recommend)\n✅ image_files_exist: All 0 local image file(s) exist\n\n## Advisory checks (not gated)\n\n⚠️ opening_summary: Opening 3 paragraphs: 40 words (recommend ≥50 for GEO)\n⚠️ heading_hierarchy: Heading hierarchy: Invalid - Skip from H1 to H3: \"SGLang\"; Skip from H1 to H3: \"멀티모달 비전\"\n⚠️ h1_count: Body H1 count: 4 (0 or 1 OK — layout renders title as H1; never multiple)\n✅ citations: Citations/statistics: 181 (recommend ≥1 for GEO)\n✅ question_headings: Scannable H2/H3 (question or keyword): 1 (1 question, 0 keyword)\n⚠️ internal_links: Internal links: 1 (recommend 2-3)\n✅ word_count: Word count: 3204 (recommend ≥300)\nℹ️ primary_keyword: No primary_keyword in manifest — keyword check skipped\n⚠️ webp_format: WebP format: 0/5 images (≥50% recommend)\n⚠️ lazy_loading: Lazy loading: 0 images (optional)\n\n## Frontmatter (advisory — written by metadata step, not gated)\n\n✅ title: Title: 39 chars (recommend ≤60)\n❌ description: Description is missing\n✅ image: OG image: assets/images/blog/posts/2026-07-15-thinkingmachines-inkling/thumbnail.png\n✅ categories: Categories: 2 (recommend 2-3)\n✅ author: Author: dailybot\n",
+        "enabled": true,
+        "fileName": "PR 리뷰 코멘트 (hf-agent-report)",
+        "frontmatter": {
+          "author": "Author: dailybot",
+          "categories": "Categories: 2 (recommend 2-3)",
+          "description": "Description is missing",
+          "image": "OG image: assets/images/blog/posts/2026-07-15-thinkingmachines-inkling/thumbnail.png",
+          "title": "Title: 39 chars (recommend ≤60)"
+        },
+        "headings": [],
+        "origin": "pr-comment",
+        "status": "pass"
+      },
+      "source": {
+        "published_date": "2026-07-15",
+        "slug": "thinkingmachines-inkling",
+        "title": "Translate Hugging Face blog post: Welcome Inkling by Thinking Machines",
+        "url": "https://huggingface.co/blog/thinkingmachines-inkling"
+      },
+      "translation": {
+        "branch": "translate/thinkingmachines-inkling",
+        "file_path": "_posts/2026-07-15-thinkingmachines-inkling.md",
+        "locale": "ko",
+        "pr_url": "https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/171",
+        "target_repo": "Hugging-Face-KREW/hugging-face-krew.github.io"
+      }
+    },
     {
       "prNumber": 168,
       "quality": {
@@ -46,14 +395,70 @@
         "target_date": "2026-07-10"
       },
       "seo": {
-        "available": false,
-        "checks": [],
-        "content": "",
+        "available": true,
+        "checks": [
+          {
+            "status": "pass",
+            "text": "alt_text_coverage: Alt text coverage: 24/24 images"
+          },
+          {
+            "status": "pass",
+            "text": "descriptive_alt_text: Descriptive alt text: 24/24 (≥80% recommend)"
+          },
+          {
+            "status": "pass",
+            "text": "image_files_exist: All 0 local image file(s) exist"
+          },
+          {
+            "status": "warning",
+            "text": "opening_summary: Opening 3 paragraphs: 34 words (recommend ≥50 for GEO)"
+          },
+          {
+            "status": "pass",
+            "text": "heading_hierarchy: Heading hierarchy: Valid"
+          },
+          {
+            "status": "warning",
+            "text": "h1_count: Body H1 count: 2 (0 or 1 OK — layout renders title as H1; never multiple)"
+          },
+          {
+            "status": "pass",
+            "text": "citations: Citations/statistics: 26 (recommend ≥1 for GEO)"
+          },
+          {
+            "status": "warning",
+            "text": "question_headings: Scannable H2/H3 (question or keyword): 0 (0 question, 0 keyword)"
+          },
+          {
+            "status": "warning",
+            "text": "internal_links: Internal links: 0 (recommend 2-3)"
+          },
+          {
+            "status": "pass",
+            "text": "word_count: Word count: 3852 (recommend ≥300)"
+          },
+          {
+            "status": "warning",
+            "text": "webp_format: WebP format: 0/24 images (≥50% recommend)"
+          },
+          {
+            "status": "warning",
+            "text": "lazy_loading: Lazy loading: 0 images (optional)"
+          }
+        ],
+        "content": "# SEO Eval Report\n\n**Gate: ✅ PASS** — deterministic gate only (rubric is stage-1 skeleton)\n\n- File: `../target/_posts/2026-07-10-torch-attention-profile.md`\n- Source: —\n- Primary keyword: (none — D5 skipped)\n- Mode: file\n\n## Gate\n\n- Deterministic REQUIRED (D1–D7): ✅ pass\n- Rubric (R1–R6): skeleton — not run (rubric not run (stage-1 skeleton))\n\n## Required checks (gated)\n\n✅ alt_text_coverage: Alt text coverage: 24/24 images\n✅ descriptive_alt_text: Descriptive alt text: 24/24 (≥80% recommend)\n✅ image_files_exist: All 0 local image file(s) exist\n\n## Advisory checks (not gated)\n\n⚠️ opening_summary: Opening 3 paragraphs: 34 words (recommend ≥50 for GEO)\n✅ heading_hierarchy: Heading hierarchy: Valid\n⚠️ h1_count: Body H1 count: 2 (0 or 1 OK — layout renders title as H1; never multiple)\n✅ citations: Citations/statistics: 26 (recommend ≥1 for GEO)\n⚠️ question_headings: Scannable H2/H3 (question or keyword): 0 (0 question, 0 keyword)\n⚠️ internal_links: Internal links: 0 (recommend 2-3)\n✅ word_count: Word count: 3852 (recommend ≥300)\nℹ️ primary_keyword: No primary_keyword in manifest — keyword check skipped\n⚠️ webp_format: WebP format: 0/24 images (≥50% recommend)\n⚠️ lazy_loading: Lazy loading: 0 images (optional)\n\n## Frontmatter (advisory — written by metadata step, not gated)\n\n✅ title: Title: 25 chars (recommend ≤60)\n❌ description: Description is missing\n✅ image: OG image: assets/images/blog/posts/2026-07-10-torch-attention-profile/thumbnail.png\n✅ categories: Categories: 2 (recommend 2-3)\n✅ author: Author: dailybot\n",
         "enabled": true,
-        "fileName": "seo-report.md",
-        "frontmatter": {},
+        "fileName": "PR 리뷰 코멘트 (hf-agent-report)",
+        "frontmatter": {
+          "author": "Author: dailybot",
+          "categories": "Categories: 2 (recommend 2-3)",
+          "description": "Description is missing",
+          "image": "OG image: assets/images/blog/posts/2026-07-10-torch-attention-profile/thumbnail.png",
+          "title": "Title: 25 chars (recommend ≤60)"
+        },
         "headings": [],
-        "status": "missing"
+        "origin": "pr-comment",
+        "status": "pass"
       },
       "source": {
         "feed_url": "https://huggingface.co/blog/feed.xml",
@@ -69,6 +474,254 @@
         "file_path": "_posts/2026-07-10-torch-attention-profile.md",
         "locale": "ko",
         "pr_url": "https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/168",
+        "target_repo": "Hugging-Face-KREW/hugging-face-krew.github.io"
+      }
+    },
+    {
+      "prNumber": 161,
+      "quality": {
+        "available": true,
+        "checks": [
+          {
+            "status": "pass",
+            "text": "translation body is not empty"
+          },
+          {
+            "status": "pass",
+            "text": "no TODO marker remains"
+          },
+          {
+            "status": "pass",
+            "text": "code fences are balanced"
+          },
+          {
+            "status": "pass",
+            "text": "contains Korean prose"
+          },
+          {
+            "status": "pass",
+            "text": "source attribution exists"
+          }
+        ],
+        "content": "# Quality Report\n\n- Manifest: `/home/runner/work/hugging-face-krew.github.io/hugging-face-krew.github.io/results/tmpacif89cy.yaml`\n- Translation file: `../target/_posts/2026-06-30-eee-community-evals.md`\n- Source: https://huggingface.co/blog/eee-community-evals\n\n## Checks\n\n- PASS: translation body is not empty\n- PASS: no TODO marker remains\n- PASS: code fences are balanced\n- PASS: contains Korean prose\n- PASS: source attribution exists\n\n## Metrics\n\n- body characters: 7120\n- Korean letter ratio: 48.35%\n- code fence markers: 4\n- TODO markers: 0\n- fetched source characters: 0\n",
+        "enabled": true,
+        "fileName": "PR 리뷰 코멘트 (hf-agent-report)",
+        "metrics": {
+          "Korean letter ratio": "48.35%",
+          "TODO markers": "0",
+          "body characters": "7120",
+          "code fence markers": "4",
+          "fetched source characters": "0"
+        },
+        "origin": "pr-comment",
+        "status": "pass"
+      },
+      "requestAvailable": false,
+      "run": {
+        "created_at": "2026-07-04T07:03:03+00:00",
+        "id": "pr-161-comment"
+      },
+      "seo": {
+        "available": true,
+        "checks": [
+          {
+            "status": "pass",
+            "text": "alt_text_coverage: Alt text coverage: 3/3 images"
+          },
+          {
+            "status": "pass",
+            "text": "descriptive_alt_text: Descriptive alt text: 3/3 (≥80% recommend)"
+          },
+          {
+            "status": "pass",
+            "text": "image_files_exist: All 0 local image file(s) exist"
+          },
+          {
+            "status": "warning",
+            "text": "opening_summary: Opening 3 paragraphs: 32 words (recommend ≥50 for GEO)"
+          },
+          {
+            "status": "pass",
+            "text": "heading_hierarchy: Heading hierarchy: Valid"
+          },
+          {
+            "status": "pass",
+            "text": "h1_count: Body H1 count: 1 (0 or 1 OK — layout renders title as H1; never multiple)"
+          },
+          {
+            "status": "pass",
+            "text": "citations: Citations/statistics: 19 (recommend ≥1 for GEO)"
+          },
+          {
+            "status": "warning",
+            "text": "question_headings: Scannable H2/H3 (question or keyword): 0 (0 question, 0 keyword)"
+          },
+          {
+            "status": "warning",
+            "text": "internal_links: Internal links: 0 (recommend 2-3)"
+          },
+          {
+            "status": "pass",
+            "text": "word_count: Word count: 1025 (recommend ≥300)"
+          },
+          {
+            "status": "warning",
+            "text": "webp_format: WebP format: 0/3 images (≥50% recommend)"
+          },
+          {
+            "status": "pass",
+            "text": "lazy_loading: Lazy loading: 1 images (optional)"
+          }
+        ],
+        "content": "# SEO Eval Report\n\n**Gate: ✅ PASS** — deterministic gate only (rubric is stage-1 skeleton)\n\n- File: `../target/_posts/2026-06-30-eee-community-evals.md`\n- Source: —\n- Primary keyword: (none — D5 skipped)\n- Mode: file\n\n## Gate\n\n- Deterministic REQUIRED (D1–D7): ✅ pass\n- Rubric (R1–R6): skeleton — not run (rubric not run (stage-1 skeleton))\n\n## Required checks (gated)\n\n✅ alt_text_coverage: Alt text coverage: 3/3 images\n✅ descriptive_alt_text: Descriptive alt text: 3/3 (≥80% recommend)\n✅ image_files_exist: All 0 local image file(s) exist\n\n## Advisory checks (not gated)\n\n⚠️ opening_summary: Opening 3 paragraphs: 32 words (recommend ≥50 for GEO)\n✅ heading_hierarchy: Heading hierarchy: Valid\n✅ h1_count: Body H1 count: 1 (0 or 1 OK — layout renders title as H1; never multiple)\n✅ citations: Citations/statistics: 19 (recommend ≥1 for GEO)\n⚠️ question_headings: Scannable H2/H3 (question or keyword): 0 (0 question, 0 keyword)\n⚠️ internal_links: Internal links: 0 (recommend 2-3)\n✅ word_count: Word count: 1025 (recommend ≥300)\nℹ️ primary_keyword: No primary_keyword in manifest — keyword check skipped\n⚠️ webp_format: WebP format: 0/3 images (≥50% recommend)\n✅ lazy_loading: Lazy loading: 1 images (optional)\n\n## Frontmatter (advisory — written by metadata step, not gated)\n\n✅ title: Title: 31 chars (recommend ≤60)\n❌ description: Description is missing\n❌ image: OG image is missing\n✅ categories: Categories: 2 (recommend 2-3)\n✅ author: Author: dailybot\n",
+        "enabled": true,
+        "fileName": "PR 리뷰 코멘트 (hf-agent-report)",
+        "frontmatter": {
+          "author": "Author: dailybot",
+          "categories": "Categories: 2 (recommend 2-3)",
+          "description": "Description is missing",
+          "image": "OG image is missing",
+          "title": "Title: 31 chars (recommend ≤60)"
+        },
+        "headings": [],
+        "origin": "pr-comment",
+        "status": "pass"
+      },
+      "source": {
+        "published_date": "2026-06-30",
+        "slug": "eee-community-evals",
+        "title": "Translate Hugging Face blog post: Featuring Every Eval Ever Results on Hugging Face Model Pages",
+        "url": "https://huggingface.co/blog/eee-community-evals"
+      },
+      "translation": {
+        "branch": "translate/eee-community-evals",
+        "file_path": "_posts/2026-06-30-eee-community-evals.md",
+        "locale": "ko",
+        "pr_url": "https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/161",
+        "target_repo": "Hugging-Face-KREW/hugging-face-krew.github.io"
+      }
+    },
+    {
+      "prNumber": 154,
+      "quality": {
+        "available": true,
+        "checks": [
+          {
+            "status": "pass",
+            "text": "translation body is not empty"
+          },
+          {
+            "status": "pass",
+            "text": "no TODO marker remains"
+          },
+          {
+            "status": "pass",
+            "text": "code fences are balanced"
+          },
+          {
+            "status": "pass",
+            "text": "contains Korean prose"
+          },
+          {
+            "status": "pass",
+            "text": "source attribution exists"
+          }
+        ],
+        "content": "# Quality Report\n\n- Manifest: `/home/runner/work/hugging-face-krew.github.io/hugging-face-krew.github.io/results/tmp2ifiy9mf.yaml`\n- Translation file: `../target/_posts/2026-06-23-cross-origin-storage.md`\n- Source: https://huggingface.co/blog/cross-origin-storage\n\n## Checks\n\n- PASS: translation body is not empty\n- PASS: no TODO marker remains\n- PASS: code fences are balanced\n- PASS: contains Korean prose\n- PASS: source attribution exists\n\n## Metrics\n\n- body characters: 18654\n- Korean letter ratio: 33.23%\n- code fence markers: 8\n- TODO markers: 0\n- fetched source characters: 0\n",
+        "enabled": true,
+        "fileName": "PR 리뷰 코멘트 (hf-agent-report)",
+        "metrics": {
+          "Korean letter ratio": "33.23%",
+          "TODO markers": "0",
+          "body characters": "18654",
+          "code fence markers": "8",
+          "fetched source characters": "0"
+        },
+        "origin": "pr-comment",
+        "status": "pass"
+      },
+      "requestAvailable": false,
+      "run": {
+        "created_at": "2026-07-04T12:28:36+00:00",
+        "id": "pr-154-comment"
+      },
+      "seo": {
+        "available": true,
+        "checks": [
+          {
+            "status": "pass",
+            "text": "alt_text_coverage: Alt text coverage: 8/8 images"
+          },
+          {
+            "status": "pass",
+            "text": "descriptive_alt_text: Descriptive alt text: 7/8 (≥80% recommend)"
+          },
+          {
+            "status": "pass",
+            "text": "image_files_exist: All 0 local image file(s) exist"
+          },
+          {
+            "status": "warning",
+            "text": "opening_summary: Opening 3 paragraphs: 32 words (recommend ≥50 for GEO)"
+          },
+          {
+            "status": "pass",
+            "text": "heading_hierarchy: Heading hierarchy: Valid"
+          },
+          {
+            "status": "pass",
+            "text": "h1_count: Body H1 count: 1 (0 or 1 OK — layout renders title as H1; never multiple)"
+          },
+          {
+            "status": "pass",
+            "text": "citations: Citations/statistics: 49 (recommend ≥1 for GEO)"
+          },
+          {
+            "status": "pass",
+            "text": "question_headings: Scannable H2/H3 (question or keyword): 1 (1 question, 0 keyword)"
+          },
+          {
+            "status": "warning",
+            "text": "internal_links: Internal links: 0 (recommend 2-3)"
+          },
+          {
+            "status": "pass",
+            "text": "word_count: Word count: 2098 (recommend ≥300)"
+          },
+          {
+            "status": "warning",
+            "text": "webp_format: WebP format: 0/8 images (≥50% recommend)"
+          },
+          {
+            "status": "warning",
+            "text": "lazy_loading: Lazy loading: 0 images (optional)"
+          }
+        ],
+        "content": "# SEO Eval Report\n\n**Gate: ✅ PASS** — deterministic gate only (rubric is stage-1 skeleton)\n\n- File: `../target/_posts/2026-06-23-cross-origin-storage.md`\n- Source: —\n- Primary keyword: (none — D5 skipped)\n- Mode: file\n\n## Gate\n\n- Deterministic REQUIRED (D1–D7): ✅ pass\n- Rubric (R1–R6): skeleton — not run (rubric not run (stage-1 skeleton))\n\n## Required checks (gated)\n\n✅ alt_text_coverage: Alt text coverage: 8/8 images\n✅ descriptive_alt_text: Descriptive alt text: 7/8 (≥80% recommend)\n✅ image_files_exist: All 0 local image file(s) exist\n\n## Advisory checks (not gated)\n\n⚠️ opening_summary: Opening 3 paragraphs: 32 words (recommend ≥50 for GEO)\n✅ heading_hierarchy: Heading hierarchy: Valid\n✅ h1_count: Body H1 count: 1 (0 or 1 OK — layout renders title as H1; never multiple)\n✅ citations: Citations/statistics: 49 (recommend ≥1 for GEO)\n✅ question_headings: Scannable H2/H3 (question or keyword): 1 (1 question, 0 keyword)\n⚠️ internal_links: Internal links: 0 (recommend 2-3)\n✅ word_count: Word count: 2098 (recommend ≥300)\nℹ️ primary_keyword: No primary_keyword in manifest — keyword check skipped\n⚠️ webp_format: WebP format: 0/8 images (≥50% recommend)\n⚠️ lazy_loading: Lazy loading: 0 images (optional)\n\n## Frontmatter (advisory — written by metadata step, not gated)\n\n✅ title: Title: 51 chars (recommend ≤60)\n❌ description: Description is missing\n❌ image: OG image is missing\n✅ categories: Categories: 2 (recommend 2-3)\n✅ author: Author: dailybot\n",
+        "enabled": true,
+        "fileName": "PR 리뷰 코멘트 (hf-agent-report)",
+        "frontmatter": {
+          "author": "Author: dailybot",
+          "categories": "Categories: 2 (recommend 2-3)",
+          "description": "Description is missing",
+          "image": "OG image is missing",
+          "title": "Title: 51 chars (recommend ≤60)"
+        },
+        "headings": [],
+        "origin": "pr-comment",
+        "status": "pass"
+      },
+      "source": {
+        "published_date": "2026-06-23",
+        "slug": "cross-origin-storage",
+        "title": "Translate Hugging Face blog post: Experimenting with the proposed Cross-Origin Storage API in Transformers.js",
+        "url": "https://huggingface.co/blog/cross-origin-storage"
+      },
+      "translation": {
+        "branch": "translate/cross-origin-storage",
+        "file_path": "_posts/2026-06-23-cross-origin-storage.md",
+        "locale": "ko",
+        "pr_url": "https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/154",
         "target_repo": "Hugging-Face-KREW/hugging-face-krew.github.io"
       }
     },

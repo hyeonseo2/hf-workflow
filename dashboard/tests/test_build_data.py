@@ -5,7 +5,10 @@ from pathlib import Path
 from zipfile import ZipFile
 
 from dashboard.scripts.build_data import (
+    append_comment_entries,
+    apply_agent_comments,
     compile_archive,
+    parse_agent_comment,
     parse_manifest,
     parse_report,
     write_snapshot,
@@ -112,6 +115,64 @@ SEO_FAIL_REPORT = """\
 - PASS: frontmatter title exists
 - WARN: description needs review
 - FAIL: source URL is missing
+"""
+
+AGENT_COMMENT = """\
+<!-- hf-agent-report -->
+## HF Agent Review
+
+| Gate | Result |
+|---|---|
+| Quality | ❌ Fail |
+| SEO | ✅ Pass |
+
+Head SHA: `c31b5ef`
+
+<details>
+<summary>Quality report — ❌ Fail</summary>
+
+# Quality Report
+
+- Manifest: `/tmp/results/manifest.yaml`
+- Translation file: `../target/_posts/2026-07-16-security-incident.md`
+- Source: https://huggingface.co/blog/security-incident
+
+## Checks
+
+- PASS: translation body is not empty
+- FAIL: source attribution exists
+
+## Metrics
+
+- body characters: 9000
+
+</details>
+
+<details>
+<summary>SEO report — ✅ Pass</summary>
+
+# SEO Eval Report
+
+**Gate: ✅ PASS** — deterministic gate only
+
+- File: `../target/_posts/2026-07-16-security-incident.md`
+- Source: —
+
+## Required checks (gated)
+
+✅ alt_text_coverage: Alt text coverage: 3/3 images
+
+## Advisory checks (not gated)
+
+⚠️ internal_links: Internal links: 0 (recommend 2-3)
+ℹ️ primary_keyword: No primary_keyword in manifest — keyword check skipped
+
+## Frontmatter (advisory — written by metadata step, not gated)
+
+✅ title: Title: 25 chars (recommend ≤60)
+❌ description: Description is missing
+
+</details>
 """
 
 
@@ -268,6 +329,87 @@ class CompileArchiveTests(unittest.TestCase):
         result = compile_archive(archive)
 
         self.assertEqual(result["reportSnapshotAt"], "2026-07-11T00:00:00+00:00")
+
+    def test_parse_agent_comment_reads_gates_and_both_report_formats(self):
+        comment = parse_agent_comment(AGENT_COMMENT)
+
+        self.assertEqual(comment["quality"]["status"], "fail")
+        self.assertEqual(
+            comment["quality"]["checks"][1],
+            {"status": "fail", "text": "source attribution exists"},
+        )
+        self.assertEqual(comment["quality"]["metrics"]["body characters"], "9000")
+        self.assertEqual(comment["seo"]["status"], "pass")
+        self.assertEqual(
+            comment["seo"]["checks"],
+            [
+                {"status": "pass", "text": "alt_text_coverage: Alt text coverage: 3/3 images"},
+                {"status": "warning", "text": "internal_links: Internal links: 0 (recommend 2-3)"},
+            ],
+        )
+        self.assertEqual(comment["seo"]["frontmatter"]["description"], "Description is missing")
+        self.assertIn("# SEO Eval Report", comment["seo"]["content"])
+        self.assertEqual(parse_agent_comment("no marker here"), {})
+        self.assertEqual(parse_agent_comment(None), {})
+
+    def test_apply_agent_comments_backfills_only_missing_reports(self):
+        snapshot = compile_archive(self.make_archive(quality=QUALITY_REPORT))
+        comment = parse_agent_comment(AGENT_COMMENT)
+
+        apply_agent_comments(snapshot, {168: comment})
+
+        report = snapshot["reports"][0]
+        self.assertEqual(report["quality"]["status"], "pass")
+        self.assertEqual(report["quality"]["content"], QUALITY_REPORT)
+        self.assertNotIn("origin", report["quality"])
+        self.assertTrue(report["seo"]["available"])
+        self.assertEqual(report["seo"]["status"], "pass")
+        self.assertEqual(report["seo"]["origin"], "pr-comment")
+        self.assertTrue(report["seo"]["enabled"])
+        self.assertIn("hf-agent-report", report["seo"]["fileName"])
+
+    def test_append_comment_entries_adds_open_pr_rows_from_comments(self):
+        snapshot = compile_archive(self.make_archive(quality=QUALITY_REPORT))
+        comment = parse_agent_comment(AGENT_COMMENT)
+        comment["createdAt"] = "2026-07-17T03:35:27+00:00"
+        pulls = [
+            {
+                "number": 173,
+                "title": "Add Korean translation for security incident",
+                "branch": "translate/security-incident",
+                "htmlUrl": "https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/173",
+            },
+            {"number": 168, "title": "already tracked", "branch": "translate/model-guide", "htmlUrl": ""},
+        ]
+
+        append_comment_entries(snapshot, pulls, {173: comment})
+
+        self.assertEqual([report["prNumber"] for report in snapshot["reports"]], [173, 168])
+        entry = snapshot["reports"][0]
+        self.assertEqual(entry["source"]["slug"], "security-incident")
+        self.assertEqual(entry["source"]["url"], "https://huggingface.co/blog/security-incident")
+        self.assertEqual(entry["source"]["published_date"], "2026-07-16")
+        self.assertEqual(
+            entry["translation"]["file_path"], "_posts/2026-07-16-security-incident.md"
+        )
+        self.assertEqual(
+            entry["translation"]["target_repo"],
+            "Hugging-Face-KREW/hugging-face-krew.github.io",
+        )
+        self.assertEqual(entry["quality"]["status"], "fail")
+        self.assertEqual(entry["seo"]["status"], "pass")
+        self.assertFalse(entry["requestAvailable"])
+        self.assertEqual(snapshot["reportSnapshotAt"], "2026-07-17T03:35:27+00:00")
+
+    def test_append_comment_entries_skips_pulls_without_comments(self):
+        snapshot = compile_archive(self.make_archive(quality=QUALITY_REPORT))
+
+        append_comment_entries(
+            snapshot, [{"number": 175, "title": "no comment yet", "branch": "translate/x", "htmlUrl": ""}], {}
+        )
+
+        self.assertEqual([report["prNumber"] for report in snapshot["reports"]], [168])
+        self.assertEqual(snapshot["reportSnapshotAt"], "2026-07-11T03:41:07+00:00")
 
     def test_write_snapshot_is_byte_deterministic_with_sorted_keys_and_newline(self):
         archive = self.make_archive(quality=QUALITY_REPORT, seo=SEO_REPORT)
