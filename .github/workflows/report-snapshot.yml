@@ -1,0 +1,51 @@
+name: Update dashboard report snapshot
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # 15:00 KST, after the daily translation run commits its reports
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: report-snapshot
+  cancel-in-progress: false
+
+jobs:
+  update-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Rebuild report snapshot
+        run: |
+          # The archive name is part of the JSON output; keep it stable so
+          # unchanged reports produce a byte-identical snapshot.
+          git archive --format=zip -o "$RUNNER_TEMP/hf-workflow-main.zip" HEAD
+          python3 dashboard/scripts/build_data.py \
+            "$RUNNER_TEMP/hf-workflow-main.zip" dashboard/data/reports.json
+
+      - name: Commit snapshot and trigger Pages deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add dashboard/data/reports.json
+          if git diff --cached --quiet; then
+            echo "Report snapshot is already up to date."
+            exit 0
+          fi
+          git commit -m "Update dashboard report snapshot"
+          git push
+          # Pushes made with GITHUB_TOKEN do not fire push-triggered
+          # workflows, so dispatch the Pages deploy explicitly.
+          gh workflow run pages.yml --ref main
