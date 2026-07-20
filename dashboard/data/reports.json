@@ -120,13 +120,13 @@
             "text": "source attribution exists"
           }
         ],
-        "content": "# Quality Report\n\n- Manifest: `/home/runner/work/hf-workflow/hf-workflow/results/tmpbgbkcdr5.yaml`\n- Translation file: `../target/_posts/2026-07-15-real-world-voiceeq.md`\n- Source: https://huggingface.co/blog/real-world-voiceeq\n\n## Checks\n\n- PASS: translation body is not empty\n- PASS: no TODO marker remains\n- PASS: code fences are balanced\n- PASS: contains Korean prose\n- PASS: source attribution exists\n\n## Metrics\n\n- body characters: 4715\n- Korean letter ratio: 71.01%\n- code fence markers: 0\n- TODO markers: 0\n- fetched source characters: 0\n",
+        "content": "# Quality Report\n\n- Manifest: `/home/runner/work/hugging-face-krew.github.io/hugging-face-krew.github.io/results/tmp436dzsmq.yaml`\n- Translation file: `../target/_posts/2026-07-15-real-world-voiceeq.md`\n- Source: https://huggingface.co/blog/real-world-voiceeq\n\n## Checks\n\n- PASS: translation body is not empty\n- PASS: no TODO marker remains\n- PASS: code fences are balanced\n- PASS: contains Korean prose\n- PASS: source attribution exists\n\n## Metrics\n\n- body characters: 4714\n- Korean letter ratio: 71.01%\n- code fence markers: 0\n- TODO markers: 0\n- fetched source characters: 0\n",
         "enabled": true,
         "fileName": "PR 리뷰 코멘트 (hf-agent-report)",
         "metrics": {
           "Korean letter ratio": "71.01%",
           "TODO markers": "0",
-          "body characters": "4715",
+          "body characters": "4714",
           "code fence markers": "0",
           "fetched source characters": "0"
         },
@@ -143,10 +143,6 @@
         "checks": [
           {
             "status": "pass",
-            "text": "heading_hierarchy: Heading hierarchy: Valid"
-          },
-          {
-            "status": "pass",
             "text": "alt_text_coverage: Alt text coverage: 1/1 images"
           },
           {
@@ -158,20 +154,16 @@
             "text": "image_files_exist: All 0 local image file(s) exist"
           },
           {
-            "status": "pass",
-            "text": "semantic_metadata: `PASS` (required) — Semantic metadata across title, description, H1, headings, and opening are consistent and align to a Korean translation of a Hugging Face blog post about Real World VoiceEQ."
-          },
-          {
-            "status": "pass",
-            "text": "alt_semantics: `PASS` (review) — https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/real-world-voiceeq/benchmark-overview.png: Clear and descriptive; summarizes the image content including the four components and their evaluation aspects."
-          },
-          {
             "status": "warning",
-            "text": "opening_summary: Opening 3 paragraphs: 39 words (recommend ≥50 for GEO)"
+            "text": "opening_summary: Opening 3 paragraphs: 48 words (recommend ≥50 for GEO)"
           },
           {
             "status": "pass",
-            "text": "h1_count: Markdown H1 count: 1 (review against rendered layout)"
+            "text": "heading_hierarchy: Heading hierarchy: Valid"
+          },
+          {
+            "status": "pass",
+            "text": "h1_count: Body H1 count: 1 (0 or 1 OK — layout renders title as H1; never multiple)"
           },
           {
             "status": "pass",
@@ -198,13 +190,13 @@
             "text": "lazy_loading: Lazy loading: 0 images (optional)"
           }
         ],
-        "content": "# SEO Eval Report\n\n**Gate: ✅ PASS** — deterministic AND rubric\n\n- File: `../target/_posts/2026-07-15-real-world-voiceeq.md`\n- Source: —\n- Primary keyword: (none — D5 skipped)\n- Mode: file\n\n## Gate\n\n- Status: `PASS`\n- Blockers: ✅ pass\n- Deterministic REQUIRED (D1–D7): ✅ pass\n- Rubric (R1–R6): ✅ pass (mean None, min None)\n\n## Blockers\n\n✅ body_not_empty: Body is not empty\n✅ robots_indexable: Robots is indexable\n✅ internal_links_resolve: All internal links resolve\n✅ local_images_resolve: All local images resolve\n\n## Required checks (gated)\n\n✅ heading_hierarchy: Heading hierarchy: Valid\n✅ alt_text_coverage: Alt text coverage: 1/1 images\n✅ descriptive_alt_text: Descriptive alt text: 1/1 (≥80% recommend)\n✅ image_files_exist: All 0 local image file(s) exist\n\n## OpenAI rubric checks\n\n✅ semantic_metadata: `PASS` (required) — Semantic metadata across title, description, H1, headings, and opening are consistent and align to a Korean translation of a Hugging Face blog post about Real World VoiceEQ.\n✅ alt_semantics: `PASS` (review) — https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/real-world-voiceeq/benchmark-overview.png: Clear and descriptive; summarizes the image content including the four components and their evaluation aspects.\n\n## Advisory checks (not gated)\n\n🟠 opening_summary: Opening 3 paragraphs: 39 words (recommend ≥50 for GEO)\n✅ h1_count: Markdown H1 count: 1 (review against rendered layout)\n✅ citations: Citations/statistics: 6 (recommend ≥1 for GEO)\n⚠️ question_headings: Scannable H2/H3 (question or keyword): 0 (0 question, 0 keyword)\n⚠️ internal_links: Internal links: 0 (recommend 2-3)\n✅ word_count: Body length: 4712 chars (recommend ≥800 for KO)\nℹ️ primary_keyword: No primary_keyword in manifest — keyword check skipped\n⚠️ webp_format: WebP format: 0/1 images (≥50% recommend)\n⚠️ lazy_loading: Lazy loading: 0 images (optional)\n\n## Signals (evidence — not directly gated)\n\n- Frontmatter: title `38` chars, description `52` chars, author present `True`\n- Title text: Real World VoiceEQ 소개: 음성 AI의 인간 품질 측정\n- Description text: Real World VoiceEQ 소개: 음성 AI의 인간 품질 측정에 대한 한국어 번역 글.\n- Opening text: * TOC\n{:toc}\n<!--toc-->\n_이 글은 Hugging Face 블로그의 [Introducing Real World VoiceEQ: Measuring the human quality of voice AI](https://huggingface.co/blog/real-world-voiceeq)를 한국어로 번역한 글입니다_.\n- Opening: first paragraph `186` chars, first 3 paragraphs `259` chars\n- Headings: markdown H1 `1`, rendered effective H1 `2`, layout title H1 `True`\n- Links: total `6`, external `6`, internal `0`, citation signals `6`\n- Images: total `1`, empty alt `0`, filename-like alt `0`, missing local files `0`\n\n### Semantic review packet\n\n- Title: Real World VoiceEQ 소개: 음성 AI의 인간 품질 측정\n- Description: Real World VoiceEQ 소개: 음성 AI의 인간 품질 측정에 대한 한국어 번역 글.\n- Rendered H1 candidates: Real World VoiceEQ 소개: 음성 AI의 인간 품질 측정, Real World VoiceEQ 소개: 음성 AI의 인간 품질 측정\n- Opening: * TOC\n{:toc}\n<!--toc-->\n_이 글은 Hugging Face 블로그의 [Introducing Real World VoiceEQ: Measuring the human quality of voice AI](https://huggingface.co/blog/real-world-voiceeq)를 한국어로 번역한 글입니다_.\n- Canonical/permalink: —\n- Instruction: Compare title, description, rendered H1, and opening text for meaning consistency. This packet is evidence only; it does not decide pass/fail.\n\n## Frontmatter (advisory — written by metadata step, not gated)\n\n✅ title: Title: 38 chars (recommend ≤60)\n✅ description: Description: 52 chars (semantic quality reviewed separately)\n✅ image: OG image: assets/images/blog/posts/2026-07-15-real-world-voiceeq/thumbnail.png\n✅ categories: Categories: 2 (recommend 2-3)\n✅ author: Author: dailybot\n",
+        "content": "# SEO Eval Report\n\n**Gate: ✅ PASS** — deterministic gate only (rubric is stage-1 skeleton)\n\n- File: `../target/_posts/2026-07-15-real-world-voiceeq.md`\n- Source: —\n- Primary keyword: (none — D5 skipped)\n- Mode: file\n\n## Gate\n\n- Deterministic REQUIRED (D1–D7): ✅ pass\n- Rubric (R1–R6): skeleton — not run (rubric not run (stage-1 skeleton))\n\n## Required checks (gated)\n\n✅ alt_text_coverage: Alt text coverage: 1/1 images\n✅ descriptive_alt_text: Descriptive alt text: 1/1 (≥80% recommend)\n✅ image_files_exist: All 0 local image file(s) exist\n\n## Advisory checks (not gated)\n\n⚠️ opening_summary: Opening 3 paragraphs: 48 words (recommend ≥50 for GEO)\n✅ heading_hierarchy: Heading hierarchy: Valid\n✅ h1_count: Body H1 count: 1 (0 or 1 OK — layout renders title as H1; never multiple)\n✅ citations: Citations/statistics: 6 (recommend ≥1 for GEO)\n⚠️ question_headings: Scannable H2/H3 (question or keyword): 0 (0 question, 0 keyword)\n⚠️ internal_links: Internal links: 0 (recommend 2-3)\n✅ word_count: Body length: 4712 chars (recommend ≥800 for KO)\nℹ️ primary_keyword: No primary_keyword in manifest — keyword check skipped\n⚠️ webp_format: WebP format: 0/1 images (≥50% recommend)\n⚠️ lazy_loading: Lazy loading: 0 images (optional)\n\n## Frontmatter (advisory — written by metadata step, not gated)\n\n✅ title: Title: 38 chars (recommend ≤60)\n❌ description: Description: 52 chars (recommend 150-160)\n✅ image: OG image: assets/images/blog/posts/2026-07-15-real-world-voiceeq/thumbnail.png\n✅ categories: Categories: 2 (recommend 2-3)\n✅ author: Author: dailybot\n",
         "enabled": true,
         "fileName": "PR 리뷰 코멘트 (hf-agent-report)",
         "frontmatter": {
           "author": "Author: dailybot",
           "categories": "Categories: 2 (recommend 2-3)",
-          "description": "Description: 52 chars (semantic quality reviewed separately)",
+          "description": "Description: 52 chars (recommend 150-160)",
           "image": "OG image: assets/images/blog/posts/2026-07-15-real-world-voiceeq/thumbnail.png",
           "title": "Title: 38 chars (recommend ≤60)"
         },
