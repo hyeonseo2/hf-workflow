@@ -244,7 +244,7 @@
             "text": "source attribution exists"
           }
         ],
-        "content": "# Quality Report\n\n- Manifest: `/home/runner/work/hugging-face-krew.github.io/hugging-face-krew.github.io/results/tmpi8jmp7m3.yaml`\n- Translation file: `../target/_posts/2026-07-15-thinkingmachines-inkling.md`\n- Source: https://huggingface.co/blog/thinkingmachines-inkling\n\n## Checks\n\n- PASS: translation body is not empty\n- PASS: no TODO marker remains\n- PASS: code fences are balanced\n- PASS: contains Korean prose\n- PASS: source attribution exists\n\n## Metrics\n\n- body characters: 23324\n- Korean letter ratio: 40.53%\n- code fence markers: 26\n- TODO markers: 0\n- fetched source characters: 0\n",
+        "content": "# Quality Report\n\n- Manifest: `/home/runner/work/hugging-face-krew.github.io/hugging-face-krew.github.io/results/tmpayqru637.yaml`\n- Translation file: `../target/_posts/2026-07-15-thinkingmachines-inkling.md`\n- Source: https://huggingface.co/blog/thinkingmachines-inkling\n\n## Checks\n\n- PASS: translation body is not empty\n- PASS: no TODO marker remains\n- PASS: code fences are balanced\n- PASS: contains Korean prose\n- PASS: source attribution exists\n\n## Metrics\n\n- body characters: 23324\n- Korean letter ratio: 40.53%\n- code fence markers: 26\n- TODO markers: 0\n- fetched source characters: 0\n",
         "enabled": true,
         "fileName": "PR 리뷰 코멘트 (hf-agent-report)",
         "metrics": {
