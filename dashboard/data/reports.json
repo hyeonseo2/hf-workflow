@@ -718,6 +718,94 @@
       }
     },
     {
+      "prNumber": 167,
+      "quality": {
+        "available": false,
+        "checks": [],
+        "content": "",
+        "enabled": false,
+        "fileName": "quality-report.md",
+        "metrics": {},
+        "status": "missing"
+      },
+      "requestAvailable": false,
+      "run": {
+        "created_at": "2026-07-09T04:12:08+00:00",
+        "id": "native-speed-vllm-transformers-backend-backfill",
+        "target_date": "2026-07-08"
+      },
+      "seo": {
+        "available": false,
+        "checks": [],
+        "content": "",
+        "enabled": false,
+        "fileName": "seo-report.md",
+        "frontmatter": {},
+        "headings": [],
+        "status": "missing"
+      },
+      "source": {
+        "feed_url": "https://huggingface.co/blog/feed.xml",
+        "language": "en",
+        "published_at": "2026-07-08T00:00:00+00:00",
+        "published_date": "2026-07-08",
+        "slug": "native-speed-vllm-transformers-backend",
+        "title": "Native-speed vLLM transformers modeling backend",
+        "url": "https://huggingface.co/blog/native-speed-vllm-transformers-backend"
+      },
+      "translation": {
+        "branch": "translate/native-speed-vllm-transformers-backend",
+        "file_path": "_posts/2026-07-08-native-speed-vllm-transformers-backend.md",
+        "locale": "ko",
+        "pr_url": "https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/167",
+        "target_repo": "Hugging-Face-KREW/hugging-face-krew.github.io"
+      }
+    },
+    {
+      "prNumber": 163,
+      "quality": {
+        "available": false,
+        "checks": [],
+        "content": "",
+        "enabled": false,
+        "fileName": "quality-report.md",
+        "metrics": {},
+        "status": "missing"
+      },
+      "requestAvailable": false,
+      "run": {
+        "created_at": "2026-07-02T04:19:39+00:00",
+        "id": "cerebras-gemma4-voice-ai-backfill",
+        "target_date": "2026-07-01"
+      },
+      "seo": {
+        "available": false,
+        "checks": [],
+        "content": "",
+        "enabled": false,
+        "fileName": "seo-report.md",
+        "frontmatter": {},
+        "headings": [],
+        "status": "missing"
+      },
+      "source": {
+        "feed_url": "https://huggingface.co/blog/feed.xml",
+        "language": "en",
+        "published_at": "2026-07-01T00:00:00+00:00",
+        "published_date": "2026-07-01",
+        "slug": "cerebras-gemma4-voice-ai",
+        "title": "Hugging Face and Cerebras bring Gemma 4 to real-time voice AI",
+        "url": "https://huggingface.co/blog/cerebras-gemma4-voice-ai"
+      },
+      "translation": {
+        "branch": "translate/cerebras-gemma4-voice-ai",
+        "file_path": "_posts/2026-07-01-cerebras-gemma4-voice-ai.md",
+        "locale": "ko",
+        "pr_url": "https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/163",
+        "target_repo": "Hugging-Face-KREW/hugging-face-krew.github.io"
+      }
+    },
+    {
       "prNumber": 161,
       "quality": {
         "available": true,
@@ -842,6 +930,94 @@
       }
     },
     {
+      "prNumber": 156,
+      "quality": {
+        "available": false,
+        "checks": [],
+        "content": "",
+        "enabled": false,
+        "fileName": "quality-report.md",
+        "metrics": {},
+        "status": "missing"
+      },
+      "requestAvailable": false,
+      "run": {
+        "created_at": "2026-06-27T04:15:30+00:00",
+        "id": "vllm-jobs-backfill",
+        "target_date": "2026-06-26"
+      },
+      "seo": {
+        "available": false,
+        "checks": [],
+        "content": "",
+        "enabled": false,
+        "fileName": "seo-report.md",
+        "frontmatter": {},
+        "headings": [],
+        "status": "missing"
+      },
+      "source": {
+        "feed_url": "https://huggingface.co/blog/feed.xml",
+        "language": "en",
+        "published_at": "2026-06-26T00:00:00+00:00",
+        "published_date": "2026-06-26",
+        "slug": "vllm-jobs",
+        "title": "Run a vLLM Server on HF Jobs in One Command",
+        "url": "https://huggingface.co/blog/vllm-jobs"
+      },
+      "translation": {
+        "branch": "translate/vllm-jobs",
+        "file_path": "_posts/2026-06-26-vllm-jobs.md",
+        "locale": "ko",
+        "pr_url": "https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/156",
+        "target_repo": "Hugging-Face-KREW/hugging-face-krew.github.io"
+      }
+    },
+    {
+      "prNumber": 155,
+      "quality": {
+        "available": false,
+        "checks": [],
+        "content": "",
+        "enabled": false,
+        "fileName": "quality-report.md",
+        "metrics": {},
+        "status": "missing"
+      },
+      "requestAvailable": false,
+      "run": {
+        "created_at": "2026-06-25T04:22:33+00:00",
+        "id": "ffasr-leaderboard-backfill",
+        "target_date": "2026-06-24"
+      },
+      "seo": {
+        "available": false,
+        "checks": [],
+        "content": "",
+        "enabled": false,
+        "fileName": "seo-report.md",
+        "frontmatter": {},
+        "headings": [],
+        "status": "missing"
+      },
+      "source": {
+        "feed_url": "https://huggingface.co/blog/feed.xml",
+        "language": "en",
+        "published_at": "2026-06-24T00:00:00+00:00",
+        "published_date": "2026-06-24",
+        "slug": "ffasr-leaderboard",
+        "title": "Introducing the FFASR Leaderboard: Benchmarking ASR in the Real World",
+        "url": "https://huggingface.co/blog/ffasr-leaderboard"
+      },
+      "translation": {
+        "branch": "translate/ffasr-leaderboard",
+        "file_path": "_posts/2026-06-24-ffasr-leaderboard.md",
+        "locale": "ko",
+        "pr_url": "https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/155",
+        "target_repo": "Hugging-Face-KREW/hugging-face-krew.github.io"
+      }
+    },
+    {
       "prNumber": 154,
       "quality": {
         "available": true,
@@ -962,6 +1138,50 @@
         "file_path": "_posts/2026-06-23-cross-origin-storage.md",
         "locale": "ko",
         "pr_url": "https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/154",
+        "target_repo": "Hugging-Face-KREW/hugging-face-krew.github.io"
+      }
+    },
+    {
+      "prNumber": 145,
+      "quality": {
+        "available": false,
+        "checks": [],
+        "content": "",
+        "enabled": false,
+        "fileName": "quality-report.md",
+        "metrics": {},
+        "status": "missing"
+      },
+      "requestAvailable": false,
+      "run": {
+        "created_at": "2026-06-19T05:22:42+00:00",
+        "id": "peft-beyond-lora-backfill",
+        "target_date": "2026-06-18"
+      },
+      "seo": {
+        "available": false,
+        "checks": [],
+        "content": "",
+        "enabled": false,
+        "fileName": "seo-report.md",
+        "frontmatter": {},
+        "headings": [],
+        "status": "missing"
+      },
+      "source": {
+        "feed_url": "https://huggingface.co/blog/feed.xml",
+        "language": "en",
+        "published_at": "2026-06-18T00:00:00+00:00",
+        "published_date": "2026-06-18",
+        "slug": "peft-beyond-lora",
+        "title": "Beyond LoRA: Can you beat the most popular fine-tuning technique?",
+        "url": "https://huggingface.co/blog/peft-beyond-lora"
+      },
+      "translation": {
+        "branch": "translate/peft-beyond-lora",
+        "file_path": "_posts/2026-06-18-peft-beyond-lora.md",
+        "locale": "ko",
+        "pr_url": "https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/145",
         "target_repo": "Hugging-Face-KREW/hugging-face-krew.github.io"
       }
     },

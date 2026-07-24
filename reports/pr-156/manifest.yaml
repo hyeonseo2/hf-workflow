@@ -1,0 +1,31 @@
+version: 1
+
+run:
+  id: vllm-jobs-backfill
+  created_at: 2026-06-27T04:15:30+00:00
+  target_date: 2026-06-26
+
+source:
+  feed_url: https://huggingface.co/blog/feed.xml
+  url: https://huggingface.co/blog/vllm-jobs
+  slug: vllm-jobs
+  title: "Run a vLLM Server on HF Jobs in One Command"
+  published_date: 2026-06-26
+  published_at: 2026-06-26T00:00:00+00:00
+  language: en
+
+translation:
+  target_repo: Hugging-Face-KREW/hugging-face-krew.github.io
+  branch: translate/vllm-jobs
+  file_path: _posts/2026-06-26-vllm-jobs.md
+  pr_url: https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/156
+  locale: ko
+
+handoff:
+  seo:
+    enabled: false
+    primary_keyword: ""
+    secondary_keywords: []
+  quality:
+    enabled: false
+    checks: []

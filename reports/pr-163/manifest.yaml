@@ -1,0 +1,31 @@
+version: 1
+
+run:
+  id: cerebras-gemma4-voice-ai-backfill
+  created_at: 2026-07-02T04:19:39+00:00
+  target_date: 2026-07-01
+
+source:
+  feed_url: https://huggingface.co/blog/feed.xml
+  url: https://huggingface.co/blog/cerebras-gemma4-voice-ai
+  slug: cerebras-gemma4-voice-ai
+  title: "Hugging Face and Cerebras bring Gemma 4 to real-time voice AI"
+  published_date: 2026-07-01
+  published_at: 2026-07-01T00:00:00+00:00
+  language: en
+
+translation:
+  target_repo: Hugging-Face-KREW/hugging-face-krew.github.io
+  branch: translate/cerebras-gemma4-voice-ai
+  file_path: _posts/2026-07-01-cerebras-gemma4-voice-ai.md
+  pr_url: https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/163
+  locale: ko
+
+handoff:
+  seo:
+    enabled: false
+    primary_keyword: ""
+    secondary_keywords: []
+  quality:
+    enabled: false
+    checks: []
