@@ -1,6 +1,130 @@
 {
-  "reportSnapshotAt": "2026-07-22T03:41:50+00:00",
+  "reportSnapshotAt": "2026-07-24T03:41:24+00:00",
   "reports": [
+    {
+      "prNumber": 178,
+      "quality": {
+        "available": true,
+        "checks": [
+          {
+            "status": "pass",
+            "text": "translation body is not empty"
+          },
+          {
+            "status": "pass",
+            "text": "no TODO marker remains"
+          },
+          {
+            "status": "pass",
+            "text": "code fences are balanced"
+          },
+          {
+            "status": "pass",
+            "text": "contains Korean prose"
+          },
+          {
+            "status": "pass",
+            "text": "source attribution exists"
+          }
+        ],
+        "content": "# Quality Report\n\n- Manifest: `/home/runner/work/hugging-face-krew.github.io/hugging-face-krew.github.io/results/tmpaha59g1j.yaml`\n- Translation file: `../target/_posts/2026-07-23-nunchaku-diffusers.md`\n- Source: https://huggingface.co/blog/nunchaku-diffusers\n\n## Checks\n\n- PASS: translation body is not empty\n- PASS: no TODO marker remains\n- PASS: code fences are balanced\n- PASS: contains Korean prose\n- PASS: source attribution exists\n\n## Metrics\n\n- body characters: 16383\n- Korean letter ratio: 31.13%\n- code fence markers: 24\n- TODO markers: 0\n- fetched source characters: 0\n",
+        "enabled": true,
+        "fileName": "PR 리뷰 코멘트 (hf-agent-report)",
+        "metrics": {
+          "Korean letter ratio": "31.13%",
+          "TODO markers": "0",
+          "body characters": "16383",
+          "code fence markers": "24",
+          "fetched source characters": "0"
+        },
+        "origin": "pr-comment",
+        "status": "pass"
+      },
+      "requestAvailable": false,
+      "run": {
+        "created_at": "2026-07-24T03:41:24+00:00",
+        "id": "pr-178-comment"
+      },
+      "seo": {
+        "available": true,
+        "checks": [
+          {
+            "status": "pass",
+            "text": "alt_text_coverage: Alt text coverage: 4/4 images"
+          },
+          {
+            "status": "pass",
+            "text": "descriptive_alt_text: Descriptive alt text: 4/4 (≥80% recommend)"
+          },
+          {
+            "status": "pass",
+            "text": "image_files_exist: All 0 local image file(s) exist"
+          },
+          {
+            "status": "pass",
+            "text": "opening_summary: Opening 3 paragraphs: 94 words (recommend ≥50 for GEO)"
+          },
+          {
+            "status": "pass",
+            "text": "heading_hierarchy: Heading hierarchy: Valid"
+          },
+          {
+            "status": "warning",
+            "text": "h1_count: Body H1 count: 2 (0 or 1 OK — layout renders title as H1; never multiple)"
+          },
+          {
+            "status": "pass",
+            "text": "citations: Citations/statistics: 35 (recommend ≥1 for GEO)"
+          },
+          {
+            "status": "warning",
+            "text": "question_headings: Scannable H2/H3 (question or keyword): 0 (0 question, 0 keyword)"
+          },
+          {
+            "status": "pass",
+            "text": "internal_links: Internal links: 12 (recommend 2-3)"
+          },
+          {
+            "status": "pass",
+            "text": "word_count: Word count: 2038 (recommend ≥300)"
+          },
+          {
+            "status": "warning",
+            "text": "webp_format: WebP format: 0/4 images (≥50% recommend)"
+          },
+          {
+            "status": "warning",
+            "text": "lazy_loading: Lazy loading: 0 images (optional)"
+          }
+        ],
+        "content": "# SEO Eval Report\n\n**Gate: ✅ PASS** — deterministic gate only (rubric is stage-1 skeleton)\n\n- File: `../target/_posts/2026-07-23-nunchaku-diffusers.md`\n- Source: —\n- Primary keyword: (none — D5 skipped)\n- Mode: file\n\n## Gate\n\n- Deterministic REQUIRED (D1–D7): ✅ pass\n- Rubric (R1–R6): skeleton — not run (rubric not run (stage-1 skeleton))\n\n## Required checks (gated)\n\n✅ alt_text_coverage: Alt text coverage: 4/4 images\n✅ descriptive_alt_text: Descriptive alt text: 4/4 (≥80% recommend)\n✅ image_files_exist: All 0 local image file(s) exist\n\n## Advisory checks (not gated)\n\n✅ opening_summary: Opening 3 paragraphs: 94 words (recommend ≥50 for GEO)\n✅ heading_hierarchy: Heading hierarchy: Valid\n⚠️ h1_count: Body H1 count: 2 (0 or 1 OK — layout renders title as H1; never multiple)\n✅ citations: Citations/statistics: 35 (recommend ≥1 for GEO)\n⚠️ question_headings: Scannable H2/H3 (question or keyword): 0 (0 question, 0 keyword)\n✅ internal_links: Internal links: 12 (recommend 2-3)\n✅ word_count: Word count: 2038 (recommend ≥300)\nℹ️ primary_keyword: No primary_keyword in manifest — keyword check skipped\n⚠️ webp_format: WebP format: 0/4 images (≥50% recommend)\n⚠️ lazy_loading: Lazy loading: 0 images (optional)\n\n## Frontmatter (advisory — written by metadata step, not gated)\n\n✅ title: Title: 35 chars (recommend ≤60)\n❌ description: Description is missing\n✅ image: OG image: assets/images/blog/posts/2026-07-23-nunchaku-diffusers/thumbnail.png\n✅ categories: Categories: 2 (recommend 2-3)\n✅ author: Author: dailybot\n",
+        "enabled": true,
+        "fileName": "PR 리뷰 코멘트 (hf-agent-report)",
+        "frontmatter": {
+          "author": "Author: dailybot",
+          "categories": "Categories: 2 (recommend 2-3)",
+          "description": "Description is missing",
+          "image": "OG image: assets/images/blog/posts/2026-07-23-nunchaku-diffusers/thumbnail.png",
+          "title": "Title: 35 chars (recommend ≤60)"
+        },
+        "headings": [],
+        "origin": "pr-comment",
+        "status": "pass"
+      },
+      "source": {
+        "published_date": "2026-07-23",
+        "slug": "nunchaku-diffusers",
+        "title": "Translate Hugging Face blog post: Bringing Nunchaku 4-bit Diffusion Inference to Diffusers",
+        "url": "https://huggingface.co/blog/nunchaku-diffusers"
+      },
+      "translation": {
+        "branch": "translate/nunchaku-diffusers",
+        "file_path": "_posts/2026-07-23-nunchaku-diffusers.md",
+        "locale": "ko",
+        "pr_url": "https://github.com/Hugging-Face-KREW/hugging-face-krew.github.io/pull/178",
+        "target_repo": "Hugging-Face-KREW/hugging-face-krew.github.io"
+      }
+    },
     {
       "prNumber": 177,
       "quality": {
